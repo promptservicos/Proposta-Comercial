@@ -2063,3 +2063,85 @@ body.light-mode .btn-remover:hover {
 body.light-mode .btn-remover:hover i {
     color: #ff4444 !important;
 }
+
+/* ========== CORREÇÃO MODO CLARO PARA UNIFORMES E EPIs ========== */
+body.light-mode .uniformes-total,
+body.light-mode .epis-total {
+    background: #f5f5f5 !important;
+    border-top: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .uniformes-total span:first-child,
+body.light-mode .epis-total span:first-child {
+    color: #666 !important;
+}
+
+body.light-mode .uniformes-total span:last-child,
+body.light-mode .epis-total span:last-child {
+    color: #c10404 !important;
+}
+
+/* Garantir que o fundo dos itens também fique claro */
+body.light-mode .item-lista {
+    background: #ffffff !important;
+    border-bottom: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .item-header .item-nome {
+    color: #333 !important;
+}
+
+body.light-mode .item-header .item-preco {
+    color: #c10404 !important;
+}
+
+body.light-mode .item-input input {
+    background: #ffffff !important;
+    border: 1px solid #ddd !important;
+    color: #333 !important;
+}
+
+body.light-mode .item-input span {
+    color: #666 !important;
+}
+
+body.light-mode .item-totals .item-total,
+body.light-mode .item-totals .item-mensal {
+    color: #c10404 !important;
+}
+
+/* Corrigir também os totais de exames no modo claro */
+body.light-mode .exames-total {
+    background: #f5f5f5 !important;
+    border-top: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .exames-total span:first-child {
+    color: #666 !important;
+}
+
+body.light-mode .exames-total span:last-child {
+    color: #c10404 !important;
+}
+
+/* ========== FORÇAR FUNDO BRANCO NOS TOTAIS ========== */
+body.light-mode .uniformes-total,
+body.light-mode .epis-total,
+body.light-mode .exames-total {
+    background: #f5f5f5 !important;
+    background-color: #f5f5f5 !important;
+    color: #333 !important;
+}
+
+body.light-mode .uniformes-total span,
+body.light-mode .epis-total span,
+body.light-mode .exames-total span {
+    color: #333 !important;
+}
+
+body.light-mode .uniformes-total span:last-child,
+body.light-mode .epis-total span:last-child,
+body.light-mode .exames-total span:last-child {
+    color: #c10404 !important;
+    font-weight: bold !important;
+}

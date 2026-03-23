@@ -168,7 +168,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     beneficios: {},
                     beneficiosPersonalizados: [],
                     seguranca: {},
-                    exames: {},
+                    exames: {}, // OBJETO, não array!
                     insumos: {},
                     treinamento: 0
                 };
@@ -240,21 +240,21 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 });
                 
-                // Capturar exames
+                // ========== CAPTURAR EXAMES CORRETAMENTE ==========
                 const examesSection = item.querySelector('.exames-section');
                 if (examesSection) {
-                    const examesData = { exames: {}, treinamento: 0 };
+                    // Capturar exames marcados como OBJETO
                     examesSection.querySelectorAll('.exame-checkbox').forEach(cb => {
                         if (cb.checked) {
-                            examesData.exames[cb.dataset.nome] = true;
+                            cargo.exames[cb.dataset.nome] = true;
                         }
                     });
-                    const treinamentoInputExames = examesSection.querySelector('.treinamento-valor');
-                    if (treinamentoInputExames) {
-                        examesData.treinamento = parseFloat(treinamentoInputExames.value.replace(/\./g, '').replace(',', '.')) || 0;
+                    
+                    // Capturar valor do treinamento
+                    const treinamentoInput = examesSection.querySelector('.treinamento-valor');
+                    if (treinamentoInput) {
+                        cargo.treinamento = parseFloat(treinamentoInput.value.replace(/\./g, '').replace(',', '.')) || 0;
                     }
-                    cargo.exames = examesData.exames;
-                    cargo.treinamento = examesData.treinamento;
                 }
                 
                 // Capturar insumos
@@ -273,6 +273,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
             
             localStorage.setItem(DRAFT_KEY, JSON.stringify(dados));
+            console.log('Rascunho salvo com sucesso!', dados);
         } catch (e) {
             console.error('Erro ao salvar rascunho:', e);
         }
@@ -283,11 +284,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         try {
             const draft = localStorage.getItem(DRAFT_KEY);
             if (draft) {
-                const dados = JSON.parse(draft);
-                if (dados.cliente) clienteInput.value = dados.cliente;
-                if (dados.cargos && dados.cargos.length > 0) {
+                const dadosRascunho = JSON.parse(draft);
+                if (dadosRascunho.cliente) clienteInput.value = dadosRascunho.cliente;
+                if (dadosRascunho.cargos && dadosRascunho.cargos.length > 0) {
                     container.innerHTML = '';
-                    dados.cargos.forEach(c => {
+                    dadosRascunho.cargos.forEach(c => {
+                        // Os exames já são um objeto, usa direto
+                        const examesObj = c.exames || {};
+                        
+                        console.log('Carregando exames:', examesObj); // Debug
+                        
                         container.appendChild(criarCargoItem(
                             c.nome,
                             c.quantidade,
@@ -297,7 +303,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                             c.epis || {},
                             c.beneficios || {},
                             c.seguranca || {},
-                            c.exames || {},
+                            examesObj, // Passa o objeto diretamente
                             c.insumos || {},
                             { encargos_fiscais: { porcentagem: 13.75 } },
                             c.treinamento || 0,
@@ -1023,7 +1029,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         EXAMES_ADMISSIONAL.forEach(e => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'exames-item';
-            const isChecked = dadosExames && dadosExames[e.nome] === true;
+            // Verificar se o exame está nos dados salvos
+            const isChecked = (dadosExames && dadosExames[e.nome] === true);
             itemDiv.innerHTML = `
                 <div class="exames-item-nome">${e.nome}</div>
                 <div class="exames-item-checkbox">
@@ -1035,8 +1042,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             examesItems.push({
                 nome: e.nome,
                 preco: e.preco,
-                checkbox: itemDiv.querySelector('.exame-checkbox'),
-                obrigatorio: false
+                checkbox: itemDiv.querySelector('.exame-checkbox')
             });
         });
         
@@ -1044,7 +1050,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         EXAMES_COMPLEMENTARES.forEach(e => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'exames-item';
-            const isChecked = dadosExames && dadosExames[e.nome] === true;
+            // Verificar se o exame está nos dados salvos
+            const isChecked = (dadosExames && dadosExames[e.nome] === true);
             itemDiv.innerHTML = `
                 <div class="exames-item-nome">${e.nome}</div>
                 <div class="exames-item-checkbox">
@@ -1056,8 +1063,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             examesItems.push({
                 nome: e.nome,
                 preco: e.preco,
-                checkbox: itemDiv.querySelector('.exame-checkbox'),
-                obrigatorio: false
+                checkbox: itemDiv.querySelector('.exame-checkbox')
             });
         });
         
@@ -1142,18 +1148,23 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         examesMenuEl.addEventListener('click', (e) => e.stopPropagation());
         
+        // Inicializar com os valores
         calcularTotal();
         
-        return { section, calcularTotal, getDados: () => {
-            const exames = {};
-            examesItems.forEach(item => {
-                if (item.checkbox.checked) {
-                    exames[item.nome] = true;
-                }
-            });
-            const treinamento = parseFloat(treinamentoInput.value.replace(/\./g, '').replace(',', '.')) || 0;
-            return { exames, treinamento };
-        } };
+        return { 
+            section, 
+            calcularTotal, 
+            getDados: () => {
+                const exames = {};
+                examesItems.forEach(item => {
+                    if (item.checkbox.checked) {
+                        exames[item.nome] = true;
+                    }
+                });
+                const treinamento = parseFloat(treinamentoInput.value.replace(/\./g, '').replace(',', '.')) || 0;
+                return { exames, treinamento };
+            } 
+        };
     }
 
     function criarInsumosSection(cargoItem, dadosInsumos = {}) {
@@ -1713,14 +1724,28 @@ document.addEventListener('DOMContentLoaded', async function() {
             try {
                 const doc = await db.collection('propostas').doc(propostaId).get();
                 if (doc.exists) {
-                    const data = doc.data();
+                    const propostaData = doc.data();
                     if (!vendedorParam) {
-                        document.getElementById('vendedor-nome').textContent = data.vendedor || 'Não informado';
+                        document.getElementById('vendedor-nome').textContent = propostaData.vendedor || 'Não informado';
                     }
-                    clienteInput.value = data.cliente || '';
+                    clienteInput.value = propostaData.cliente || '';
                     container.innerHTML = '';
-                    if (data.cargos && data.cargos.length > 0) {
-                        data.cargos.forEach(c => {
+                    if (propostaData.cargos && propostaData.cargos.length > 0) {
+                        propostaData.cargos.forEach(c => {
+                            // Garantir que exames seja um objeto
+                            let examesObj = {};
+                            if (c.exames) {
+                                if (Array.isArray(c.exames)) {
+                                    // Se for array, converte para objeto
+                                    c.exames.forEach(nomeExame => {
+                                        examesObj[nomeExame] = true;
+                                    });
+                                } else {
+                                    // Já é objeto
+                                    examesObj = c.exames;
+                                }
+                            }
+                            
                             container.appendChild(criarCargoItem(
                                 c.nome,
                                 c.quantidade,
@@ -1730,7 +1755,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 c.epis || {},
                                 c.beneficios || {},
                                 c.seguranca || {},
-                                c.exames || {},
+                                examesObj,
                                 c.insumos || {},
                                 c.despesas || {},
                                 c.treinamento || 0,
@@ -1843,7 +1868,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // ========== GERAR PDF PROFISSIONAL - VERSÃO SIMPLIFICADA E CORRIGIDA ==========
+    // ========== GERAR PDF PROFISSIONAL ==========
     function gerarPDFProfissional() {
         // Coletar dados do cliente
         const clienteNome = clienteInput.value || 'Não informado';
@@ -2211,11 +2236,23 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             
             htmlContent += `
-                    <table>
-                        <tr class="bg-gray"><td><strong>SUB TOTAL INSUMOS E BENEFÍCIOS</strong></td><td style="text-align:right">R$ ${subtotalInsumosBeneficios.toFixed(2).replace('.', ',')}</td></tr>
-                        <tr><td><strong>Encargos Fiscais (13,75%)</strong></td><td style="text-align:right">R$ ${encargosFiscais.toFixed(2).replace('.', ',')}</td></tr>
-                        <tr class="bg-light"><td><strong>Total por vaga</strong></td><td style="text-align:right;font-weight:bold">R$ ${totalVaga.toFixed(2).replace('.', ',')}</td></tr>
-                        <tr class="bg-dark"><td><strong>Total (${quantidade} vaga(s))</strong></td><td style="text-align:right;font-weight:bold;color:#c10404">R$ ${totalVagas.toFixed(2).replace('.', ',')}</td></tr>
+                    )\"
+                        <tr class=\"bg-gray\">\
+                            <td><strong>SUB TOTAL INSUMOS E BENEFÍCIOS</strong>\
+                            <td style=\"text-align:right\">R$ ${subtotalInsumosBeneficios.toFixed(2).replace('.', ',')}\
+                        </tr>
+                        <tr class=\"bg-gray\">\
+                            <td><strong>Encargos Fiscais (13,75%)</strong>\
+                            <td style=\"text-align:right\">R$ ${encargosFiscais.toFixed(2).replace('.', ',')}\
+                        </tr>
+                        <tr class=\"bg-light\">\
+                            <td><strong>Total por vaga</strong>\
+                            <td style=\"text-align:right;font-weight:bold\">R$ ${totalVaga.toFixed(2).replace('.', ',')}\
+                        </tr>
+                        <tr class=\"bg-dark\">\
+                            <td><strong>Total (${quantidade} vaga(s))</strong>\
+                            <td style=\"text-align:right;font-weight:bold;color:#c10404\">R$ ${totalVagas.toFixed(2).replace('.', ',')}\
+                        </tr>
                     </table>
                 </div>
             </div>
@@ -2281,8 +2318,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         if (isVisualizacao) {
             // Modo visualização - desabilitar TODAS as edições
-            
-            // Desabilitar todos os inputs e selects
             document.querySelectorAll('input, select, textarea').forEach(el => {
                 el.disabled = true;
                 el.style.opacity = '0.7';
@@ -2290,42 +2325,40 @@ document.addEventListener('DOMContentLoaded', async function() {
                 el.style.pointerEvents = 'none';
             });
             
-            // Desabilitar checkboxes
             document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
                 cb.disabled = true;
                 cb.style.pointerEvents = 'none';
             });
             
-            // Esconder todos os botões de ação
-            document.querySelectorAll('.btn-add, #btn-gerar-pdf, #btn-salvar, .btn-remover, .btn-tema, .btn-compartilhar, .btn-add-beneficio, .btn-remover-beneficio').forEach(btn => {
+            // Esconder botões de ação (mas manter o botão de tema e compartilhar)
+            document.querySelectorAll('.btn-add, #btn-gerar-pdf, #btn-salvar, .btn-remover, .btn-add-beneficio, .btn-remover-beneficio').forEach(btn => {
                 if (btn) btn.style.display = 'none';
             });
             
-            // Esconder botão adicionar cargo
+            // Manter botão de tema e compartilhar visíveis no modo visualização
+            // Não esconder .btn-tema e .btn-compartilhar
+            
             const btnAddCargo = document.getElementById('adicionar-cargo');
             if (btnAddCargo) btnAddCargo.style.display = 'none';
             
-            // Esconder botão voltar
-            const btnVoltar = document.getElementById('btn-voltar');
-            if (btnVoltar) btnVoltar.style.display = 'none';
+            // Não esconder o botão voltar para que o cliente possa voltar
+            // const btnVoltar = document.getElementById('btn-voltar');
+            // if (btnVoltar) btnVoltar.style.display = 'none';
             
-            // Esconder botões de expansão (deixar tudo expandido)
             document.querySelectorAll('.section-toggle, .despesas-toggle, .exames-toggle').forEach(toggle => {
                 if (toggle) toggle.style.display = 'none';
             });
             
-            // Expandir todas as seções para visualização
             document.querySelectorAll('.section-content.collapsed, .despesas-content.collapsed, .exames-content.collapsed').forEach(content => {
                 if (content) content.classList.remove('collapsed');
             });
             
-            // Desabilitar dropdowns
             document.querySelectorAll('.box-header').forEach(header => {
                 header.style.pointerEvents = 'none';
                 header.style.cursor = 'default';
             });
             
-            // Adicionar aviso de visualização no topo
+            // Adicionar aviso de visualização
             const aviso = document.createElement('div');
             aviso.className = 'aviso-visualizacao';
             aviso.innerHTML = `
@@ -2334,18 +2367,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </div>
             `;
             const containerDiv = document.querySelector('.container');
-            if (containerDiv) {
-                if (!containerDiv.querySelector('.aviso-visualizacao')) {
-                    containerDiv.insertBefore(aviso, containerDiv.firstChild);
-                }
+            if (containerDiv && !containerDiv.querySelector('.aviso-visualizacao')) {
+                containerDiv.insertBefore(aviso, containerDiv.firstChild);
             }
             
-            // Desabilitar clique nos cards de benefícios personalizados
             document.querySelectorAll('.btn-remover-beneficio').forEach(btn => {
                 btn.style.display = 'none';
             });
             
-            // Desabilitar adicionar benefício
             const btnAddBeneficio = document.querySelector('.btn-add-beneficio');
             if (btnAddBeneficio) btnAddBeneficio.style.display = 'none';
         }
@@ -2376,6 +2405,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const heHoras = parseFloat(adicionaisSection?.querySelector('.he-horas')?.value) || 0;
             const anHoras = parseFloat(adicionaisSection?.querySelector('.an-horas')?.value) || 0;
             
+            // Uniformes e EPIs (mantém igual)
             const uniformesSection = item.querySelectorAll('.expandable-section')[1];
             let uniformes = {}, epis = {};
             if (uniformesSection && uniformesSection.__getUniformesDados) {
@@ -2413,6 +2443,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
             
+            // Benefícios (mantém igual)
             const beneficiosSection = item.querySelectorAll('.expandable-section')[2];
             let beneficios = {};
             let beneficiosPersonalizados = [];
@@ -2444,6 +2475,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
             
+            // Segurança (mantém igual)
             const segurancaSection = item.querySelectorAll('.expandable-section')[3];
             let seguranca = {};
             if (segurancaSection && segurancaSection.__getSegurancaDados) {
@@ -2461,28 +2493,29 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
             
-            const examesSection = item.querySelectorAll('.expandable-section')[4];
+            // ========== CORREÇÃO: Capturar EXAMES corretamente para o Firebase ==========
+            const examesSection = item.querySelector('.exames-section');
             let exames = {};
             let treinamento = 0;
-            if (examesSection && examesSection.__getExamesDados) {
-                const dados = examesSection.__getExamesDados();
-                exames = dados.exames || {};
-                treinamento = dados.treinamento || 0;
-            } else if (examesSection) {
-                const examesData = { exames: {}, treinamento: 0 };
+            
+            if (examesSection) {
+                // Capturar exames marcados
                 examesSection.querySelectorAll('.exame-checkbox').forEach(cb => {
                     if (cb.checked) {
-                        examesData.exames[cb.dataset.nome] = true;
+                        exames[cb.dataset.nome] = true;
                     }
                 });
-                const treinamentoInputExames = examesSection.querySelector('.treinamento-valor');
-                if (treinamentoInputExames) {
-                    examesData.treinamento = parseFloat(treinamentoInputExames.value.replace(/\./g, '').replace(',', '.')) || 0;
+                
+                // Capturar treinamento
+                const treinamentoInput = examesSection.querySelector('.treinamento-valor');
+                if (treinamentoInput) {
+                    treinamento = parseFloat(treinamentoInput.value.replace(/\./g, '').replace(',', '.')) || 0;
                 }
-                exames = examesData.exames;
-                treinamento = examesData.treinamento;
             }
             
+            console.log('Exames sendo salvos no Firebase:', exames); // LOG PARA DEBUG
+            
+            // Insumos (mantém igual)
             const insumosSection = item.querySelectorAll('.expandable-section')[5];
             let insumos = {};
             if (insumosSection && insumosSection.__getInsumosDados) {
@@ -2525,7 +2558,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 beneficios,
                 beneficiosPersonalizados,
                 seguranca,
-                exames,
+                exames, // AGORA exames é um OBJETO com os nomes marcados
                 treinamento,
                 insumos,
                 despesas,
@@ -2543,6 +2576,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             cargos,
             totalGeral
         };
+        
+        console.log('Proposta sendo salva:', proposta); // LOG PARA DEBUG
         
         try {
             if (propostaId) {

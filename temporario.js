@@ -260,21 +260,21 @@ document.addEventListener('DOMContentLoaded', async function() {
                     });
                 }
                 
-                // Capturar exames
+                // Capturar exames (JÁ ESTÁ CORRETO, mas vamos garantir)
                 const examesSection = item.querySelector('.exames-section');
                 if (examesSection) {
-                    const examesData = { exames: {}, treinamento: 0 };
+                    const examesObj = {};
                     examesSection.querySelectorAll('.exame-checkbox').forEach(cb => {
                         if (cb.checked) {
-                            examesData.exames[cb.dataset.nome] = true;
+                            examesObj[cb.dataset.nome] = true;
                         }
                     });
+                    cargo.exames = examesObj; // Isso já está correto
+                    
                     const treinamentoInput = examesSection.querySelector('.treinamento-valor');
                     if (treinamentoInput) {
-                        examesData.treinamento = parseFloat(treinamentoInput.value.replace(/\./g, '').replace(',', '.')) || 0;
+                        cargo.treinamento = parseFloat(treinamentoInput.value.replace(/\./g, '').replace(',', '.')) || 0;
                     }
-                    cargo.exames = examesData.exames;
-                    cargo.treinamento = examesData.treinamento;
                 }
                 
                 dados.cargos.push(cargo);
@@ -296,6 +296,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (dados.cargos && dados.cargos.length > 0) {
                     container.innerHTML = '';
                     dados.cargos.forEach(c => {
+                        // Garantir que exames seja um objeto
+                        let examesObj = c.exames || {};
+                        
                         container.appendChild(criarCargoItem(
                             c.nome,
                             c.quantidade,
@@ -307,9 +310,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                             c.seguranca || {},
                             c.insumos || {},
                             c.despesas || {},
-                            c.exames || {},
+                            examesObj, // Passa o objeto diretamente
                             c.treinamento || 0,
-                            parseFloat(c.encargosPercentual?.replace(/\./g, '').replace(',', '.')) || 55.83
+                            parseFloat(c.adicionais?.encargosPercentual?.replace(/\./g, '').replace(',', '.')) || 55.83
                         ));
                     });
                     calcularTotalGeral();
@@ -1099,7 +1102,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         EXAMES_OBRIGATORIOS.forEach(e => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'exames-item';
-            const isChecked = dadosExames.exames?.[e.nome] !== undefined ? dadosExames.exames[e.nome] : true;
+            const isChecked = dadosExames[e.nome] === true;
             itemDiv.innerHTML = `
                 <div class="exames-item-nome">${e.nome}</div>
                 <div class="exames-item-checkbox">
@@ -1220,17 +1223,22 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         calcularTotal();
         
-        return { section, calcularTotal, getDados: () => {
-            const exames = {};
-            examesItems.forEach(item => {
-                if (item.checkbox.checked) {
-                    exames[item.nome] = true;
-                }
-            });
-            const treinamento = parseFloat(treinamentoInput.value.replace(/\./g, '').replace(',', '.')) || 0;
-            return { exames, treinamento };
-        } };
+         return { 
+            section, 
+            calcularTotal, 
+            getDados: () => {
+                const exames = {};
+                examesItems.forEach(item => {
+                    if (item.checkbox.checked) {
+                        exames[item.nome] = true;
+                    }
+                });
+                const treinamento = parseFloat(treinamentoInput.value.replace(/\./g, '').replace(',', '.')) || 0;
+                return { exames, treinamento };
+            } 
+        };
     }
+
 
     // ========== CRIAÇÃO DO CARGO ==========
     function criarCargoItem(cargo = '', quantidade = 1, salario = 0, dadosAdicionais = {}, dadosUniformes = {}, dadosEpis = {}, dadosBeneficios = {}, dadosSeguranca = {}, dadosInsumos = {}, dadosDespesas = {}, dadosExames = {}, treinamentoValor = 0, encargosPercentual = 55.83) {
@@ -1642,6 +1650,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                     container.innerHTML = '';
                     if (data.cargos && data.cargos.length > 0) {
                         data.cargos.forEach(c => {
+                            // Garantir que exames seja um objeto
+                            let examesObj = {};
+                            if (c.exames) {
+                                if (Array.isArray(c.exames)) {
+                                    // Se for array, converte para objeto
+                                    c.exames.forEach(nomeExame => {
+                                        examesObj[nomeExame] = true;
+                                    });
+                                } else {
+                                    // Já é objeto
+                                    examesObj = c.exames;
+                                }
+                            }
+                            
                             container.appendChild(criarCargoItem(
                                 c.nome,
                                 c.quantidade,
@@ -1653,7 +1675,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 c.seguranca || {},
                                 c.insumos || {},
                                 c.despesas || {},
-                                c.exames || {},
+                                examesObj,
                                 c.treinamento || 0,
                                 c.adicionais?.encargosPercentual || 55.83
                             ));
@@ -1856,6 +1878,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const isVisualizacao = urlParams.get('visualizacao') === 'true';
         
         if (isVisualizacao) {
+            // Modo visualização - desabilitar TODAS as edições
             document.querySelectorAll('input, select, textarea').forEach(el => {
                 el.disabled = true;
                 el.style.opacity = '0.7';
@@ -1868,15 +1891,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                 cb.style.pointerEvents = 'none';
             });
             
-            document.querySelectorAll('.btn-add, #btn-gerar-pdf, #btn-salvar, .btn-remover, .btn-tema, .btn-compartilhar').forEach(btn => {
+            // Esconder botões de ação (mas manter o botão de tema)
+            document.querySelectorAll('.btn-add, #btn-gerar-pdf, #btn-salvar, .btn-remover, .btn-compartilhar').forEach(btn => {
                 if (btn) btn.style.display = 'none';
             });
+            
+            // NÃO esconder o botão de tema - o cliente pode mudar o tema
+            // O botão de tema permanece visível
             
             const btnAddCargo = document.getElementById('adicionar-cargo');
             if (btnAddCargo) btnAddCargo.style.display = 'none';
             
-            const btnVoltar = document.getElementById('btn-voltar');
-            if (btnVoltar) btnVoltar.style.display = 'none';
+            // Não esconder o botão voltar para que o cliente possa voltar ao menu
+            // const btnVoltar = document.getElementById('btn-voltar');
+            // if (btnVoltar) btnVoltar.style.display = 'none';
             
             document.querySelectorAll('.section-toggle, .despesas-toggle, .exames-toggle').forEach(toggle => {
                 if (toggle) toggle.style.display = 'none';
@@ -1891,6 +1919,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 header.style.cursor = 'default';
             });
             
+            // Adicionar aviso de visualização
             const aviso = document.createElement('div');
             aviso.className = 'aviso-visualizacao';
             aviso.innerHTML = `
