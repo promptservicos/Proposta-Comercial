@@ -1,0 +1,949 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #e0e0e0;
+    padding: 1rem;
+    position: relative;
+}
+
+/* Efeito de fundo dinâmico com partículas */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        radial-gradient(circle at 20% 80%, rgba(193, 4, 4, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(193, 4, 4, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.03) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.container {
+    background: linear-gradient(135deg, #141414 0%, #0c0c0c 100%);
+    max-width: 900px;
+    width: 100%;
+    padding: 2rem;
+    border-radius: 32px;
+    border: 1px solid rgba(193, 4, 4, 0.3);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(193, 4, 4, 0.1) inset;
+    position: relative;
+    z-index: 1;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+    position: relative;
+}
+
+.header-icon {
+    color: #c10404;
+    font-size: 1.8rem;
+    filter: drop-shadow(0 0 8px rgba(193, 4, 4, 0.4));
+}
+
+.header h1 {
+    font-size: 1.6rem;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    flex: 1;
+    background: linear-gradient(135deg, #ffffff 0%, #c10404 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.header-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.btn-tema, .btn-compartilhar {
+    background: rgba(30, 30, 30, 0.8);
+    border: 1px solid rgba(193, 4, 4, 0.3);
+    color: #c10404;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 1.2rem;
+    backdrop-filter: blur(4px);
+}
+
+.btn-tema:hover, .btn-compartilhar:hover {
+    border-color: #c10404;
+    background-color: rgba(193, 4, 4, 0.2);
+    transform: scale(1.05);
+    box-shadow: 0 0 12px rgba(193, 4, 4, 0.3);
+}
+
+.btn-voltar {
+    background: rgba(30, 30, 30, 0.8);
+    border: 1px solid rgba(193, 4, 4, 0.3);
+    color: #c10404;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 1.2rem;
+    backdrop-filter: blur(4px);
+}
+
+.btn-voltar:hover {
+    border-color: #c10404;
+    background-color: rgba(193, 4, 4, 0.2);
+    transform: scale(1.05);
+    box-shadow: 0 0 12px rgba(193, 4, 4, 0.3);
+}
+
+.vendedor-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%);
+    padding: 0.6rem 1.2rem;
+    border-radius: 40px;
+    width: fit-content;
+    margin: 0.5rem 0 1.2rem 0;
+    border: 1px solid rgba(193, 4, 4, 0.3);
+    font-size: 0.9rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.vendedor-info i {
+    color: #c10404;
+}
+
+.subtitle {
+    color: #aaa;
+    font-size: 0.9rem;
+    margin-bottom: 2rem;
+    border-left: 3px solid #c10404;
+    padding-left: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(90deg, rgba(193, 4, 4, 0.1), transparent);
+}
+
+.subtitle i {
+    color: #c10404;
+    font-size: 1rem;
+}
+
+.cliente-field {
+    margin-bottom: 2rem;
+    max-width: 400px;
+}
+
+.cliente-field label {
+    margin-bottom: 0.5rem;
+    display: block;
+    color: #ccc;
+    font-weight: 500;
+}
+
+.cliente-field label i {
+    color: #c10404;
+    width: 1.4rem;
+    text-align: center;
+}
+
+.cargo-item {
+    background: linear-gradient(135deg, #1a1a1a 0%, #111111 100%);
+    border-radius: 24px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid rgba(193, 4, 4, 0.2);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s;
+}
+
+.cargo-item:hover {
+    border-color: rgba(193, 4, 4, 0.5);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+}
+
+.cargo-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.cargo-titulo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #c10404;
+    font-weight: 600;
+}
+
+.cargo-titulo i {
+    font-size: 1.2rem;
+    filter: drop-shadow(0 0 4px rgba(193, 4, 4, 0.5));
+}
+
+.btn-remover {
+    background: rgba(30, 30, 30, 0.8);
+    border: 1px solid rgba(193, 4, 4, 0.3);
+    color: #c10404;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.2s;
+    padding: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-remover:hover {
+    color: #ff4444;
+    background-color: rgba(193, 4, 4, 0.2);
+    transform: scale(1.1);
+    border-color: #ff4444;
+}
+
+.cargo-linha {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    align-items: flex-end;
+}
+
+.campo-pequeno {
+    flex: 1 1 180px;
+    min-width: 140px;
+}
+
+.campo-pequeno label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    color: #aaa;
+    margin-bottom: 0.2rem;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.campo-pequeno label i {
+    color: #c10404;
+    width: 1.4rem;
+    font-size: 1rem;
+    text-align: center;
+    display: inline-block;
+}
+
+.input-moderno {
+    width: 100%;
+    padding: 0.7rem 1rem;
+    background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%);
+    border: 1px solid #2c2c2c;
+    border-radius: 16px;
+    color: #fff;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+
+.input-moderno:focus {
+    outline: none;
+    border-color: #c10404;
+    background: linear-gradient(135deg, #202020 0%, #181818 100%);
+    box-shadow: 0 0 0 2px rgba(193, 4, 4, 0.2);
+}
+
+.select-wrapper {
+    position: relative;
+}
+
+.select-wrapper select {
+    width: 100%;
+    padding: 0.7rem 1rem;
+    background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%);
+    border: 1px solid #2c2c2c;
+    border-radius: 16px;
+    color: #fff;
+    font-size: 0.95rem;
+    appearance: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.select-wrapper select:focus {
+    outline: none;
+    border-color: #c10404;
+    box-shadow: 0 0 0 2px rgba(193, 4, 4, 0.2);
+}
+
+.select-wrapper .fa-chevron-down {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #c10404;
+    pointer-events: none;
+    font-size: 0.9rem;
+}
+
+.cargo-resultados {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    background: linear-gradient(135deg, #111111 0%, #0a0a0a 100%);
+    border-radius: 18px;
+    padding: 1rem;
+    margin-top: 0.5rem;
+    border: 1px solid rgba(193, 4, 4, 0.3);
+}
+
+.resultado-bloco {
+    flex: 1 1 150px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.5rem;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.resultado-bloco .rotulo {
+    font-size: 0.7rem;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.resultado-bloco .valor {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.resultado-bloco .valor i {
+    color: #c10404;
+    margin-right: 0.3rem;
+    font-size: 0.9rem;
+}
+
+.btn-add {
+    background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%);
+    border: 2px dashed #c10404;
+    color: #c10404;
+    font-size: 1rem;
+    padding: 0.8rem;
+    border-radius: 40px;
+    width: 100%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.3s;
+    margin: 1rem 0;
+    font-weight: 600;
+}
+
+.btn-add:hover {
+    border-color: #c10404;
+    background: linear-gradient(135deg, #252525 0%, #1a1a1a 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(193, 4, 4, 0.3);
+}
+
+.resumo-final {
+    background: linear-gradient(135deg, #1a1a1a 0%, #111111 100%);
+    border-radius: 24px;
+    padding: 1.2rem;
+    margin: 1.5rem 0;
+    border: 1px solid #c10404;
+    box-shadow: 0 0 20px rgba(193, 4, 4, 0.2);
+}
+
+.resumo-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 1.2rem;
+}
+
+.resumo-item i {
+    color: #c10404;
+    font-size: 1.5rem;
+}
+
+.resumo-item span {
+    flex: 1;
+    color: #ccc;
+    font-weight: 500;
+}
+
+.resumo-item strong {
+    color: #c10404;
+    font-size: 1.6rem;
+    font-weight: 700;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.btn {
+    background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%);
+    border: 2px solid #c10404;
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 1rem 1.5rem;
+    border-radius: 50px;
+    flex: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn i {
+    color: #c10404;
+    transition: all 0.2s;
+}
+
+.btn:hover {
+    background: linear-gradient(135deg, #c10404 0%, #a00303 100%);
+    border-color: #c10404;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(193, 4, 4, 0.4);
+}
+
+.btn:hover i {
+    color: #ffffff;
+}
+
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(8px);
+}
+
+.modal-content {
+    background: linear-gradient(135deg, #1a1a1a 0%, #111111 100%);
+    border: 1px solid #c10404;
+    border-radius: 24px;
+    padding: 2rem;
+    max-width: 350px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+}
+
+.modal-icon {
+    font-size: 2.5rem;
+    color: #c10404;
+    margin-bottom: 1rem;
+}
+
+.modal-text {
+    color: #fff;
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.4;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: center;
+}
+
+.modal-btn-ok {
+    background: linear-gradient(135deg, #c10404 0%, #a00303 100%);
+    color: #fff;
+    border: none;
+    padding: 0.7rem 2rem;
+    border-radius: 40px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-width: 100px;
+}
+
+.modal-btn-ok:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(193, 4, 4, 0.4);
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Share link */
+.share-link-container {
+    display: flex;
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+.share-link-container .input-moderno {
+    flex: 1;
+}
+
+.btn-copiar {
+    background: linear-gradient(135deg, #c10404 0%, #a00303 100%);
+    border: none;
+    color: #fff;
+    padding: 0.7rem 1rem;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-copiar:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(193, 4, 4, 0.4);
+}
+
+/* Scrollbar personalizada */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1a1a1a;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c10404;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #ff4444;
+}
+
+/* Seleção de texto */
+::selection {
+    background: rgba(193, 4, 4, 0.3);
+    color: #fff;
+}
+
+/* ========== MODO CLARO ========== */
+body.light-mode {
+    background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+    color: #1a1a1a;
+}
+
+body.light-mode::before {
+    background-image: 
+        radial-gradient(circle at 20% 80%, rgba(193, 4, 4, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(193, 4, 4, 0.03) 0%, transparent 50%);
+}
+
+body.light-mode .container {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%);
+    border: 1px solid rgba(193, 4, 4, 0.3);
+}
+
+body.light-mode .header h1 {
+    background: linear-gradient(135deg, #1a1a1a 0%, #c10404 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+body.light-mode .vendedor-info {
+    background: linear-gradient(135deg, #f0f0f0 0%, #e8e8e8 100%);
+    border: 1px solid rgba(193, 4, 4, 0.3);
+    color: #333;
+}
+
+body.light-mode .subtitle {
+    color: #666;
+    background: linear-gradient(90deg, rgba(193, 4, 4, 0.08), transparent);
+}
+
+body.light-mode .cliente-field label {
+    color: #333;
+}
+
+body.light-mode .input-moderno {
+    background: #ffffff !important;
+    border: 1px solid #ddd !important;
+    color: #333 !important;
+}
+
+body.light-mode .input-moderno:focus {
+    border-color: #c10404 !important;
+    box-shadow: 0 0 0 2px rgba(193, 4, 4, 0.1) !important;
+}
+
+body.light-mode .campo-pequeno label {
+    color: #555 !important;
+}
+
+body.light-mode .cargo-item {
+    background: #fafafa !important;
+    border: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .cargo-linha {
+    background: #ffffff !important;
+    border: 1px solid #e8e8e8 !important;
+}
+
+body.light-mode .select-wrapper select {
+    background: #ffffff !important;
+    border: 1px solid #ddd !important;
+    color: #333 !important;
+}
+
+body.light-mode .select-wrapper select option {
+    background: #ffffff !important;
+    color: #333 !important;
+}
+
+body.light-mode .select-wrapper select option:checked,
+body.light-mode .select-wrapper select option:hover {
+    background: linear-gradient(135deg, #c10404 0%, #a00303 100%) !important;
+    color: #fff !important;
+}
+
+body.light-mode .cargo-resultados {
+    background: #fafafa !important;
+    border: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .resultado-bloco {
+    background: rgba(0, 0, 0, 0.03) !important;
+}
+
+body.light-mode .resultado-bloco .rotulo {
+    color: #666 !important;
+}
+
+body.light-mode .resultado-bloco .valor {
+    color: #333 !important;
+}
+
+body.light-mode .resumo-final {
+    background: #fafafa !important;
+    border: 1px solid #c10404 !important;
+}
+
+body.light-mode .resumo-item span {
+    color: #666 !important;
+}
+
+body.light-mode .btn,
+body.light-mode .btn-add {
+    background: #f5f5f5 !important;
+    border: 2px solid #c10404 !important;
+    color: #333 !important;
+}
+
+body.light-mode .btn:hover,
+body.light-mode .btn-add:hover {
+    background: linear-gradient(135deg, #c10404 0%, #a00303 100%) !important;
+    color: #fff !important;
+}
+
+body.light-mode .btn-tema,
+body.light-mode .btn-compartilhar,
+body.light-mode .btn-voltar {
+    background: #f0f0f0 !important;
+    border: 1px solid rgba(193, 4, 4, 0.5) !important;
+    color: #c10404 !important;
+}
+
+body.light-mode .btn-tema:hover,
+body.light-mode .btn-compartilhar:hover,
+body.light-mode .btn-voltar:hover {
+    background: rgba(193, 4, 4, 0.1) !important;
+}
+
+body.light-mode .btn-remover {
+    background: #f0f0f0 !important;
+    border: 1px solid rgba(193, 4, 4, 0.4) !important;
+    color: #c10404 !important;
+}
+
+body.light-mode .btn-remover:hover {
+    background: #ffe5e5 !important;
+    border-color: #ff4444 !important;
+    color: #ff4444 !important;
+}
+
+body.light-mode .modal-content {
+    background: #ffffff !important;
+}
+
+body.light-mode .modal-text {
+    color: #333 !important;
+}
+
+body.light-mode .share-link-container .input-moderno {
+    background: #ffffff !important;
+    border: 1px solid #ddd !important;
+    color: #333 !important;
+}
+
+@media (max-width: 600px) {
+    .container {
+        padding: 1.2rem;
+    }
+    .cargo-linha {
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+    .campo-pequeno {
+        width: 100%;
+    }
+    .cargo-resultados {
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+    .resumo-item {
+        flex-wrap: wrap;
+    }
+    .action-buttons {
+        flex-direction: column;
+    }
+    .btn {
+        padding: 0.8rem 1rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* ========== CORREÇÃO DO SELECT NO MODO CLARO ========== */
+body.light-mode .select-wrapper select {
+    background: #ffffff !important;
+    border: 1px solid #ddd !important;
+    color: #333 !important;
+}
+
+body.light-mode .select-wrapper select option {
+    background: #ffffff !important;
+    color: #333 !important;
+}
+
+body.light-mode .select-wrapper select option:hover {
+    background: linear-gradient(135deg, #c10404 0%, #a00303 100%) !important;
+    color: #fff !important;
+}
+
+body.light-mode .select-wrapper select option:checked {
+    background: linear-gradient(135deg, #c10404 0%, #a00303 100%) !important;
+    color: #fff !important;
+    font-weight: bold !important;
+}
+
+/* ========== CORREÇÃO EXTREMA PARA SELECT NO MODO CLARO ========== */
+body.light-mode .select-wrapper select,
+body.light-mode .select-wrapper select *,
+body.light-mode select.cargo-taxa,
+body.light-mode select.cargo-taxa * {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #333333 !important;
+}
+
+body.light-mode .select-wrapper select option:checked,
+body.light-mode .select-wrapper select option:hover,
+body.light-mode select.cargo-taxa option:checked,
+body.light-mode select.cargo-taxa option:hover {
+    background: #c10404 !important;
+    background-color: #c10404 !important;
+    color: #ffffff !important;
+}
+
+/* Forçar cor de fundo do select quando aberto */
+body.light-mode .select-wrapper select:focus,
+body.light-mode select.cargo-taxa:focus {
+    background: #ffffff !important;
+    border-color: #c10404 !important;
+    outline: none !important;
+}
+
+/* ========== RESET COMPLETO DO SELECT NO MODO CLARO ========== */
+body.light-mode .select-wrapper {
+    position: relative;
+}
+
+body.light-mode .select-wrapper select {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    background: #ffffff !important;
+    color: #333333 !important;
+    border: 1px solid #c10404 !important;
+    padding: 0.7rem 2rem 0.7rem 1rem !important;
+    border-radius: 16px !important;
+    cursor: pointer !important;
+    font-size: 0.95rem !important;
+}
+
+body.light-mode .select-wrapper select option {
+    background: #ffffff !important;
+    color: #333333 !important;
+    padding: 0.5rem !important;
+}
+
+body.light-mode .select-wrapper select option:checked,
+body.light-mode .select-wrapper select option:hover {
+    background: #c10404 !important;
+    color: #ffffff !important;
+}
+
+body.light-mode .select-wrapper .fa-chevron-down {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #c10404;
+    pointer-events: none;
+    z-index: 10;
+}
+
+/* ========== CORREÇÃO DO SELECT DE TAXA NO MODO ESCURO ========== */
+.cargo-taxa,
+select.cargo-taxa {
+    background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid #2c2c2c !important;
+}
+
+.cargo-taxa option,
+select.cargo-taxa option {
+    background: #1a1a1a !important;
+    color: #ffffff !important;
+}
+
+.cargo-taxa option:checked,
+select.cargo-taxa option:checked {
+    background: linear-gradient(135deg, #c10404 0%, #a00303 100%) !important;
+    color: #ffffff !important;
+}
+
+.cargo-taxa option:hover,
+select.cargo-taxa option:hover {
+    background: linear-gradient(135deg, #c10404 0%, #a00303 100%) !important;
+    color: #ffffff !important;
+}
+
+/* Garantir que todos os selects no modo escuro tenham o estilo correto */
+select {
+    background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid #2c2c2c !important;
+}
+
+select option {
+    background: #1a1a1a !important;
+    color: #ffffff !important;
+}
+
+select option:checked,
+select option:hover {
+    background: linear-gradient(135deg, #c10404 0%, #a00303 100%) !important;
+    color: #ffffff !important;
+}
+
+/* Para navegadores WebKit */
+select option:checked {
+    background-color: #c10404 !important;
+}
+
+/* Para Firefox */
+@-moz-document url-prefix() {
+    select {
+        background: #1a1a1a !important;
+        color: #ffffff !important;
+    }
+    select option:checked {
+        background-color: #c10404 !important;
+        color: #ffffff !important;
+    }
+}
+
+/* ========== CORREÇÃO ESPECÍFICA PARA O SELECT DE TAXA ========== */
+.select-wrapper select.cargo-taxa {
+    background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid #2c2c2c !important;
+    border-radius: 16px !important;
+    padding: 0.7rem 2rem 0.7rem 1rem !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    cursor: pointer !important;
+}
+
+.select-wrapper select.cargo-taxa option {
+    background: #1a1a1a !important;
+    color: #ffffff !important;
+    padding: 0.5rem !important;
+}
+
+.select-wrapper select.cargo-taxa option:checked,
+.select-wrapper select.cargo-taxa option:hover {
+    background: linear-gradient(135deg, #c10404 0%, #a00303 100%) !important;
+    color: #ffffff !important;
+}
+
+/* Forçar quando o select está aberto */
+.select-wrapper select.cargo-taxa:focus {
+    outline: none !important;
+    border-color: #c10404 !important;
+    box-shadow: 0 0 0 2px rgba(193, 4, 4, 0.2) !important;
+}

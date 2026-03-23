@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Serviços · Gestão de Propostas</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Firebase SDKs - TODOS OS SDKs NECESSÁRIOS -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
+    <link rel="stylesheet" href="menu.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <i class="fas fa-chart-line header-icon"></i>
+            <h1>Prompt Serviços</h1>
+            <div class="user-info">
+                <i class="fas fa-user-circle"></i>
+                <span id="usuario-nome">Carregando...</span>
+                <button id="btn-logout" class="btn-logout" title="Sair">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </div>
+        <p class="subtitle">gestão de propostas</p>
+
+        <!-- Botões toggle -->
+        <div class="toggle-container">
+            <button class="toggle-btn" id="btn-criar">Criar proposta</button>
+            <button class="toggle-btn" id="btn-ver">Ver proposta</button>
+        </div>
+
+        <!-- Painel Criar Proposta -->
+        <div id="criar-panel" class="panel hidden">
+            <div class="field">
+                <label for="contrato-criar"><i class="fas fa-file-contract"></i> contrato</label>
+                <div class="select-wrapper">
+                    <select id="contrato-criar" required>
+                        <option value="" disabled selected></option>
+                        <option value="efetivo">Efetivo</option>
+                        <option value="temporario">Temporário</option>
+                        <option value="terceirizado">Terceirizado</option>
+                    </select>
+                    <span class="select-arrow"></span>
+                </div>
+            </div>
+            <button class="btn" id="btn-continuar">continuar <i class="fas fa-arrow-right"></i></button>
+        </div>
+
+        <!-- Painel Ver Proposta -->
+        <div id="ver-panel" class="panel hidden">
+            <!-- Filtros -->
+            <div class="filtros">
+                <div class="filtro-item">
+                    <label><i class="fas fa-building"></i> Cliente</label>
+                    <input type="text" id="filtro-cliente" class="input-moderno" placeholder="Nome">
+                </div>
+                <div class="filtro-item" id="filtro-vendedor-container">
+                    <label><i class="fas fa-user-tie"></i> Vendedor</label>
+                    <div class="select-wrapper">
+                        <select id="filtro-vendedor">
+                            <option value="">Todos</option>
+                        </select>
+                        <span class="select-arrow"></span>
+                    </div>
+                </div>
+                <div class="filtro-item data-group">
+                    <div class="data-field">
+                        <label><i class="fas fa-calendar-alt"></i> Início</label>
+                        <input type="date" id="filtro-data-inicio" class="input-moderno">
+                    </div>
+                    <div class="data-field">
+                        <label><i class="fas fa-calendar-alt"></i> Fim</label>
+                        <input type="date" id="filtro-data-fim" class="input-moderno">
+                    </div>
+                </div>
+            </div>
+
+            <div id="cards-container" class="cards-container">
+                <p class="loading">Carregando propostas...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmação personalizado -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div class="modal-content">
+            <i class="fas fa-file-alt modal-icon"></i>
+            <p class="modal-text">Abrir proposta?</p>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-sim">Sim</button>
+                <button class="modal-btn modal-btn-nao">Não</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="menu.js"></script>
+</body>
+</html>
