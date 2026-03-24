@@ -1880,447 +1880,354 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // ========== GERAR PDF PROFISSIONAL ==========
-    function gerarPDFProfissional() {
-        // Coletar dados do cliente
-        const clienteNome = clienteInput.value || 'Não informado';
-        const vendedorNome = document.getElementById('vendedor-nome').textContent;
-        const dataAtual = new Date().toLocaleDateString('pt-BR');
-        const horaAtual = new Date().toLocaleTimeString('pt-BR');
+    // ========== VERIFICAR MODO VISUALIZAÇÃO ==========
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    // ========== VISUALIZAÇÃO RESUMIDA PARA CLIENTE ==========
+    async function capturarImagemProposta() {
+        const elemento = document.querySelector('.visualizacao-resumida');
+        if (!elemento) {
+            console.error('Elemento não encontrado');
+            return;
+        }
         
-        // Criar o conteúdo HTML do PDF
-        let htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <title>Proposta Terceirizado</title>
-            <style>
-                body {
-                    font-family: 'Arial', 'Helvetica', sans-serif;
-                    margin: 0;
-                    padding: 20px;
-                    color: #333;
-                    line-height: 1.4;
-                }
-                .header {
-                    text-align: center;
-                    margin-bottom: 25px;
-                    padding-bottom: 15px;
-                    border-bottom: 3px solid #c10404;
-                }
-                .header h1 {
-                    color: #c10404;
-                    margin: 0;
-                    font-size: 24px;
-                }
-                .header p {
-                    color: #666;
-                    margin: 5px 0 0;
-                    font-size: 12px;
-                }
-                .info-cliente {
-                    background: #f9f9f9;
-                    padding: 12px 15px;
-                    border-radius: 6px;
-                    margin-bottom: 25px;
-                    border: 1px solid #e0e0e0;
-                }
-                .info-cliente table {
-                    width: 100%;
-                    border-collapse: collapse;
-                }
-                .info-cliente td {
-                    padding: 5px 0;
-                }
-                .info-cliente td:first-child {
-                    width: 100px;
-                    font-weight: bold;
-                }
-                .cargo-box {
-                    margin-bottom: 30px;
-                    border: 1px solid #ddd;
-                    border-radius: 8px;
-                    overflow: hidden;
-                    page-break-inside: avoid;
-                }
-                .cargo-header {
-                    background: #f5f5f5;
-                    padding: 10px 15px;
-                    border-bottom: 1px solid #ddd;
-                }
-                .cargo-header h2 {
-                    color: #c10404;
-                    margin: 0;
-                    font-size: 18px;
-                }
-                .cargo-header p {
-                    margin: 5px 0 0;
-                    color: #666;
-                    font-size: 12px;
-                }
-                .cargo-content {
-                    padding: 15px;
-                }
-                table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin-bottom: 15px;
-                    font-size: 13px;
-                }
-                td {
-                    padding: 6px 10px;
-                    border: 1px solid #e0e0e0;
-                }
-                .bg-gray {
-                    background: #f9f9f9;
-                }
-                .bg-light {
-                    background: #f0f0f0;
-                }
-                .bg-dark {
-                    background: #e8e8e8;
-                }
-                h3 {
-                    color: #c10404;
-                    font-size: 14px;
-                    margin: 10px 0 5px;
-                }
-                ul {
-                    margin: 0 0 10px 20px;
-                    font-size: 12px;
-                }
-                .total-box {
-                    background: #f5f5f5;
-                    padding: 15px;
-                    border-radius: 6px;
-                    margin-top: 20px;
-                    text-align: center;
-                    border: 1px solid #e0e0e0;
-                }
-                .total-box p {
-                    margin: 0;
-                }
-                .total-value {
-                    font-size: 28px;
-                    font-weight: bold;
-                    color: #c10404;
-                    margin-top: 5px;
-                }
-                .footer {
-                    text-align: center;
-                    margin-top: 30px;
-                    padding-top: 15px;
-                    border-top: 1px solid #ddd;
-                    font-size: 10px;
-                    color: #888;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <h1>Prompt Serviços</h1>
-                <p>Proposta Comercial - Contrato Terceirizado</p>
-                <p style="font-size: 10px;">Documento gerado em ${dataAtual} às ${horaAtual}</p>
-            </div>
-            
-            <div class="info-cliente">
-                <table>
-                    <tr><td>Cliente:</td><td>${clienteNome}</td></tr>
-                    <tr><td>Vendedor:</td><td>${vendedorNome}</td></tr>
-                    <tr><td>Data:</td><td>${dataAtual}</td></tr>
-                </table>
-            </div>
-        `;
+        // Mostrar indicador de carregamento
+        const btnCapture = document.getElementById('btn-capturar-imagem');
+        const textoOriginal = btnCapture ? btnCapture.innerHTML : '';
+        if (btnCapture) {
+            btnCapture.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando imagem...';
+            btnCapture.disabled = true;
+        }
         
-        // Coletar dados de cada cargo
-        let cargoIndex = 0;
-        document.querySelectorAll('.cargo-item').forEach((cargo) => {
-            cargoIndex++;
+        try {
+            // Clonar o elemento para não afetar o original
+            const cloneElement = elemento.cloneNode(true);
+            cloneElement.style.position = 'absolute';
+            cloneElement.style.left = '-9999px';
+            cloneElement.style.top = '-9999px';
+            cloneElement.style.backgroundColor = '#ffffff';
+            cloneElement.style.padding = '2rem';
+            cloneElement.style.borderRadius = '16px';
             
-            const cargoNome = cargo.querySelector('.cargo-nome')?.value || 'Cargo sem nome';
-            const quantidade = parseInt(cargo.querySelector('.cargo-quantidade')?.value) || 1;
-            const salarioInput = cargo.querySelector('.cargo-salario')?.value || '0';
-            const salario = parseFloat(salarioInput.replace(/\./g, '').replace(',', '.')) || 0;
+            // Garantir que os estilos sejam aplicados corretamente
+            cloneElement.style.width = '800px';
+            cloneElement.style.maxWidth = '800px';
+            cloneElement.style.margin = '0';
             
-            // Encargos
-            const encargosPercentualInput = cargo.querySelector('.encargos-percentual')?.value || '113,00';
-            const encargosPercentual = parseFloat(encargosPercentualInput.replace(/\./g, '').replace(',', '.')) || 113;
-            const taxaEncargos = encargosPercentual / 100;
-            const valorEncargos = salario * taxaEncargos;
+            // Remover o botão de captura do clone para não aparecer na imagem
+            const btnClone = cloneElement.querySelector('#btn-capturar-imagem');
+            if (btnClone) btnClone.remove();
             
-            // Adicionais
-            let totalAdicionais = 0;
-            let adicionaisLista = [];
+            document.body.appendChild(cloneElement);
             
-            const heCheck = cargo.querySelector('.he-check')?.checked;
-            const anCheck = cargo.querySelector('.an-check')?.checked;
-            const perCheck = cargo.querySelector('.per-check')?.checked;
-            const insCheck = cargo.querySelector('.ins-check')?.checked;
-            
-            if (heCheck) {
-                const horas = parseFloat(cargo.querySelector('.he-horas')?.value) || 0;
-                if (horas > 0) {
-                    const valorHora = salario / 220;
-                    const valorHoraExtra = valorHora * 1.5 * horas;
-                    const dsr = (valorHoraExtra / 25) * 5;
-                    const encargosHE = (valorHoraExtra + dsr) * taxaEncargos;
-                    const totalHE = valorHoraExtra + dsr + encargosHE;
-                    totalAdicionais += totalHE;
-                    adicionaisLista.push(`Horas Extras: ${horas}h/mês - R$ ${totalHE.toFixed(2).replace('.', ',')}`);
-                }
-            }
-            if (anCheck) {
-                const horasNoturnas = parseFloat(cargo.querySelector('.an-horas')?.value) || 0;
-                if (horasNoturnas > 0) {
-                    const valorHora = salario / 220;
-                    const valorAdicionalNoturno = valorHora * 0.2 * horasNoturnas;
-                    const encargosAN = valorAdicionalNoturno * taxaEncargos;
-                    const totalAN = valorAdicionalNoturno + encargosAN;
-                    totalAdicionais += totalAN;
-                    adicionaisLista.push(`Adicional Noturno: ${horasNoturnas}h/mês - R$ ${totalAN.toFixed(2).replace('.', ',')}`);
-                }
-            }
-            if (perCheck) {
-                const periculosidade = salario * 0.3;
-                const encargosPer = periculosidade * taxaEncargos;
-                const totalPer = periculosidade + encargosPer;
-                totalAdicionais += totalPer;
-                adicionaisLista.push(`Periculosidade (30%) - R$ ${totalPer.toFixed(2).replace('.', ',')}`);
-            }
-            if (insCheck) {
-                const insalubridade = 1621 * 0.2;
-                const encargosIns = insalubridade * taxaEncargos;
-                const totalIns = insalubridade + encargosIns;
-                totalAdicionais += totalIns;
-                adicionaisLista.push(`Insalubridade (20% do SM) - R$ ${totalIns.toFixed(2).replace('.', ',')}`);
-            }
-            
-            const subtotalSalarioEncargos = salario + valorEncargos + totalAdicionais;
-            
-            // Uniformes
-            let uniformesLista = [];
-            let totalUniformes = 0;
-            cargo.querySelectorAll('.uniformes-box .item-lista').forEach(item => {
-                const nome = item.querySelector('.item-nome')?.textContent;
-                const qtd = parseInt(item.querySelector('.quantidade-uniforme')?.value) || 0;
-                const depreciacao = parseInt(item.querySelector('.depreciacao-uniforme')?.value) || 1;
-                const precoTexto = item.querySelector('.item-preco')?.textContent || 'R$ 0,00';
-                const preco = parseFloat(precoTexto.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
-                if (qtd > 0) {
-                    const total = (qtd * preco) / depreciacao;
-                    totalUniformes += total;
-                    uniformesLista.push(`${nome}: ${qtd} un. (depreciação ${depreciacao} meses) - R$ ${total.toFixed(2).replace('.', ',')}/mês`);
-                }
+            // Usar html2canvas para gerar a imagem
+            const canvas = await html2canvas(cloneElement, {
+                scale: 2,
+                backgroundColor: '#ffffff',
+                logging: false,
+                useCORS: true,
+                allowTaint: false
             });
             
-            // EPIs
-            let episLista = [];
-            let totalEpis = 0;
-            cargo.querySelectorAll('.epis-box .item-lista').forEach(item => {
-                const nome = item.querySelector('.item-nome')?.textContent;
-                const qtd = parseInt(item.querySelector('.quantidade-epi')?.value) || 0;
-                const depreciacao = parseInt(item.querySelector('.depreciacao-epi')?.value) || 1;
-                const precoTexto = item.querySelector('.item-preco')?.textContent || 'R$ 0,00';
-                const preco = parseFloat(precoTexto.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
-                if (qtd > 0) {
-                    const total = (qtd * preco) / depreciacao;
-                    totalEpis += total;
-                    episLista.push(`${nome}: ${qtd} un. (depreciação ${depreciacao} meses) - R$ ${total.toFixed(2).replace('.', ',')}/mês`);
-                }
-            });
+            // Remover o clone
+            document.body.removeChild(cloneElement);
             
-            // Benefícios
-            let beneficiosLista = [];
-            let totalBeneficios = 0;
-            cargo.querySelectorAll('.beneficio-fixo-card, .beneficio-custom-card').forEach(card => {
-                let nome = '';
-                let valor = 0;
-                let dias = 0;
-                
-                if (card.classList.contains('beneficio-fixo-card')) {
-                    nome = card.querySelector('.beneficio-nome')?.textContent || '';
-                    const valorInput = card.querySelector('.beneficio-valor');
-                    const diasInput = card.querySelector('.beneficio-dias');
-                    valor = parseFloat(valorInput?.value?.replace(/\./g, '').replace(',', '.') || 0);
-                    dias = parseInt(diasInput?.value) || 0;
-                } else {
-                    nome = card.querySelector('.beneficio-custom-nome')?.value || '';
-                    const valorInput = card.querySelector('.beneficio-custom-valor');
-                    const diasInput = card.querySelector('.beneficio-custom-dias');
-                    valor = parseFloat(valorInput?.value?.replace(/\./g, '').replace(',', '.') || 0);
-                    dias = parseInt(diasInput?.value) || 0;
-                }
-                
-                if (nome && valor > 0 && dias > 0) {
-                    const subtotal = valor * dias;
-                    totalBeneficios += subtotal;
-                    beneficiosLista.push(`${nome}: R$ ${valor.toFixed(2).replace('.', ',')}/dia × ${dias} dias = R$ ${subtotal.toFixed(2).replace('.', ',')}`);
-                }
-            });
+            // Criar link para download
+            const link = document.createElement('a');
+            const clienteNome = document.querySelector('.vis-value')?.textContent || 'proposta';
+            const dataAtual = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+            link.download = `Proposta_${clienteNome}_${dataAtual}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
             
-            // Segurança
-            let segurancaLista = [];
-            let totalSeguranca = 0;
-            cargo.querySelectorAll('.seguranca-item').forEach(item => {
-                const nome = item.querySelector('.seguranca-nome')?.textContent;
-                const valorInput = item.querySelector('.seguranca-valor');
-                const depreciacaoInput = item.querySelector('.seguranca-depreciacao');
-                const valor = parseFloat(valorInput?.value?.replace(/\./g, '').replace(',', '.') || 0);
-                const depreciacao = parseInt(depreciacaoInput?.value) || 1;
-                if (valor > 0) {
-                    const mensal = valor / depreciacao;
-                    totalSeguranca += mensal;
-                    segurancaLista.push(`${nome}: R$ ${valor.toFixed(2).replace('.', ',')} (depreciação ${depreciacao} meses) = R$ ${mensal.toFixed(2).replace('.', ',')}/mês`);
-                }
-            });
-            
-            // Exames
-            let examesLista = [];
-            let totalExames = 0;
-            cargo.querySelectorAll('.exame-checkbox:checked').forEach(cb => {
-                const nome = cb.dataset.nome;
-                const preco = parseFloat(cb.dataset.preco);
-                if (nome && preco) {
-                    totalExames += preco;
-                    examesLista.push(`${nome}: R$ ${preco.toFixed(2).replace('.', ',')}`);
-                }
-            });
-            const treinamentoInput = cargo.querySelector('.treinamento-valor');
-            const treinamento = parseFloat(treinamentoInput?.value?.replace(/\./g, '').replace(',', '.') || 0);
-            if (treinamento > 0) {
-                totalExames += treinamento;
-                examesLista.push(`Treinamentos: R$ ${treinamento.toFixed(2).replace('.', ',')}`);
+        } catch (error) {
+            console.error('Erro ao gerar imagem:', error);
+            alert('Erro ao gerar imagem. Tente novamente.');
+        } finally {
+            // Restaurar botão
+            if (btnCapture) {
+                btnCapture.innerHTML = textoOriginal;
+                btnCapture.disabled = false;
             }
-            
-            // Insumos
-            let insumosLista = [];
-            let totalInsumos = 0;
-            cargo.querySelectorAll('.insumo-card').forEach(card => {
-                const nome = card.querySelector('.insumo-nome')?.textContent;
-                const valorInput = card.querySelector('.insumo-valor');
-                const valor = parseFloat(valorInput?.value?.replace(/\./g, '').replace(',', '.') || 0);
-                if (valor > 0) {
-                    totalInsumos += valor;
-                    insumosLista.push(`${nome}: R$ ${valor.toFixed(2).replace('.', ',')}`);
-                }
-            });
-            
-            // Totais
-            const subtotalInsumosBeneficios = totalUniformes + totalEpis + totalBeneficios + totalSeguranca + totalExames + totalInsumos;
-            const encargosFiscais = subtotalInsumosBeneficios * 0.1375;
-            const totalVaga = subtotalSalarioEncargos + subtotalInsumosBeneficios + encargosFiscais;
-            const totalVagas = totalVaga * quantidade;
-            
-            // Adicionar cargo ao HTML
-            htmlContent += `
-            <div class="cargo-box">
-                <div class="cargo-header">
-                    <h2>${cargoIndex}. ${cargoNome}</h2>
-                    <p>Quantidade: ${quantidade} vaga(s)</p>
-                </div>
-                <div class="cargo-content">
-                    <table>
-                        <tr class="bg-gray"><td><strong>Salário Base</strong></td><td style="text-align:right">R$ ${salario.toFixed(2).replace('.', ',')}</td></tr>
-                        <tr><td><strong>Encargos (${encargosPercentual.toFixed(2)}%)</strong></td><td style="text-align:right">R$ ${valorEncargos.toFixed(2).replace('.', ',')}</td></tr>
-                        ${totalAdicionais > 0 ? `<tr class="bg-gray"><td><strong>Adicionais</strong></td><td style="text-align:right">R$ ${totalAdicionais.toFixed(2).replace('.', ',')}</td></tr>` : ''}
-                        <tr class="bg-light"><td><strong>SUB TOTAL SALARIO + ENCARGOS</strong></td><td style="text-align:right;font-weight:bold">R$ ${subtotalSalarioEncargos.toFixed(2).replace('.', ',')}</td></tr>
-                    </table>
-            `;
-            
-            if (uniformesLista.length > 0) {
-                htmlContent += `<h3>Uniformes</h3><ul>${uniformesLista.map(i => `<li>${i}</li>`).join('')}</ul>`;
-            }
-            if (episLista.length > 0) {
-                htmlContent += `<h3>EPIs</h3><ul>${episLista.map(i => `<li>${i}</li>`).join('')}</ul>`;
-            }
-            if (beneficiosLista.length > 0) {
-                htmlContent += `<h3>Benefícios</h3><ul>${beneficiosLista.map(i => `<li>${i}</li>`).join('')}</ul>`;
-            }
-            if (segurancaLista.length > 0) {
-                htmlContent += `<h3>Segurança e Seguro</h3><ul>${segurancaLista.map(i => `<li>${i}</li>`).join('')}</ul>`;
-            }
-            if (examesLista.length > 0) {
-                htmlContent += `<h3>Exames e Treinamentos</h3><ul>${examesLista.map(i => `<li>${i}</li>`).join('')}</ul>`;
-            }
-            if (insumosLista.length > 0) {
-                htmlContent += `<h3>Insumos</h3><ul>${insumosLista.map(i => `<li>${i}</li>`).join('')}</ul>`;
-            }
-            
-            htmlContent += `
-                    )\"
-                        <tr class=\"bg-gray\">\
-                            <td><strong>SUB TOTAL INSUMOS E BENEFÍCIOS</strong>\
-                            <td style=\"text-align:right\">R$ ${subtotalInsumosBeneficios.toFixed(2).replace('.', ',')}\
-                        </tr>
-                        <tr class=\"bg-gray\">\
-                            <td><strong>Encargos Fiscais (13,75%)</strong>\
-                            <td style=\"text-align:right\">R$ ${encargosFiscais.toFixed(2).replace('.', ',')}\
-                        </tr>
-                        <tr class=\"bg-light\">\
-                            <td><strong>Total por vaga</strong>\
-                            <td style=\"text-align:right;font-weight:bold\">R$ ${totalVaga.toFixed(2).replace('.', ',')}\
-                        </tr>
-                        <tr class=\"bg-dark\">\
-                            <td><strong>Total (${quantidade} vaga(s))</strong>\
-                            <td style=\"text-align:right;font-weight:bold;color:#c10404\">R$ ${totalVagas.toFixed(2).replace('.', ',')}\
-                        </tr>
-                    </table>
-                </div>
-            </div>
-            `;
-        });
+        }
+    }
+    
+    // ========== VISUALIZAÇÃO RESUMIDA PARA CLIENTE ==========
+    function carregarVisualizacaoResumida(proposta) {
+        const container = document.getElementById('cargos-container');
+        if (!container) return;
         
-        // Calcular total geral
-        let totalGeral = 0;
-        document.querySelectorAll('.cargo-item').forEach(item => {
-            const qtd = parseInt(item.querySelector('.cargo-quantidade').value) || 1;
-            const totalVagaElem = item.querySelector('.total-prestacao .valor');
-            if (totalVagaElem) {
-                const totalText = totalVagaElem.textContent;
-                const totalValor = parseFloat(totalText.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
-                totalGeral += totalValor * qtd;
-            }
-        });
-        
-        // Fechar HTML
-        htmlContent += `
-            <div class="total-box">
-                <p><strong>TOTAL DA PROPOSTA</strong></p>
-                <div class="total-value">R$ ${totalGeral.toFixed(2).replace('.', ',')}</div>
-            </div>
-            <div class="footer">
-                <p>Prompt Serviços - CNPJ: XX.XXX.XXX/0001-XX</p>
-                <p>Este documento é uma proposta comercial e tem validade de 30 dias.</p>
-            </div>
-        </body>
-        </html>
-        `;
-        
-        // Criar um blob e gerar o PDF
-        const opt = {
-            margin: [0.4, 0.4, 0.4, 0.4],
-            filename: `Proposta_Terceirizado_${clienteInput.value || 'SemCliente'}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, backgroundColor: '#ffffff', logging: false, letterRendering: true },
-            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+        // Usar a função formatarMoeda que já existe no escopo global
+        const formatMoney = (valor) => {
+            return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         };
         
-        // Usar um elemento temporário para gerar o PDF
-        const tempContainer = document.createElement('div');
-        tempContainer.style.position = 'absolute';
-        tempContainer.style.left = '-9999px';
-        tempContainer.style.top = '-9999px';
-        tempContainer.innerHTML = htmlContent;
-        document.body.appendChild(tempContainer);
+        let html = `
+            <div class="visualizacao-resumida">
+                <div class="vis-header">
+                    <i class="fas fa-chart-line"></i>
+                    <h2>Proposta Comercial</h2>
+                    <p class="vis-subtitle">Prompt Serviços - Contrato Terceirizado</p>
+                </div>
+                
+                <div class="vis-info">
+                    <div class="vis-info-item">
+                        <span class="vis-label">Cliente:</span>
+                        <span class="vis-value">${escapeHtml(proposta.cliente || 'Não informado')}</span>
+                    </div>
+                    <div class="vis-info-item">
+                        <span class="vis-label">Vendedor:</span>
+                        <span class="vis-value">${escapeHtml(proposta.vendedor || 'Não informado')}</span>
+                    </div>
+                    <div class="vis-info-item">
+                        <span class="vis-label">Data:</span>
+                        <span class="vis-value">${new Date(proposta.data).toLocaleDateString('pt-BR')}</span>
+                    </div>
+                </div>
+        `;
         
-        html2pdf().set(opt).from(tempContainer).save().then(() => {
-            document.body.removeChild(tempContainer);
-        }).catch((error) => {
-            console.error('Erro ao gerar PDF:', error);
-            document.body.removeChild(tempContainer);
-            alert('Erro ao gerar PDF. Tente novamente.');
+        // Para cada cargo, mostrar apenas valores resumidos
+        let cargoIndex = 0;
+        let totalGeralProposta = 0;
+        
+        proposta.cargos.forEach(cargo => {
+            cargoIndex++;
+            const qtd = cargo.quantidade || 1;
+            const totalVaga = cargo.totalVaga || 0;
+            const totalVagas = totalVaga * qtd;
+            totalGeralProposta += totalVagas;
+            
+            html += `
+                <div class="vis-cargo">
+                    <div class="vis-cargo-header">
+                        <h3>${cargoIndex}. ${escapeHtml(cargo.nome || 'Cargo sem nome')}</h3>
+                        <span class="vis-quantidade">${qtd} vaga${qtd > 1 ? 's' : ''}</span>
+                    </div>
+                    <div class="vis-resumo">
+                        <div class="vis-resumo-item">
+                            <strong>Valor por vaga:</strong>
+                            <span>${formatMoney(totalVaga)}</span>
+                        </div>
+                        <div class="vis-resumo-item vis-destaque">
+                            <strong>Total (${qtd} vaga${qtd > 1 ? 's' : ''}):</strong>
+                            <span>${formatMoney(totalVagas)}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
         });
+        
+        html += `
+                <div class="vis-total-geral">
+                    <strong>TOTAL DA PROPOSTA:</strong>
+                    <span>${formatMoney(totalGeralProposta)}</span>
+                </div>
+                
+                <div class="vis-footer">
+                    <p>Prompt Serviços - CNPJ: XX.XXX.XXX/0001-XX</p>
+                    <p>Esta proposta tem validade de 30 dias.</p>
+                    <p>Documento gerado em ${new Date().toLocaleDateString('pt-BR')}</p>
+                </div>
+                
+                <div class="vis-actions">
+                    <button id="btn-capturar-imagem" class="btn-capturar">
+                        <i class="fas fa-camera"></i> Capturar como Imagem
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        container.innerHTML = html;
+        
+        // Adicionar CSS específico para visualização resumida
+        const styleId = 'vis-resumida-style';
+        if (!document.getElementById(styleId)) {
+            const style = document.createElement('style');
+            style.id = styleId;
+            style.textContent = `
+                .visualizacao-resumida {
+                    max-width: 800px;
+                    margin: 0 auto;
+                    font-family: 'Inter', sans-serif;
+                }
+                .vis-header {
+                    text-align: center;
+                    margin-bottom: 2rem;
+                    padding-bottom: 1rem;
+                    border-bottom: 2px solid #c10404;
+                }
+                .vis-header h2 {
+                    color: #c10404;
+                    margin: 0.5rem 0;
+                }
+                .vis-subtitle {
+                    color: #666;
+                    font-size: 0.9rem;
+                }
+                .vis-info {
+                    background: #f5f5f5;
+                    padding: 1rem;
+                    border-radius: 12px;
+                    margin-bottom: 2rem;
+                }
+                .vis-info-item {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 0.3rem 0;
+                }
+                .vis-label {
+                    font-weight: 600;
+                    color: #666;
+                }
+                .vis-value {
+                    color: #333;
+                }
+                .vis-cargo {
+                    background: #fff;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 16px;
+                    margin-bottom: 1.5rem;
+                    overflow: hidden;
+                }
+                .vis-cargo-header {
+                    background: #f8f8f8;
+                    padding: 1rem;
+                    border-bottom: 1px solid #e0e0e0;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+                .vis-cargo-header h3 {
+                    color: #c10404;
+                    margin: 0;
+                    font-size: 1.1rem;
+                }
+                .vis-quantidade {
+                    background: #c10404;
+                    color: #fff;
+                    padding: 0.2rem 0.8rem;
+                    border-radius: 20px;
+                    font-size: 0.8rem;
+                }
+                .vis-resumo {
+                    padding: 1rem;
+                }
+                .vis-resumo-item {
+                    padding: 0.5rem 0;
+                    display: flex;
+                    justify-content: space-between;
+                    border-bottom: 1px dashed #eee;
+                }
+                .vis-resumo-item:last-child {
+                    border-bottom: none;
+                }
+                .vis-destaque {
+                    font-size: 1.1rem;
+                    font-weight: bold;
+                    color: #c10404;
+                    margin-top: 0.5rem;
+                    padding-top: 0.5rem;
+                    border-top: 1px solid #ddd;
+                }
+                .vis-total-geral {
+                    background: linear-gradient(135deg, #c10404 0%, #a00303 100%);
+                    color: #fff;
+                    padding: 1.5rem;
+                    border-radius: 16px;
+                    text-align: center;
+                    margin: 2rem 0;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    font-size: 1.2rem;
+                }
+                .vis-total-geral span {
+                    font-size: 1.8rem;
+                    font-weight: bold;
+                }
+                .vis-footer {
+                    text-align: center;
+                    padding: 1rem;
+                    color: #888;
+                    font-size: 0.8rem;
+                    border-top: 1px solid #e0e0e0;
+                    margin-top: 1rem;
+                }
+                .vis-actions {
+                    text-align: center;
+                    margin-top: 2rem;
+                    padding-top: 1rem;
+                    border-top: 1px solid #e0e0e0;
+                }
+                .btn-capturar {
+                    background: linear-gradient(135deg, #c10404 0%, #a00303 100%);
+                    color: #fff;
+                    border: none;
+                    padding: 0.8rem 1.5rem;
+                    border-radius: 30px;
+                    font-size: 1rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: transform 0.2s, box-shadow 0.2s;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                }
+                .btn-capturar:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(193, 4, 4, 0.3);
+                }
+                .btn-capturar:active {
+                    transform: translateY(0);
+                }
+                .btn-capturar:disabled {
+                    opacity: 0.7;
+                    cursor: not-allowed;
+                    transform: none;
+                }
+                body.light-mode .vis-cargo {
+                    background: #fff;
+                }
+                body.light-mode .vis-info {
+                    background: #f5f5f5;
+                }
+                body.light-mode .vis-cargo-header {
+                    background: #f8f8f8;
+                }
+                body.dark-mode .vis-cargo {
+                    background: #1a1a1a;
+                    border-color: #333;
+                }
+                body.dark-mode .vis-info {
+                    background: #1a1a1a;
+                }
+                body.dark-mode .vis-cargo-header {
+                    background: #222;
+                }
+                body.dark-mode .vis-resumo-item {
+                    color: #ccc;
+                    border-bottom-color: #333;
+                }
+                body.dark-mode .vis-value {
+                    color: #fff;
+                }
+                body.dark-mode .vis-actions {
+                    border-top-color: #333;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Adicionar evento ao botão de capturar imagem
+        const btnCapturar = document.getElementById('btn-capturar-imagem');
+        if (btnCapturar) {
+            btnCapturar.addEventListener('click', capturarImagemProposta);
+        }
     }
     
     // ========== VERIFICAR MODO VISUALIZAÇÃO ==========
@@ -2329,66 +2236,129 @@ document.addEventListener('DOMContentLoaded', async function() {
         const isVisualizacao = urlParams.get('visualizacao') === 'true';
         
         if (isVisualizacao) {
-            // Modo visualização - desabilitar TODAS as edições
-            document.querySelectorAll('input, select, textarea').forEach(el => {
-                el.disabled = true;
-                el.style.opacity = '0.7';
-                el.style.cursor = 'not-allowed';
-                el.style.pointerEvents = 'none';
-            });
+            const propostaId = urlParams.get('id');
+            if (!propostaId) return;
             
-            document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-                cb.disabled = true;
-                cb.style.pointerEvents = 'none';
-            });
+            // Buscar a proposta no Firebase para exibir a versão resumida
+            db.collection('propostas').doc(propostaId).get()
+                .then((doc) => {
+                    if (doc.exists) {
+                        const proposta = doc.data();
+                        // Exibir versão resumida
+                        carregarVisualizacaoResumida(proposta);
+                        
+                        // Esconder elementos de edição
+                        const btnAdicionar = document.getElementById('adicionar-cargo');
+                        const btnSalvar = document.getElementById('btn-salvar');
+                        const btnGerarPDF = document.getElementById('btn-gerar-pdf');
+                        const btnCompartilhar = document.getElementById('btn-compartilhar');
+                        const clienteInput = document.getElementById('cliente-nome');
+                        
+                        if (btnAdicionar) btnAdicionar.style.display = 'none';
+                        if (btnSalvar) btnSalvar.style.display = 'none';
+                        if (btnGerarPDF) btnGerarPDF.style.display = 'none';
+                        if (btnCompartilhar) btnCompartilhar.style.display = 'none';
+                        if (clienteInput) {
+                            clienteInput.disabled = true;
+                            clienteInput.value = proposta.cliente || '';
+                        }
+                        
+                        // Esconder todas as seções expansíveis originais
+                        document.querySelectorAll('.expandable-section, .exames-section, .despesas-section, .cargo-linha, .cargo-header, .cargo-resultados').forEach(el => {
+                            if (el) el.style.display = 'none';
+                        });
+                        
+                        // Esconder botões de remover
+                        document.querySelectorAll('.btn-remover, .btn-remover-beneficio, .btn-add-beneficio').forEach(btn => {
+                            if (btn) btn.style.display = 'none';
+                        });
+                        
+                        // Adicionar aviso de visualização
+                        const aviso = document.createElement('div');
+                        aviso.className = 'aviso-visualizacao';
+                        aviso.innerHTML = `
+                            <div style="background: #c10404; color: #fff; text-align: center; padding: 0.8rem; border-radius: 8px; margin-bottom: 1rem;">
+                                <i class="fas fa-eye"></i> <strong>Modo de visualização</strong> - Versão resumida da proposta
+                            </div>
+                        `;
+                        const containerDiv = document.querySelector('.container');
+                        if (containerDiv && !containerDiv.querySelector('.aviso-visualizacao')) {
+                            containerDiv.insertBefore(aviso, containerDiv.firstChild);
+                        }
+                    } else {
+                        document.getElementById('cargos-container').innerHTML = '<p style="text-align:center;padding:2rem;">Proposta não encontrada.</p>';
+                    }
+                })
+                .catch((error) => {
+                    console.error('Erro ao carregar proposta:', error);
+                    document.getElementById('cargos-container').innerHTML = '<p style="text-align:center;padding:2rem;">Erro ao carregar proposta.</p>';
+                });
+        }
+    }
+    
+    // ========== VERIFICAR MODO VISUALIZAÇÃO ==========
+    function checkVisualizacao() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const isVisualizacao = urlParams.get('visualizacao') === 'true';
+        
+        if (isVisualizacao) {
+            const propostaId = urlParams.get('id');
+            if (!propostaId) return;
             
-            // Esconder botões de ação (mas manter o botão de tema e compartilhar)
-            document.querySelectorAll('.btn-add, #btn-gerar-pdf, #btn-salvar, .btn-remover, .btn-add-beneficio, .btn-remover-beneficio').forEach(btn => {
-                if (btn) btn.style.display = 'none';
-            });
-            
-            // Manter botão de tema e compartilhar visíveis no modo visualização
-            // Não esconder .btn-tema e .btn-compartilhar
-            
-            const btnAddCargo = document.getElementById('adicionar-cargo');
-            if (btnAddCargo) btnAddCargo.style.display = 'none';
-            
-            // Não esconder o botão voltar para que o cliente possa voltar
-            // const btnVoltar = document.getElementById('btn-voltar');
-            // if (btnVoltar) btnVoltar.style.display = 'none';
-            
-            document.querySelectorAll('.section-toggle, .despesas-toggle, .exames-toggle').forEach(toggle => {
-                if (toggle) toggle.style.display = 'none';
-            });
-            
-            document.querySelectorAll('.section-content.collapsed, .despesas-content.collapsed, .exames-content.collapsed').forEach(content => {
-                if (content) content.classList.remove('collapsed');
-            });
-            
-            document.querySelectorAll('.box-header').forEach(header => {
-                header.style.pointerEvents = 'none';
-                header.style.cursor = 'default';
-            });
-            
-            // Adicionar aviso de visualização
-            const aviso = document.createElement('div');
-            aviso.className = 'aviso-visualizacao';
-            aviso.innerHTML = `
-                <div style="background: #c10404; color: #fff; text-align: center; padding: 0.8rem; border-radius: 8px; margin-bottom: 1rem;">
-                    <i class="fas fa-eye"></i> <strong>Modo de visualização</strong> - Esta proposta é apenas para leitura
-                </div>
-            `;
-            const containerDiv = document.querySelector('.container');
-            if (containerDiv && !containerDiv.querySelector('.aviso-visualizacao')) {
-                containerDiv.insertBefore(aviso, containerDiv.firstChild);
-            }
-            
-            document.querySelectorAll('.btn-remover-beneficio').forEach(btn => {
-                btn.style.display = 'none';
-            });
-            
-            const btnAddBeneficio = document.querySelector('.btn-add-beneficio');
-            if (btnAddBeneficio) btnAddBeneficio.style.display = 'none';
+            // Buscar a proposta no Firebase para exibir a versão resumida
+            db.collection('propostas').doc(propostaId).get()
+                .then((doc) => {
+                    if (doc.exists) {
+                        const proposta = doc.data();
+                        // Exibir versão resumida
+                        carregarVisualizacaoResumida(proposta);
+                        
+                        // Esconder elementos de edição
+                        const btnAdicionar = document.getElementById('adicionar-cargo');
+                        const btnSalvar = document.getElementById('btn-salvar');
+                        const btnGerarPDF = document.getElementById('btn-gerar-pdf');
+                        const btnCompartilhar = document.getElementById('btn-compartilhar');
+                        const clienteInput = document.getElementById('cliente-nome');
+                        
+                        if (btnAdicionar) btnAdicionar.style.display = 'none';
+                        if (btnSalvar) btnSalvar.style.display = 'none';
+                        if (btnGerarPDF) btnGerarPDF.style.display = 'none';
+                        if (btnCompartilhar) btnCompartilhar.style.display = 'none';
+                        if (clienteInput) {
+                            clienteInput.disabled = true;
+                            clienteInput.value = proposta.cliente || '';
+                        }
+                        
+                        // Esconder todas as seções expansíveis originais
+                        document.querySelectorAll('.expandable-section, .exames-section, .despesas-section, .cargo-linha, .cargo-header, .cargo-resultados').forEach(el => {
+                            if (el) el.style.display = 'none';
+                        });
+                        
+                        // Esconder botões de remover
+                        document.querySelectorAll('.btn-remover, .btn-remover-beneficio, .btn-add-beneficio').forEach(btn => {
+                            if (btn) btn.style.display = 'none';
+                        });
+                        
+                        // Adicionar aviso de visualização
+                        const aviso = document.createElement('div');
+                        aviso.className = 'aviso-visualizacao';
+                        aviso.innerHTML = `
+                            <div style="background: #c10404; color: #fff; text-align: center; padding: 0.8rem; border-radius: 8px; margin-bottom: 1rem;">
+                                <i class="fas fa-eye"></i> <strong>Modo de visualização</strong> - Versão resumida da proposta
+                            </div>
+                        `;
+                        const containerDiv = document.querySelector('.container');
+                        if (containerDiv && !containerDiv.querySelector('.aviso-visualizacao')) {
+                            containerDiv.insertBefore(aviso, containerDiv.firstChild);
+                        }
+                    } else {
+                        document.getElementById('cargos-container').innerHTML = '<p style="text-align:center;padding:2rem;">Proposta não encontrada.</p>';
+                    }
+                })
+                .catch((error) => {
+                    console.error('Erro ao carregar proposta:', error);
+                    document.getElementById('cargos-container').innerHTML = '<p style="text-align:center;padding:2rem;">Erro ao carregar proposta.</p>';
+                });
         }
     }
     
@@ -2607,7 +2577,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             mostrarModal('Erro ao salvar proposta.');
         }
     });
-    
+
     // ========== INICIALIZAR FUNCIONALIDADES ==========
     initTema();
     initCompartilhar();
