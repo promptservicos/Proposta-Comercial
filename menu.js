@@ -70,11 +70,9 @@ if (modalOverlay) modalOverlay.classList.add('hidden');
 // ================== FUNÇÃO PARA OBTER NOME A PARTIR DO EMAIL ==================
 function getNomeFromEmail(email) {
     if (!email) return 'Desconhecido';
-    // Primeiro tenta o mapeamento direto
     if (emailToName[email]) {
         return emailToName[email];
     }
-    // Se não encontrar, tenta extrair antes do @ e capitalizar
     const nome = email.split('@')[0];
     return nome.charAt(0).toUpperCase() + nome.slice(1);
 }
@@ -96,14 +94,9 @@ function verificarSessao() {
     
     usuarioEmail = sessionEmail;
     usuarioAtual = sessionEmail;
-    
-    // Obter o nome correto a partir do email
     usuarioNome = getNomeFromEmail(sessionEmail);
-    
-    // Verificar se é admin (Fabio ou Luca)
     isAdmin = checkIsAdmin(sessionEmail);
     
-    // Atualizar o sessionStorage com o nome correto
     sessionStorage.setItem('session_name', usuarioNome);
     
     if (usuarioNomeSpan) {
@@ -123,7 +116,6 @@ function configurarFiltroVendedor() {
     filtroVendedorSelect.innerHTML = '<option value="">Todos</option>';
     
     if (isAdmin && filtroVendedorContainer) {
-        // Admin vê todos os vendedores no filtro (apenas os vendedores comuns)
         VENDEDORES.forEach(v => {
             const option = document.createElement('option');
             option.value = v;
@@ -139,14 +131,10 @@ function configurarFiltroVendedor() {
 // ================== FUNÇÃO PARA FORMATAR TIPO DE CONTRATO ==================
 function formatarTipoContrato(tipo) {
     switch(tipo) {
-        case 'temporario':
-            return 'Temporário';
-        case 'efetivo':
-            return 'Efetivo';
-        case 'terceirizado':
-            return 'Terceirizado';
-        default:
-            return tipo || 'Não definido';
+        case 'temporario': return 'Temporário';
+        case 'efetivo': return 'Efetivo';
+        case 'terceirizado': return 'Terceirizado';
+        default: return tipo || 'Não definido';
     }
 }
 
@@ -197,7 +185,6 @@ if (btnContinuar) {
             alert('Selecione o tipo de contrato.');
             return;
         }
-        // Usa o nome do vendedor logado (já convertido do email)
         window.location.href = `${contrato}.html?vendedor=${encodeURIComponent(usuarioNome)}`;
     });
 }
@@ -211,20 +198,13 @@ function carregarPropostas() {
             propostas = [];
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
-                // Converter o vendedor do email para nome, se necessário
                 let vendedorNome = data.vendedor;
-                // Se o vendedor ainda estiver como email, converte
                 if (vendedorNome && vendedorNome.includes('@')) {
                     vendedorNome = getNomeFromEmail(vendedorNome);
                 }
-                propostas.push({ 
-                    id: doc.id, 
-                    ...data,
-                    vendedor: vendedorNome
-                });
+                propostas.push({ id: doc.id, ...data, vendedor: vendedorNome });
             });
             
-            // Filtrar no frontend se não for admin
             if (!isAdmin) {
                 propostas = propostas.filter(p => p.vendedor === usuarioNome);
             }
@@ -297,16 +277,12 @@ function aplicarFiltros() {
 
     document.querySelectorAll('.proposta-card').forEach(card => {
         card.addEventListener('click', () => {
-            propostaSelecionada = {
-                id: card.dataset.id,
-                tipo: card.dataset.tipo || 'efetivo'
-            };
+            propostaSelecionada = { id: card.dataset.id, tipo: card.dataset.tipo || 'efetivo' };
             if (modalOverlay) modalOverlay.classList.remove('hidden');
         });
     });
 }
 
-// Função para escapar HTML
 function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -362,8 +338,54 @@ if (filtroVendedor) filtroVendedor.addEventListener('change', aplicarFiltros);
 if (filtroDataInicio) filtroDataInicio.addEventListener('change', aplicarFiltros);
 if (filtroDataFim) filtroDataFim.addEventListener('change', aplicarFiltros);
 
+// ================== TEMA CLARO/ESCURO ==================
+function initTema() {
+    const temaSalvo = localStorage.getItem('tema_menu');
+    const btnTema = document.getElementById('btn-tema');
+    const iconTema = btnTema?.querySelector('i');
+    
+    // Se NÃO houver tema salvo, ou se o tema salvo for 'light', aplica o tema claro
+    if (!temaSalvo || temaSalvo === 'light') {
+        document.body.classList.add('light-mode');
+        if (iconTema) {
+            iconTema.classList.remove('fa-moon');
+            iconTema.classList.add('fa-sun');
+        }
+        if (!temaSalvo) {
+            localStorage.setItem('tema_menu', 'light');
+        }
+    } else if (temaSalvo === 'dark') {
+        document.body.classList.remove('light-mode');
+        if (iconTema) {
+            iconTema.classList.remove('fa-sun');
+            iconTema.classList.add('fa-moon');
+        }
+    }
+    
+    if (btnTema) {
+        btnTema.addEventListener('click', () => {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+            localStorage.setItem('tema_menu', isLight ? 'light' : 'dark');
+            
+            if (iconTema) {
+                if (isLight) {
+                    iconTema.classList.remove('fa-moon');
+                    iconTema.classList.add('fa-sun');
+                } else {
+                    iconTema.classList.remove('fa-sun');
+                    iconTema.classList.add('fa-moon');
+                }
+            }
+        });
+    }
+}
+
 // ================== INICIALIZAÇÃO ==================
 document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar tema primeiro
+    initTema();
+    
     auth.onAuthStateChanged((user) => {
         if (!user) {
             window.location.href = 'index.html';

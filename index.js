@@ -39,6 +39,57 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Erro ao configurar persistência:', error);
         });
 
+    // ================== TEMA CLARO/ESCURO ==================
+    function initTema() {
+        const temaSalvo = localStorage.getItem('tema_login');
+        const btnTema = document.getElementById('btn-tema');
+        const iconTema = btnTema?.querySelector('i');
+        const textoTema = btnTema?.querySelector('span');
+        
+        // Se NÃO houver tema salvo, ou se o tema salvo for 'light', aplica o tema claro
+        if (!temaSalvo || temaSalvo === 'light') {
+            document.body.classList.add('light-mode');
+            if (iconTema) {
+                iconTema.classList.remove('fa-moon');
+                iconTema.classList.add('fa-sun');
+            }
+            if (textoTema) textoTema.textContent = 'Modo claro';
+            if (!temaSalvo) {
+                localStorage.setItem('tema_login', 'light');
+            }
+        } else if (temaSalvo === 'dark') {
+            document.body.classList.remove('light-mode');
+            if (iconTema) {
+                iconTema.classList.remove('fa-sun');
+                iconTema.classList.add('fa-moon');
+            }
+            if (textoTema) textoTema.textContent = 'Modo escuro';
+        }
+        
+        if (btnTema) {
+            btnTema.addEventListener('click', () => {
+                document.body.classList.toggle('light-mode');
+                const isLight = document.body.classList.contains('light-mode');
+                localStorage.setItem('tema_login', isLight ? 'light' : 'dark');
+                
+                if (iconTema) {
+                    if (isLight) {
+                        iconTema.classList.remove('fa-moon');
+                        iconTema.classList.add('fa-sun');
+                        if (textoTema) textoTema.textContent = 'Modo claro';
+                    } else {
+                        iconTema.classList.remove('fa-sun');
+                        iconTema.classList.add('fa-moon');
+                        if (textoTema) textoTema.textContent = 'Modo escuro';
+                    }
+                }
+            });
+        }
+    }
+    
+    // Inicializar tema
+    initTema();
+
     // ================== ELEMENTOS ==================
     const form = document.getElementById('login-form');
     const emailInput = document.getElementById('email');

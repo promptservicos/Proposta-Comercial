@@ -1719,11 +1719,23 @@ document.addEventListener('DOMContentLoaded', async function() {
         const btnTema = document.getElementById('btn-tema');
         const iconTema = btnTema?.querySelector('i');
         
-        if (temaSalvo === 'light') {
+        // Se NÃO houver tema salvo, ou se o tema salvo for 'light', aplica o tema claro
+        if (!temaSalvo || temaSalvo === 'light') {
             document.body.classList.add('light-mode');
             if (iconTema) {
                 iconTema.classList.remove('fa-moon');
                 iconTema.classList.add('fa-sun');
+            }
+            // Salvar como 'light' se não houver tema salvo
+            if (!temaSalvo) {
+                localStorage.setItem('tema_temporario', 'light');
+            }
+        } else if (temaSalvo === 'dark') {
+            // Apenas se o tema salvo for 'dark', aplica o tema escuro
+            document.body.classList.remove('light-mode');
+            if (iconTema) {
+                iconTema.classList.remove('fa-sun');
+                iconTema.classList.add('fa-moon');
             }
         }
         

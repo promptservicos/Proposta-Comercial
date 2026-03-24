@@ -9,7 +9,7 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="index.css">
-    <!-- ========== FIREBASE SDKs - ADICIONAR AQUI! ========== -->
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -71,6 +71,14 @@
                 <i class="fas fa-info-circle"></i>
                 <span>Use as credenciais fornecidas pela administração</span>
             </div>
+
+            <!-- Botão de tema no rodapé -->
+            <div class="tema-container">
+                <button id="btn-tema" class="btn-tema" title="Modo claro/escuro">
+                    <i class="fas fa-sun"></i>
+                    <span>Modo claro</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -85,7 +93,6 @@
         </div>
     </div>
 
-    <!-- SEU SCRIPT - DEVE VIR DEPOIS DOS SDKs -->
     <script src="index.js"></script>
 </body>
 </html>
