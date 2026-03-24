@@ -947,3 +947,14 @@ select option:checked {
     border-color: #c10404 !important;
     box-shadow: 0 0 0 2px rgba(193, 4, 4, 0.2) !important;
 }
+
+/* Ajuste para o botão único */
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.action-buttons .btn {
+    flex: 1;
+}

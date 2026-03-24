@@ -2613,9 +2613,4 @@ document.addEventListener('DOMContentLoaded', async function() {
     initCompartilhar();
     checkVisualizacao();
     
-    // Substituir o evento do botão gerar PDF
-    const btnGerarPDF = document.getElementById('btn-gerar-pdf');
-    if (btnGerarPDF) {
-        btnGerarPDF.addEventListener('click', gerarPDFProfissional);
-    }
 });

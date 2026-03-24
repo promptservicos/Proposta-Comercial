@@ -376,78 +376,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // ========== GERAR PDF PROFISSIONAL ==========
-    function gerarPDFProfissional() {
-        const elemento = document.querySelector('.container').cloneNode(true);
-        
-        const botoesRemover = elemento.querySelectorAll('.btn-add, #btn-gerar-pdf, #btn-salvar, .btn-remover, .btn-voltar, .btn-tema, .btn-compartilhar');
-        botoesRemover.forEach(btn => btn.remove());
-        
-        elemento.querySelectorAll('input, select').forEach(input => {
-            const span = document.createElement('span');
-            if (input.tagName === 'SELECT') {
-                span.textContent = input.options[input.selectedIndex]?.textContent || input.value;
-            } else {
-                span.textContent = input.value;
-            }
-            span.className = 'valor-texto';
-            span.style.color = '#333';
-            span.style.fontWeight = '500';
-            input.parentNode.replaceChild(span, input);
-        });
-        
-        // Adicionar cabeçalho profissional
-        const headerProfissional = document.createElement('div');
-        headerProfissional.className = 'pdf-header';
-        headerProfissional.innerHTML = `
-            <div style="text-align: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #c10404;">
-                <img src="logo.png" alt="Prompt Serviços" style="width: 80px; height: 80px; object-fit: contain; margin-bottom: 0.5rem;">
-                <h2 style="color: #c10404; margin: 0;">Prompt Serviços</h2>
-                <p style="color: #666; margin: 0;">Proposta Comercial - Contrato Efetivo</p>
-                <p style="color: #888; font-size: 0.8rem; margin-top: 0.3rem;">Documento gerado em ${new Date().toLocaleDateString('pt-BR')}</p>
-            </div>
-        `;
-        elemento.insertBefore(headerProfissional, elemento.firstChild);
-        
-        // Adicionar rodapé
-        const footer = document.createElement('div');
-        footer.className = 'pdf-footer';
-        footer.innerHTML = `
-            <div style="text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.7rem; color: #888;">
-                <p>Prompt Serviços - CNPJ: XX.XXX.XXX/0001-XX</p>
-                <p>Este documento é uma proposta comercial e tem validade de 30 dias.</p>
-            </div>
-        `;
-        elemento.appendChild(footer);
-        
-        const style = document.createElement('style');
-        style.innerHTML = `
-            .container { background: #ffffff !important; color: #333333 !important; padding: 1.5rem !important; font-family: 'Inter', 'Segoe UI', sans-serif !important; }
-            .cargo-item { background: #fafafa !important; border: 1px solid #e0e0e0 !important; margin-bottom: 1rem !important; border-radius: 12px !important; page-break-inside: avoid !important; }
-            .cargo-header { background: #f0f0f0 !important; padding: 0.8rem !important; border-radius: 12px 12px 0 0 !important; }
-            .cargo-titulo { color: #c10404 !important; }
-            .input-moderno, select { background: #f5f5f5 !important; border: 1px solid #ddd !important; color: #333 !important; }
-            .cargo-resultados { background: #fafafa !important; border: 1px solid #e0e0e0 !important; }
-            .resultado-bloco .valor { color: #333 !important; }
-            .resumo-final { background: #fafafa !important; border: 2px solid #c10404 !important; }
-            .resumo-item strong { color: #c10404 !important; }
-            .btn-remover, .btn-add, .btn { display: none !important; }
-            .valor-texto { color: #333 !important; font-weight: 500 !important; display: inline-block; padding: 0.5rem 0; }
-            .select-wrapper .fa-chevron-down { display: none !important; }
-        `;
-        elemento.appendChild(style);
-        
-        const opt = {
-            margin: [0.5, 0.5, 0.5, 0.5],
-            filename: `Proposta_Efetivo_${clienteInput.value || 'SemCliente'}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, backgroundColor: '#ffffff', logging: false },
-            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-        };
-        
-        html2pdf().set(opt).from(elemento).save();
-    }
-    
     // ========== VERIFICAR MODO VISUALIZAÇÃO ==========
     function checkVisualizacao() {
         const urlParams = new URLSearchParams(window.location.search);
@@ -461,7 +389,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 el.style.pointerEvents = 'none';
             });
             
-            document.querySelectorAll('.btn-add, #btn-gerar-pdf, #btn-salvar, .btn-remover, .btn-tema, .btn-compartilhar').forEach(btn => {
+            document.querySelectorAll('.btn-add, #btn-salvar, .btn-remover, .btn-tema, .btn-compartilhar').forEach(btn => {
                 if (btn) btn.style.display = 'none';
             });
             
@@ -539,14 +467,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             mostrarModal('Erro ao salvar proposta.');
         }
     });
-    
+
     // ========== INICIALIZAR FUNCIONALIDADES ==========
     initTema();
     initCompartilhar();
     checkVisualizacao();
-    
-    const btnGerarPDF = document.getElementById('btn-gerar-pdf');
-    if (btnGerarPDF) {
-        btnGerarPDF.addEventListener('click', gerarPDFProfissional);
-    }
 });
