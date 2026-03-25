@@ -253,6 +253,17 @@ function aplicarFiltros() {
         const totalCargos = p.cargos ? p.cargos.length : 0;
         const totalGeral = p.totalGeral ? p.totalGeral.toFixed(2).replace('.', ',') : '0,00';
         const tipoContrato = formatarTipoContrato(p.tipo);
+        
+        // Extrair os nomes dos cargos
+        let nomesCargos = '';
+        if (p.cargos && p.cargos.length > 0) {
+            // Pegar os primeiros 2 cargos para não poluir o card
+            const cargosExibicao = p.cargos.slice(0, 2);
+            nomesCargos = cargosExibicao.map(cargo => cargo.nome || 'Cargo sem nome').join(', ');
+            if (p.cargos.length > 2) {
+                nomesCargos += ` +${p.cargos.length - 2}`;
+            }
+        }
 
         html += `
             <div class="proposta-card" data-id="${p.id}" data-tipo="${p.tipo || 'efetivo'}">
@@ -267,6 +278,11 @@ function aplicarFiltros() {
                     <span><i class="fas fa-calendar"></i> ${dataStr}</span>
                     <span><i class="fas fa-briefcase"></i> ${totalCargos} cargo(s)</span>
                 </div>
+                ${nomesCargos ? `
+                <div class="card-cargos">
+                    <i class="fas fa-user-tie"></i> ${escapeHtml(nomesCargos)}
+                </div>
+                ` : ''}
                 <div class="card-footer">
                     R$ ${totalGeral}
                 </div>

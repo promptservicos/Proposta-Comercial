@@ -2029,8 +2029,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </div>
                 
                 <div class="vis-footer">
-                    <p>Prompt Serviços - CNPJ: XX.XXX.XXX/0001-XX</p>
-                    <p>Esta proposta tem validade de 30 dias.</p>
                     <p>Documento gerado em ${new Date().toLocaleDateString('pt-BR')}</p>
                 </div>
                 

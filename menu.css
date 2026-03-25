@@ -1071,3 +1071,33 @@ body.light-mode .vendedor-badge {
     background: linear-gradient(135deg, #c10404 0%, #a00303 100%);
     color: #fff;
 }
+
+/* Estilo para a seção de cargos no card */
+.card-cargos {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #aaa;
+    font-size: 0.75rem;
+    background: rgba(193, 4, 4, 0.05);
+    padding: 0.4rem 0.6rem;
+    border-radius: 12px;
+    margin-top: 0.2rem;
+    border-left: 2px solid #c10404;
+}
+
+.card-cargos i {
+    color: #c10404;
+    font-size: 0.8rem;
+    width: 1rem;
+}
+
+/* Modo claro */
+body.light-mode .card-cargos {
+    background: rgba(193, 4, 4, 0.08);
+    color: #666;
+}
+
+body.light-mode .card-cargos i {
+    color: #c10404;
+}
