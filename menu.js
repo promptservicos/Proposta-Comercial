@@ -21,7 +21,7 @@ const analytics = firebase.analytics();
 // ================== MAPEAMENTO DE EMAILS PARA NOMES ==================
 const emailToName = {
     'marketing@promptservicos.com.br': 'Luca',
-    'faabiomansur@promptservicos.com.br': 'Fabio',
+    'fabiomansur@promptservicos.com.br': 'Fabio',
     'comercial1@promptservicos.com.br': 'Leila',
     'comercial3@promptservicos.com.br': 'Ricardo',
     'ass.comercial@promptservicos.com.br': 'Moriela'
@@ -30,7 +30,7 @@ const emailToName = {
 // Lista de admins (que veem todas as propostas)
 const ADMIN_EMAILS = [
     'marketing@promptservicos.com.br',  // Luca - admin mas não aparece na lista
-    'faabiomansur@promptservicos.com.br'  // Fabio - admin
+    'fabiomansur@promptservicos.com.br'  // Fabio - admin
 ];
 
 // Lista de vendedores disponíveis para filtro (apenas os vendedores comuns)
