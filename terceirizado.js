@@ -19,6 +19,7 @@ const HORAS_MENSAL = 220;
 const TAXA_ENCARGOS_FISCAIS = 0.1375; // 13.75% fixo sobre subtotal dos insumos e benefícios
 
 const UNIFORMES = [
+    { nome: "KIT DE UNIFORMES", preco: 389.00 },
     { nome: "CALÇA OPERACIONAL", preco: 48.00 },
     { nome: "CAMISETA", preco: 45.00 },
     { nome: "BOTA", preco: 78.00 },
@@ -335,7 +336,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             <div class="section-summary">
                 <span class="summary-label">Subtotal:</span>
                 <span class="summary-value">R$ 0,00</span>
-                <i class="fas fa-chevron-down section-toggle"></i>
+                <i class="fas fa-chevron-down section-toggle"></i>  <!-- Mudado: sempre começa com chevron-down -->
             </div>
         `;
         
@@ -346,10 +347,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         section.appendChild(header);
         section.appendChild(content);
         
-        let isExpanded = !iniciarRetraido;
+        let isExpanded = !iniciarRetraido;  // Se iniciar retraído, isExpanded = false
         
         if (iniciarRetraido) {
             content.classList.add('collapsed');
+            // Quando fechado (retraído), seta pra BAIXO (chevron-down)
+            header.querySelector('.section-toggle').classList.remove('fa-chevron-up');
+            header.querySelector('.section-toggle').classList.add('fa-chevron-down');
+        } else {
+            // Quando aberto, seta pra CIMA (chevron-up)
             header.querySelector('.section-toggle').classList.remove('fa-chevron-down');
             header.querySelector('.section-toggle').classList.add('fa-chevron-up');
         }
@@ -359,12 +365,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             isExpanded = !isExpanded;
             if (isExpanded) {
                 content.classList.remove('collapsed');
-                header.querySelector('.section-toggle').classList.remove('fa-chevron-up');
-                header.querySelector('.section-toggle').classList.add('fa-chevron-down');
-            } else {
-                content.classList.add('collapsed');
+                // ABERTO: seta pra CIMA
                 header.querySelector('.section-toggle').classList.remove('fa-chevron-down');
                 header.querySelector('.section-toggle').classList.add('fa-chevron-up');
+            } else {
+                content.classList.add('collapsed');
+                // FECHADO: seta pra BAIXO
+                header.querySelector('.section-toggle').classList.remove('fa-chevron-up');
+                header.querySelector('.section-toggle').classList.add('fa-chevron-down');
             }
         });
         
@@ -475,20 +483,23 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         let isExpanded = false;
         content.classList.add('collapsed');
-        header.querySelector('.section-toggle').classList.remove('fa-chevron-down');
-        header.querySelector('.section-toggle').classList.add('fa-chevron-up');
+        // Quando fechado, seta pra BAIXO
+        header.querySelector('.section-toggle').classList.remove('fa-chevron-up');
+        header.querySelector('.section-toggle').classList.add('fa-chevron-down');
         
         header.addEventListener('click', (e) => {
             e.stopPropagation();
             isExpanded = !isExpanded;
             if (isExpanded) {
                 content.classList.remove('collapsed');
-                header.querySelector('.section-toggle').classList.remove('fa-chevron-up');
-                header.querySelector('.section-toggle').classList.add('fa-chevron-down');
-            } else {
-                content.classList.add('collapsed');
+                // ABERTO: seta pra CIMA
                 header.querySelector('.section-toggle').classList.remove('fa-chevron-down');
                 header.querySelector('.section-toggle').classList.add('fa-chevron-up');
+            } else {
+                content.classList.add('collapsed');
+                // FECHADO: seta pra BAIXO
+                header.querySelector('.section-toggle').classList.remove('fa-chevron-up');
+                header.querySelector('.section-toggle').classList.add('fa-chevron-down');
             }
         });
         
@@ -599,39 +610,64 @@ document.addEventListener('DOMContentLoaded', async function() {
         const uniformesMenuEl = uniformesMenu;
         const episMenuEl = episMenu;
         
-        function toggleDropdown(headerEl, menu) {
+        // Configurar setas dos dropdowns
+        const uniformesIcon = uniformesHeader.querySelector('i');
+        const episIcon = episHeader.querySelector('i');
+        
+        function toggleDropdown(headerEl, menu, icon) {
             const isOpen = menu.classList.contains('open');
             document.querySelectorAll('.dropdown-menu.open').forEach(m => {
                 if (m !== menu) {
                     m.classList.remove('open');
-                    if (m.previousElementSibling) m.previousElementSibling.classList.remove('open');
+                    const prevHeader = m.previousElementSibling;
+                    if (prevHeader && prevHeader.classList.contains('box-header')) {
+                        const prevIcon = prevHeader.querySelector('i');
+                        if (prevIcon) {
+                            prevIcon.classList.remove('fa-chevron-up');
+                            prevIcon.classList.add('fa-chevron-down');
+                        }
+                        prevHeader.classList.remove('open');
+                    }
                 }
             });
             if (!isOpen) {
                 menu.classList.add('open');
                 headerEl.classList.add('open');
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
                 menu.style.zIndex = '10000';
             } else {
                 menu.classList.remove('open');
                 headerEl.classList.remove('open');
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
                 menu.style.zIndex = '';
             }
         }
         
         uniformesHeader.addEventListener('click', (e) => {
             e.stopPropagation();
-            toggleDropdown(uniformesHeader, uniformesMenuEl);
+            toggleDropdown(uniformesHeader, uniformesMenuEl, uniformesIcon);
         });
+        
         episHeader.addEventListener('click', (e) => {
             e.stopPropagation();
-            toggleDropdown(episHeader, episMenuEl);
+            toggleDropdown(episHeader, episMenuEl, episIcon);
         });
         
         document.addEventListener('click', function(e) {
             if (!section.contains(e.target)) {
                 document.querySelectorAll('.dropdown-menu.open').forEach(menu => {
                     menu.classList.remove('open');
-                    if (menu.previousElementSibling) menu.previousElementSibling.classList.remove('open');
+                    const prevHeader = menu.previousElementSibling;
+                    if (prevHeader && prevHeader.classList.contains('box-header')) {
+                        const prevIcon = prevHeader.querySelector('i');
+                        if (prevIcon) {
+                            prevIcon.classList.remove('fa-chevron-up');
+                            prevIcon.classList.add('fa-chevron-down');
+                        }
+                        prevHeader.classList.remove('open');
+                    }
                     menu.style.zIndex = '';
                 });
             }
@@ -1000,20 +1036,23 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         let isExpanded = false;
         content.classList.add('collapsed');
-        header.querySelector('.exames-toggle').classList.remove('fa-chevron-down');
-        header.querySelector('.exames-toggle').classList.add('fa-chevron-up');
+        // Quando fechado, seta pra BAIXO
+        header.querySelector('.exames-toggle').classList.remove('fa-chevron-up');
+        header.querySelector('.exames-toggle').classList.add('fa-chevron-down');
         
         header.addEventListener('click', (e) => {
             e.stopPropagation();
             isExpanded = !isExpanded;
             if (isExpanded) {
                 content.classList.remove('collapsed');
-                header.querySelector('.exames-toggle').classList.remove('fa-chevron-up');
-                header.querySelector('.exames-toggle').classList.add('fa-chevron-down');
-            } else {
-                content.classList.add('collapsed');
+                // ABERTO: seta pra CIMA
                 header.querySelector('.exames-toggle').classList.remove('fa-chevron-down');
                 header.querySelector('.exames-toggle').classList.add('fa-chevron-up');
+            } else {
+                content.classList.add('collapsed');
+                // FECHADO: seta pra BAIXO
+                header.querySelector('.exames-toggle').classList.remove('fa-chevron-up');
+                header.querySelector('.exames-toggle').classList.add('fa-chevron-down');
             }
         });
         
@@ -1029,7 +1068,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         EXAMES_ADMISSIONAL.forEach(e => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'exames-item';
-            // Verificar se o exame está nos dados salvos
             const isChecked = (dadosExames && dadosExames[e.nome] === true);
             itemDiv.innerHTML = `
                 <div class="exames-item-nome">${e.nome}</div>
@@ -1050,7 +1088,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         EXAMES_COMPLEMENTARES.forEach(e => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'exames-item';
-            // Verificar se o exame está nos dados salvos
             const isChecked = (dadosExames && dadosExames[e.nome] === true);
             itemDiv.innerHTML = `
                 <div class="exames-item-nome">${e.nome}</div>
@@ -1108,39 +1145,60 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         });
         
-        // Dropdown toggle
+        // Dropdown toggle para exames
         const examesHeader = examesBox.querySelector('.box-header');
         const examesMenuEl = examesMenu;
+        const examesIcon = examesHeader.querySelector('i');
         
-        function toggleDropdown(headerEl, menu) {
+        function toggleDropdown(headerEl, menu, icon) {
             const isOpen = menu.classList.contains('open');
             document.querySelectorAll('.exames-box .dropdown-menu.open').forEach(m => {
                 if (m !== menu) {
                     m.classList.remove('open');
-                    if (m.previousElementSibling) m.previousElementSibling.classList.remove('open');
+                    const prevHeader = m.previousElementSibling;
+                    if (prevHeader && prevHeader.classList.contains('box-header')) {
+                        const prevIcon = prevHeader.querySelector('i');
+                        if (prevIcon) {
+                            prevIcon.classList.remove('fa-chevron-up');
+                            prevIcon.classList.add('fa-chevron-down');
+                        }
+                        prevHeader.classList.remove('open');
+                    }
                 }
             });
             if (!isOpen) {
                 menu.classList.add('open');
                 headerEl.classList.add('open');
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
                 menu.style.zIndex = '10000';
             } else {
                 menu.classList.remove('open');
                 headerEl.classList.remove('open');
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
                 menu.style.zIndex = '';
             }
         }
         
         examesHeader.addEventListener('click', (e) => {
             e.stopPropagation();
-            toggleDropdown(examesHeader, examesMenuEl);
+            toggleDropdown(examesHeader, examesMenuEl, examesIcon);
         });
         
         document.addEventListener('click', function(e) {
             if (!section.contains(e.target)) {
                 document.querySelectorAll('.exames-box .dropdown-menu.open').forEach(menu => {
                     menu.classList.remove('open');
-                    if (menu.previousElementSibling) menu.previousElementSibling.classList.remove('open');
+                    const prevHeader = menu.previousElementSibling;
+                    if (prevHeader && prevHeader.classList.contains('box-header')) {
+                        const prevIcon = prevHeader.querySelector('i');
+                        if (prevIcon) {
+                            prevIcon.classList.remove('fa-chevron-up');
+                            prevIcon.classList.add('fa-chevron-down');
+                        }
+                        prevHeader.classList.remove('open');
+                    }
                     menu.style.zIndex = '';
                 });
             }
@@ -1273,20 +1331,23 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         let isExpanded = false;
         content.classList.add('collapsed');
-        header.querySelector('.despesas-toggle').classList.remove('fa-chevron-down');
-        header.querySelector('.despesas-toggle').classList.add('fa-chevron-up');
+        // Quando fechado, seta pra BAIXO
+        header.querySelector('.despesas-toggle').classList.remove('fa-chevron-up');
+        header.querySelector('.despesas-toggle').classList.add('fa-chevron-down');
         
         header.addEventListener('click', (e) => {
             e.stopPropagation();
             isExpanded = !isExpanded;
             if (isExpanded) {
                 content.classList.remove('collapsed');
-                header.querySelector('.despesas-toggle').classList.remove('fa-chevron-up');
-                header.querySelector('.despesas-toggle').classList.add('fa-chevron-down');
-            } else {
-                content.classList.add('collapsed');
+                // ABERTO: seta pra CIMA
                 header.querySelector('.despesas-toggle').classList.remove('fa-chevron-down');
                 header.querySelector('.despesas-toggle').classList.add('fa-chevron-up');
+            } else {
+                content.classList.add('collapsed');
+                // FECHADO: seta pra BAIXO
+                header.querySelector('.despesas-toggle').classList.remove('fa-chevron-up');
+                header.querySelector('.despesas-toggle').classList.add('fa-chevron-down');
             }
         });
         
