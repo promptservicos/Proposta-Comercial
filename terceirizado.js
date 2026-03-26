@@ -130,14 +130,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     function calcularTotalGeral() {
         let total = 0;
         document.querySelectorAll('.cargo-item').forEach(item => {
-            const qtd = parseInt(item.querySelector('.cargo-quantidade').value) || 1;
+            // Busca o elemento que contém o TOTAL FINAL DA VAGA
             const totalVagaElem = item.querySelector('.total-prestacao .valor');
             if (totalVagaElem) {
+                // Extrai o valor do texto (ex: "R$ 12.204,55")
                 const totalText = totalVagaElem.textContent;
+                // Converte para número (remove R$, pontos e troca vírgula por ponto)
                 const totalValor = parseFloat(totalText.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
-                total += totalValor * qtd;
+                total += totalValor;
             }
         });
+        // Atualiza o elemento na tela
         totalGeralEl.textContent = formatarMoeda(total);
         return total;
     }
