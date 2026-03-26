@@ -161,10 +161,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                         noturno: item.querySelector('.an-check')?.checked || false,
                         periculosidade: item.querySelector('.per-check')?.checked || false,
                         insalubridade: item.querySelector('.ins-check')?.checked || false,
-                        acumuloFuncao: item.querySelector('.acumulo-check')?.checked || false,
                         heHoras: item.querySelector('.he-horas')?.value || 0,
-                        anHoras: item.querySelector('.an-horas')?.value || 0,
-                        acumuloQtd: item.querySelector('.acumulo-qtd')?.value || 0
+                        anHoras: item.querySelector('.an-horas')?.value || 0
                     },
                     uniformes: {},
                     epis: {},
@@ -177,7 +175,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 };
                 
                 // ========== CAPTURAR UNIFORMES (PADRÃO) ==========
-                item.querySelectorAll('.uniformes-lista-padrao .item-lista').forEach(lista => {
+                item.querySelectorAll('.uniformes-box .item-lista').forEach(lista => {
                     const nome = lista.querySelector('.item-nome')?.textContent;
                     const qtdInput = lista.querySelector('.quantidade-uniforme');
                     const depInput = lista.querySelector('.depreciacao-uniforme');
@@ -212,7 +210,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
                 
                 // ========== CAPTURAR EPIs (PADRÃO) ==========
-                item.querySelectorAll('.epis-lista-padrao .item-lista').forEach(lista => {
+                item.querySelectorAll('.epis-box .item-lista').forEach(lista => {
                     const nome = lista.querySelector('.item-nome')?.textContent;
                     const qtdInput = lista.querySelector('.quantidade-epi');
                     const depInput = lista.querySelector('.depreciacao-epi');
@@ -291,7 +289,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const examesSection = item.querySelector('.exames-section');
                 if (examesSection) {
                     // Capturar exames padrão marcados
-                    examesSection.querySelectorAll('.exames-lista-padrao .exame-checkbox').forEach(cb => {
+                    examesSection.querySelectorAll('.exame-checkbox').forEach(cb => {
                         if (cb.checked) {
                             cargo.exames[cb.dataset.nome] = true;
                         }
@@ -355,7 +353,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (dadosRascunho.cargos && dadosRascunho.cargos.length > 0) {
                     container.innerHTML = '';
                     dadosRascunho.cargos.forEach(c => {
+                        // Os exames já são um objeto, usa direto
                         const examesObj = c.exames || {};
+                        
+                        console.log('Carregando exames:', examesObj); // Debug
+                        
                         container.appendChild(criarCargoItem(
                             c.nome,
                             c.quantidade,
@@ -365,7 +367,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                             c.epis || {},
                             c.beneficios || {},
                             c.seguranca || {},
-                            examesObj,
+                            examesObj, // Passa o objeto diretamente
                             c.insumos || {},
                             { encargos_fiscais: { porcentagem: 13.75 } },
                             c.treinamento || 0,
@@ -397,7 +399,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             <div class="section-summary">
                 <span class="summary-label">Subtotal:</span>
                 <span class="summary-value">R$ 0,00</span>
-                <i class="fas fa-chevron-down section-toggle"></i>
+                <i class="fas fa-chevron-down section-toggle"></i>  <!-- Mudado: sempre começa com chevron-down -->
             </div>
         `;
         
@@ -408,13 +410,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         section.appendChild(header);
         section.appendChild(content);
         
-        let isExpanded = !iniciarRetraido;
+        let isExpanded = !iniciarRetraido;  // Se iniciar retraído, isExpanded = false
         
         if (iniciarRetraido) {
             content.classList.add('collapsed');
+            // Quando fechado (retraído), seta pra BAIXO (chevron-down)
             header.querySelector('.section-toggle').classList.remove('fa-chevron-up');
             header.querySelector('.section-toggle').classList.add('fa-chevron-down');
         } else {
+            // Quando aberto, seta pra CIMA (chevron-up)
             header.querySelector('.section-toggle').classList.remove('fa-chevron-down');
             header.querySelector('.section-toggle').classList.add('fa-chevron-up');
         }
@@ -424,10 +428,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             isExpanded = !isExpanded;
             if (isExpanded) {
                 content.classList.remove('collapsed');
+                // ABERTO: seta pra CIMA
                 header.querySelector('.section-toggle').classList.remove('fa-chevron-down');
                 header.querySelector('.section-toggle').classList.add('fa-chevron-up');
             } else {
                 content.classList.add('collapsed');
+                // FECHADO: seta pra BAIXO
                 header.querySelector('.section-toggle').classList.remove('fa-chevron-up');
                 header.querySelector('.section-toggle').classList.add('fa-chevron-down');
             }
@@ -531,15 +537,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                         <h4><i class="fas fa-shirt"></i> Uniformes</h4>
                         <i class="fas fa-chevron-down"></i>
                     </div>
-                    <div class="dropdown-menu uniformes-menu">
-                        <div class="uniformes-lista-padrao"></div>
-                        <div class="uniformes-custom-header" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid rgba(193,4,4,0.3);">
-                            <h5 style="color: #c10404; margin: 0.5rem 0 0.5rem 0; font-size: 0.8rem;">Itens Personalizados</h5>
-                            <div class="uniformes-custom-grid"></div>
-                            <button type="button" class="btn-add-uniforme-custom" style="background: transparent; border: 1px dashed #c10404; color: #c10404; padding: 0.3rem; border-radius: 20px; width: 100%; margin-top: 0.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem; font-size: 0.8rem;">
-                                <i class="fas fa-plus-circle"></i> Adicionar Uniforme Personalizado
-                            </button>
-                        </div>
+                    <div class="dropdown-menu uniformes-menu"></div>
+                    <div class="uniformes-custom">
+                        <h5 style="color: #c10404; margin: 0.5rem 0 0.5rem 0; font-size: 0.8rem;">Itens Personalizados</h5>
+                        <div class="uniformes-custom-grid"></div>
+                        <button type="button" class="btn-add-uniforme-custom" style="background: transparent; border: 1px dashed #c10404; color: #c10404; padding: 0.3rem; border-radius: 20px; width: 100%; margin-top: 0.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem; font-size: 0.8rem;">
+                            <i class="fas fa-plus-circle"></i> Adicionar Uniforme Personalizado
+                        </button>
                     </div>
                     <div class="uniformes-total">
                         <div>Total Mensal Uniformes: <span>R$ 0,00</span></div>
@@ -551,15 +555,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                         <h4><i class="fas fa-hard-hat"></i> EPIs</h4>
                         <i class="fas fa-chevron-down"></i>
                     </div>
-                    <div class="dropdown-menu epis-menu">
-                        <div class="epis-lista-padrao"></div>
-                        <div class="epis-custom-header" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid rgba(193,4,4,0.3);">
-                            <h5 style="color: #c10404; margin: 0.5rem 0 0.5rem 0; font-size: 0.8rem;">Itens Personalizados</h5>
-                            <div class="epis-custom-grid"></div>
-                            <button type="button" class="btn-add-epi-custom" style="background: transparent; border: 1px dashed #c10404; color: #c10404; padding: 0.3rem; border-radius: 20px; width: 100%; margin-top: 0.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem; font-size: 0.8rem;">
-                                <i class="fas fa-plus-circle"></i> Adicionar EPI Personalizado
-                            </button>
-                        </div>
+                    <div class="dropdown-menu epis-menu"></div>
+                    <div class="epis-custom">
+                        <h5 style="color: #c10404; margin: 0.5rem 0 0.5rem 0; font-size: 0.8rem;">Itens Personalizados</h5>
+                        <div class="epis-custom-grid"></div>
+                        <button type="button" class="btn-add-epi-custom" style="background: transparent; border: 1px dashed #c10404; color: #c10404; padding: 0.3rem; border-radius: 20px; width: 100%; margin-top: 0.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem; font-size: 0.8rem;">
+                            <i class="fas fa-plus-circle"></i> Adicionar EPI Personalizado
+                        </button>
                     </div>
                     <div class="epis-total">
                         <div>Total Mensal EPIs: <span>R$ 0,00</span></div>
@@ -574,6 +576,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         let isExpanded = false;
         content.classList.add('collapsed');
+        // Quando fechado, seta pra BAIXO
         header.querySelector('.section-toggle').classList.remove('fa-chevron-up');
         header.querySelector('.section-toggle').classList.add('fa-chevron-down');
         
@@ -582,10 +585,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             isExpanded = !isExpanded;
             if (isExpanded) {
                 content.classList.remove('collapsed');
+                // ABERTO: seta pra CIMA
                 header.querySelector('.section-toggle').classList.remove('fa-chevron-down');
                 header.querySelector('.section-toggle').classList.add('fa-chevron-up');
             } else {
                 content.classList.add('collapsed');
+                // FECHADO: seta pra BAIXO
                 header.querySelector('.section-toggle').classList.remove('fa-chevron-up');
                 header.querySelector('.section-toggle').classList.add('fa-chevron-down');
             }
@@ -595,8 +600,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         const episBox = content.querySelector('.epis-box');
         const uniformesMenu = content.querySelector('.uniformes-menu');
         const episMenu = content.querySelector('.epis-menu');
-        const uniformesListaPadrao = content.querySelector('.uniformes-lista-padrao');
-        const episListaPadrao = content.querySelector('.epis-lista-padrao');
         const uniformesTotalSpan = content.querySelector('.uniformes-total span');
         const episTotalSpan = content.querySelector('.epis-total span');
         const uniformesTotalGeralSpan = content.querySelector('.uniformes-total-geral strong');
@@ -611,6 +614,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const uniformesCustomItems = [];
         const episCustomItems = [];
         
+        // Função para criar item personalizado (uniforme ou EPI)
         function criarItemPersonalizado(tipo, itemData = null) {
             const div = document.createElement('div');
             div.className = 'item-custom';
@@ -737,6 +741,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         }
         
+        // Botão adicionar uniforme personalizado
         btnAddUniformeCustom.addEventListener('click', () => {
             const customItem = criarItemPersonalizado('uniforme');
             uniformesCustomGrid.appendChild(customItem.div);
@@ -745,6 +750,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             salvarRascunho();
         });
         
+        // Botão adicionar EPI personalizado
         btnAddEpiCustom.addEventListener('click', () => {
             const customItem = criarItemPersonalizado('epi');
             episCustomGrid.appendChild(customItem.div);
@@ -763,7 +769,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 depreciacaoInput.value = dadosUniformes[u.nome].depreciacao || 1;
                 atualizar();
             }
-            uniformesListaPadrao.appendChild(div);
+            uniformesMenu.appendChild(div);
             uniformesItems.push({ 
                 atualizar, 
                 getQuantidade, 
@@ -785,7 +791,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 depreciacaoInput.value = dadosEpis[e.nome].depreciacao || 1;
                 atualizar();
             }
-            episListaPadrao.appendChild(div);
+            episMenu.appendChild(div);
             episItems.push({ 
                 atualizar, 
                 getQuantidade, 
@@ -850,6 +856,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const totalGeral = totalUniforme + totalEpi;
             header.querySelector('.summary-value').textContent = formatarMoeda(totalGeral);
             
+            // Atualizar também os totais gerais considerando a quantidade de funcionários
             const qtdFuncionarios = parseInt(cargoItem?.querySelector('.cargo-quantidade')?.value) || 1;
             const totalUniformeGeral = calcularTotalUniformeGeral(qtdFuncionarios);
             const totalEpiGeral = calcularTotalEpiGeral(qtdFuncionarios);
@@ -861,6 +868,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 episTotalGeralSpan.textContent = formatarMoeda(totalEpiGeral);
             }
             
+            // Atualizar o texto da quantidade de funcionários
             const uniformesTotalGeralDiv = content.querySelector('.uniformes-total-geral');
             const episTotalGeralDiv = content.querySelector('.epis-total-geral');
             if (uniformesTotalGeralDiv) {
@@ -873,6 +881,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             return { totalUniforme, totalEpi, totalGeral };
         }
         
+        // Adicionar event listeners para itens padrão
         uniformesItems.forEach(item => {
             item.div.querySelectorAll('input').forEach(input => {
                 input.addEventListener('input', () => {
@@ -897,6 +906,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
         
+        // Adicionar listener para quando a quantidade de funcionários mudar
         if (cargoItem) {
             const qtdInput = cargoItem.querySelector('.cargo-quantidade');
             if (qtdInput) {
@@ -910,6 +920,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         const episHeader = episBox.querySelector('.box-header');
         const uniformesMenuEl = uniformesMenu;
         const episMenuEl = episMenu;
+        
+        // Configurar setas dos dropdowns
         const uniformesIcon = uniformesHeader.querySelector('i');
         const episIcon = episHeader.querySelector('i');
         
@@ -992,6 +1004,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 });
                 
+                // Capturar uniformes personalizados
                 const uniformesCustom = [];
                 uniformesCustomItems.forEach(item => {
                     const nome = item.getNome();
@@ -1022,6 +1035,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 });
                 
+                // Capturar EPIs personalizados
                 const episCustom = [];
                 episCustomItems.forEach(item => {
                     const nome = item.getNome();
@@ -1073,6 +1087,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         let customBeneficios = [...dadosBeneficiosPersonalizados];
         
+        // Função para atualizar o total geral com a quantidade de funcionários
         function atualizarTotalGeral(totalPorFuncionario) {
             const qtdFuncionarios = parseInt(cargoItem?.querySelector('.cargo-quantidade')?.value) || 1;
             const totalGeral = totalPorFuncionario * qtdFuncionarios;
@@ -1085,6 +1100,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             return totalGeral;
         }
         
+        // Criar benefícios fixos
         BENEFICIOS_FIXOS.forEach(b => {
             const card = document.createElement('div');
             card.className = 'beneficio-fixo-card';
@@ -1108,6 +1124,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             fixosGrid.appendChild(card);
         });
         
+        // Função para criar um benefício personalizado
         function criarBeneficioCustomizado(beneficio = null) {
             const card = document.createElement('div');
             card.className = 'beneficio-custom-card';
@@ -1148,10 +1165,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             return card;
         }
         
+        // Adicionar benefícios personalizados existentes
         customBeneficios.forEach(b => {
             customGrid.appendChild(criarBeneficioCustomizado(b));
         });
         
+        // Botão para adicionar novo benefício personalizado
         btnAdicionar.addEventListener('click', () => {
             customGrid.appendChild(criarBeneficioCustomizado());
             calcularTotal();
@@ -1161,6 +1180,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         function calcularTotal() {
             let total = 0;
             
+            // Benefícios fixos
             fixosGrid.querySelectorAll('.beneficio-fixo-card').forEach(card => {
                 const valorInput = card.querySelector('.beneficio-valor');
                 const diasInput = card.querySelector('.beneficio-dias');
@@ -1172,6 +1192,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 totalSpan.textContent = `Total: ${formatarMoeda(subtotal)}`;
             });
             
+            // Benefícios personalizados
             customGrid.querySelectorAll('.beneficio-custom-card').forEach(card => {
                 const valorInput = card.querySelector('.beneficio-custom-valor');
                 const diasInput = card.querySelector('.beneficio-custom-dias');
@@ -1188,6 +1209,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             return total;
         }
         
+        // Event listeners para benefícios fixos
         fixosGrid.querySelectorAll('.beneficio-valor, .beneficio-dias').forEach(input => {
             input.addEventListener('input', function(e) {
                 if (e.target.classList.contains('beneficio-valor')) {
@@ -1202,6 +1224,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
         
+        // Event listeners para benefícios personalizados (delegação)
         customGrid.addEventListener('input', function(e) {
             if (e.target.classList.contains('beneficio-custom-valor')) {
                 let valor = e.target.value.replace(/\D/g, '');
@@ -1222,6 +1245,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         });
         
+        // Adicionar listener para quando a quantidade de funcionários mudar
         if (cargoItem) {
             const qtdInput = cargoItem.querySelector('.cargo-quantidade');
             if (qtdInput) {
@@ -1276,6 +1300,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const segurancaTotalGeralSpan = content.querySelector('.seguranca-valor-geral');
         const segurancaQtdFuncionariosSpan = content.querySelector('.seguranca-qtd-funcionarios');
         
+        // Função para atualizar o total geral com a quantidade de funcionários
         function atualizarTotalGeral(totalPorFuncionario) {
             const qtdFuncionarios = parseInt(cargoItem?.querySelector('.cargo-quantidade')?.value) || 1;
             const totalGeral = totalPorFuncionario * qtdFuncionarios;
@@ -1349,6 +1374,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
         
+        // Adicionar listener para quando a quantidade de funcionários mudar
         if (cargoItem) {
             const qtdInput = cargoItem.querySelector('.cargo-quantidade');
             if (qtdInput) {
@@ -1404,15 +1430,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                         <h4><i class="fas fa-notes-medical"></i> Exames</h4>
                         <i class="fas fa-chevron-down"></i>
                     </div>
-                    <div class="dropdown-menu exames-menu">
-                        <div class="exames-lista-padrao"></div>
-                        <div class="exames-custom-header" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid rgba(193,4,4,0.3);">
-                            <h5 style="color: #c10404; margin: 0.5rem 0 0.5rem 0; font-size: 0.8rem;">Exames Personalizados</h5>
-                            <div class="exames-custom-grid"></div>
-                            <button type="button" class="btn-add-exame-custom" style="background: transparent; border: 1px dashed #c10404; color: #c10404; padding: 0.3rem; border-radius: 20px; width: 100%; margin-top: 0.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem; font-size: 0.8rem;">
-                                <i class="fas fa-plus-circle"></i> Adicionar Exame Personalizado
-                            </button>
-                        </div>
+                    <div class="dropdown-menu exames-menu"></div>
+                    <div class="exames-custom">
+                        <h5 style="color: #c10404; margin: 0.5rem 0 0.5rem 0; font-size: 0.8rem;">Exames Personalizados</h5>
+                        <div class="exames-custom-grid"></div>
+                        <button type="button" class="btn-add-exame-custom" style="background: transparent; border: 1px dashed #c10404; color: #c10404; padding: 0.3rem; border-radius: 20px; width: 100%; margin-top: 0.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem; font-size: 0.8rem;">
+                            <i class="fas fa-plus-circle"></i> Adicionar Exame Personalizado
+                        </button>
                     </div>
                     <div class="exames-total">Total Exames: <span>R$ 0,00</span></div>
                 </div>
@@ -1437,6 +1461,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         let isExpanded = false;
         content.classList.add('collapsed');
+        // Quando fechado, seta pra BAIXO
         header.querySelector('.exames-toggle').classList.remove('fa-chevron-up');
         header.querySelector('.exames-toggle').classList.add('fa-chevron-down');
         
@@ -1445,10 +1470,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             isExpanded = !isExpanded;
             if (isExpanded) {
                 content.classList.remove('collapsed');
+                // ABERTO: seta pra CIMA
                 header.querySelector('.exames-toggle').classList.remove('fa-chevron-down');
                 header.querySelector('.exames-toggle').classList.add('fa-chevron-up');
             } else {
                 content.classList.add('collapsed');
+                // FECHADO: seta pra BAIXO
                 header.querySelector('.exames-toggle').classList.remove('fa-chevron-up');
                 header.querySelector('.exames-toggle').classList.add('fa-chevron-down');
             }
@@ -1456,7 +1483,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         const examesBox = content.querySelector('.exames-box');
         const examesMenu = content.querySelector('.exames-menu');
-        const examesListaPadrao = content.querySelector('.exames-lista-padrao');
         const examesTotalSpan = content.querySelector('.exames-total span');
         const treinamentoInput = content.querySelector('.treinamento-valor');
         const totalSecaoSpan = content.querySelector('.total-secao');
@@ -1468,6 +1494,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const examesItems = [];
         const examesCustomItems = [];
         
+        // Função para criar exame personalizado
         function criarExamePersonalizado(exameData = null) {
             const div = document.createElement('div');
             div.className = 'exame-custom-item';
@@ -1540,6 +1567,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             };
         }
         
+        // Carregar exames personalizados existentes
         if (dadosExames && dadosExames.custom) {
             dadosExames.custom.forEach(item => {
                 const customItem = criarExamePersonalizado(item);
@@ -1548,6 +1576,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         }
         
+        // Botão adicionar exame personalizado
         btnAddExameCustom.addEventListener('click', () => {
             const customItem = criarExamePersonalizado();
             examesCustomGrid.appendChild(customItem.div);
@@ -1556,6 +1585,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             salvarRascunho();
         });
         
+        // Função para atualizar o total geral com a quantidade de funcionários
         function atualizarTotalGeral(totalPorFuncionario) {
             const qtdFuncionarios = parseInt(cargoItem?.querySelector('.cargo-quantidade')?.value) || 1;
             const totalGeral = totalPorFuncionario * qtdFuncionarios;
@@ -1568,6 +1598,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             return totalGeral;
         }
         
+        // Adicionar exame Admissional/Demissional/Acuidade
         EXAMES_ADMISSIONAL.forEach(e => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'exames-item';
@@ -1579,7 +1610,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <input type="checkbox" class="exame-checkbox" data-nome="${e.nome}" data-preco="${e.preco}" ${isChecked ? 'checked' : ''}>
                 </div>
             `;
-            examesListaPadrao.appendChild(itemDiv);
+            examesMenu.appendChild(itemDiv);
             examesItems.push({
                 nome: e.nome,
                 preco: e.preco,
@@ -1587,6 +1618,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
         
+        // Adicionar exames complementares
         EXAMES_COMPLEMENTARES.forEach(e => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'exames-item';
@@ -1598,7 +1630,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <input type="checkbox" class="exame-checkbox" data-nome="${e.nome}" data-preco="${e.preco}" ${isChecked ? 'checked' : ''}>
                 </div>
             `;
-            examesListaPadrao.appendChild(itemDiv);
+            examesMenu.appendChild(itemDiv);
             examesItems.push({
                 nome: e.nome,
                 preco: e.preco,
@@ -1632,6 +1664,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             return totalGeral;
         }
         
+        // Event listeners para exames padrão
         examesItems.forEach(item => {
             item.checkbox.addEventListener('change', () => {
                 calcularTotal();
@@ -1652,6 +1685,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         });
         
+        // Adicionar listener para quando a quantidade de funcionários mudar
         if (cargoItem) {
             const qtdInput = cargoItem.querySelector('.cargo-quantidade');
             if (qtdInput) {
@@ -1662,6 +1696,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
         
+        // Dropdown toggle para exames
         const examesHeader = examesBox.querySelector('.box-header');
         const examesMenuEl = examesMenu;
         const examesIcon = examesHeader.querySelector('i');
@@ -1722,6 +1757,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         examesMenuEl.addEventListener('click', (e) => e.stopPropagation());
         
+        // Inicializar com os valores
         calcularTotal();
         
         return { 
@@ -1735,6 +1771,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 });
                 
+                // Capturar exames personalizados
                 const examesCustom = [];
                 examesCustomItems.forEach(item => {
                     const nome = item.getNome();
@@ -1776,6 +1813,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const insumosTotalGeralSpan = content.querySelector('.insumos-valor-geral');
         const insumosQtdFuncionariosSpan = content.querySelector('.insumos-qtd-funcionarios');
         
+        // Função para atualizar o total geral com a quantidade de funcionários
         function atualizarTotalGeral(totalPorFuncionario) {
             const qtdFuncionarios = parseInt(cargoItem?.querySelector('.cargo-quantidade')?.value) || 1;
             const totalGeral = totalPorFuncionario * qtdFuncionarios;
@@ -1829,6 +1867,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
         
+        // Adicionar listener para quando a quantidade de funcionários mudar
         if (cargoItem) {
             const qtdInput = cargoItem.querySelector('.cargo-quantidade');
             if (qtdInput) {
@@ -1900,6 +1939,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         let isExpanded = false;
         content.classList.add('collapsed');
+        // Quando fechado, seta pra BAIXO
         header.querySelector('.despesas-toggle').classList.remove('fa-chevron-up');
         header.querySelector('.despesas-toggle').classList.add('fa-chevron-down');
         
@@ -1908,10 +1948,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             isExpanded = !isExpanded;
             if (isExpanded) {
                 content.classList.remove('collapsed');
+                // ABERTO: seta pra CIMA
                 header.querySelector('.despesas-toggle').classList.remove('fa-chevron-down');
                 header.querySelector('.despesas-toggle').classList.add('fa-chevron-up');
             } else {
                 content.classList.add('collapsed');
+                // FECHADO: seta pra BAIXO
                 header.querySelector('.despesas-toggle').classList.remove('fa-chevron-up');
                 header.querySelector('.despesas-toggle').classList.add('fa-chevron-down');
             }
@@ -1983,7 +2025,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         `;
         item.appendChild(linha);
         
-        // Seção Adicionais (COM O NOVO ACÚMULO DE FUNÇÃO)
+        // Seção Adicionais
         const adicionaisHtml = `
             <div class="adicionais-grid">
                 <div class="adicional-card">
@@ -2040,22 +2082,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     </div>
                     <div class="adicional-conteudo ins-conteudo hidden">
                         <div class="adicional-valor ins-resultado"></div>
-                    </div>
-                </div>
-                <div class="adicional-card">
-                    <div class="adicional-header">
-                        <label class="checkbox-label">
-                            <input type="checkbox" class="acumulo-check">
-                            <span class="checkbox-custom"></span>
-                            <span class="checkbox-text">Acúmulo de Função (20%)</span>
-                        </label>
-                    </div>
-                    <div class="adicional-conteudo acumulo-conteudo hidden">
-                        <div class="adicional-campo">
-                            <span class="input-symbol"><i class="fas fa-users"></i></span>
-                            <input type="number" class="input-moderno acumulo-qtd" placeholder="Qtd. funcionários" min="0" step="1" value="1">
-                        </div>
-                        <div class="adicional-valor acumulo-resultado"></div>
                     </div>
                 </div>
             </div>
@@ -2184,34 +2210,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (insResultado) insResultado.innerHTML = '';
             }
             if (insConteudo) insConteudo.classList.toggle('hidden', !(insCheck && insCheck.checked));
-            
-            // ========== ACÚMULO DE FUNÇÃO ==========
-            const acumuloCheck = adicionaisContent.querySelector('.acumulo-check');
-            const acumuloConteudo = adicionaisContent.querySelector('.acumulo-conteudo');
-            const acumuloResultado = adicionaisContent.querySelector('.acumulo-resultado');
-            if (acumuloCheck && acumuloCheck.checked) {
-                const qtdAcumulo = parseInt(adicionaisContent.querySelector('.acumulo-qtd')?.value) || 1;
-                if (qtdAcumulo > 0) {
-                    // Acúmulo de função = 20% do salário
-                    const acumuloBase = salario * 0.2;
-                    const encargosAcumulo = acumuloBase * taxaEncargos;
-                    const totalPorFuncionario = acumuloBase + encargosAcumulo;
-                    const totalAcumulo = totalPorFuncionario * qtdAcumulo;
-                    
-                    if (acumuloResultado) {
-                        acumuloResultado.innerHTML = `
-                            <span class="valor-label">Total Acúmulo (${qtdAcumulo} funcionário${qtdAcumulo > 1 ? 's' : ''})</span>
-                            <span class="valor-number">${formatarMoeda(totalAcumulo)}</span>
-                        `;
-                    }
-                    totalAdicionais += totalAcumulo;
-                } else {
-                    if (acumuloResultado) acumuloResultado.innerHTML = '';
-                }
-            } else {
-                if (acumuloResultado) acumuloResultado.innerHTML = '';
-            }
-            if (acumuloConteudo) acumuloConteudo.classList.toggle('hidden', !(acumuloCheck && acumuloCheck.checked));
             
             updateAdicionaisSummary(totalAdicionais);
             
@@ -2342,7 +2340,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             salvarRascunho();
         });
         
-        // Event listeners para os adicionais existentes
         adicionaisContent.querySelectorAll('.he-check, .an-check, .per-check, .ins-check').forEach(chk => {
             chk.addEventListener('change', () => { atualizarResultados(); salvarRascunho(); });
         });
@@ -2350,30 +2347,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             input.addEventListener('input', () => { atualizarResultados(); salvarRascunho(); });
         });
         
-        // Event listeners para Acúmulo de Função
-        const acumuloCheck = adicionaisContent.querySelector('.acumulo-check');
-        const acumuloQtd = adicionaisContent.querySelector('.acumulo-qtd');
-        
-        if (acumuloCheck) {
-            acumuloCheck.addEventListener('change', () => { 
-                atualizarResultados(); 
-                salvarRascunho(); 
-            });
-        }
-        
-        if (acumuloQtd) {
-            acumuloQtd.addEventListener('input', () => { 
-                atualizarResultados(); 
-                salvarRascunho(); 
-            });
-        }
-        
-        // Event listeners para recalcular
         item.addEventListener('recalcular', atualizarResultados);
         item.addEventListener('recalcular-despesas', atualizarResultados);
         item.addEventListener('recalcular-exames', atualizarResultados);
         
-        // Botão remover
         item.querySelector('.btn-remover').addEventListener('click', function() {
             item.remove();
             calcularTotalGeral();
@@ -2386,10 +2363,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (dadosAdicionais.noturno && adicionaisContent.querySelector('.an-check')) adicionaisContent.querySelector('.an-check').checked = true;
             if (dadosAdicionais.periculosidade && adicionaisContent.querySelector('.per-check')) adicionaisContent.querySelector('.per-check').checked = true;
             if (dadosAdicionais.insalubridade && adicionaisContent.querySelector('.ins-check')) adicionaisContent.querySelector('.ins-check').checked = true;
-            if (dadosAdicionais.acumuloFuncao && adicionaisContent.querySelector('.acumulo-check')) adicionaisContent.querySelector('.acumulo-check').checked = true;
             if (dadosAdicionais.heHoras && adicionaisContent.querySelector('.he-horas')) adicionaisContent.querySelector('.he-horas').value = dadosAdicionais.heHoras;
             if (dadosAdicionais.anHoras && adicionaisContent.querySelector('.an-horas')) adicionaisContent.querySelector('.an-horas').value = dadosAdicionais.anHoras;
-            if (dadosAdicionais.acumuloQtd && adicionaisContent.querySelector('.acumulo-qtd')) adicionaisContent.querySelector('.acumulo-qtd').value = dadosAdicionais.acumuloQtd;
         }
         
         // Preencher porcentagem de encargos
@@ -2426,13 +2401,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                     container.innerHTML = '';
                     if (propostaData.cargos && propostaData.cargos.length > 0) {
                         propostaData.cargos.forEach(c => {
+                            // Garantir que exames seja um objeto
                             let examesObj = {};
                             if (c.exames) {
                                 if (Array.isArray(c.exames)) {
+                                    // Se for array, converte para objeto
                                     c.exames.forEach(nomeExame => {
                                         examesObj[nomeExame] = true;
                                     });
                                 } else {
+                                    // Já é objeto
                                     examesObj = c.exames;
                                 }
                             }
@@ -2478,6 +2456,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     await carregarPropostaExistente();
     
+    // Botão adicionar cargo
     btnAdicionar.addEventListener('click', function() {
         const novoCargo = criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, {}, 0, []);
         container.appendChild(novoCargo);
@@ -2485,21 +2464,25 @@ document.addEventListener('DOMContentLoaded', async function() {
         salvarRascunho();
     });
     
+    // ========== TEMA CLARO/ESCURO ==========
     function initTema() {
         const temaSalvo = localStorage.getItem('tema_terceirizado');
         const btnTema = document.getElementById('btn-tema');
         const iconTema = btnTema?.querySelector('i');
         
+        // Se NÃO houver tema salvo, ou se o tema salvo for 'light', aplica o tema claro
         if (!temaSalvo || temaSalvo === 'light') {
             document.body.classList.add('light-mode');
             if (iconTema) {
                 iconTema.classList.remove('fa-moon');
                 iconTema.classList.add('fa-sun');
             }
+            // Salvar como 'light' se não houver tema salvo
             if (!temaSalvo) {
                 localStorage.setItem('tema_terceirizado', 'light');
             }
         } else if (temaSalvo === 'dark') {
+            // Apenas se o tema salvo for 'dark', aplica o tema escuro
             document.body.classList.remove('light-mode');
             if (iconTema) {
                 iconTema.classList.remove('fa-sun');
@@ -2526,6 +2509,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
+    // ========== COMPARTILHAR LINK ==========
     function initCompartilhar() {
         const btnCompartilhar = document.getElementById('btn-compartilhar');
         const modalShare = document.getElementById('modal-share');
@@ -2565,6 +2549,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
+    // ========== VERIFICAR MODO VISUALIZAÇÃO ==========
     function escapeHtml(text) {
         if (!text) return '';
         const div = document.createElement('div');
@@ -2572,6 +2557,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         return div.innerHTML;
     }
     
+    // ========== VISUALIZAÇÃO RESUMIDA PARA CLIENTE ==========
     async function capturarImagemProposta() {
         const elemento = document.querySelector('.visualizacao-resumida');
         if (!elemento) {
@@ -2579,6 +2565,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
         
+        // Mostrar indicador de carregamento
         const btnCapture = document.getElementById('btn-capturar-imagem');
         const textoOriginal = btnCapture ? btnCapture.innerHTML : '';
         if (btnCapture) {
@@ -2587,6 +2574,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         try {
+            // Clonar o elemento para não afetar o original
             const cloneElement = elemento.cloneNode(true);
             cloneElement.style.position = 'absolute';
             cloneElement.style.left = '-9999px';
@@ -2594,15 +2582,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             cloneElement.style.backgroundColor = '#ffffff';
             cloneElement.style.padding = '2rem';
             cloneElement.style.borderRadius = '16px';
+            
+            // Garantir que os estilos sejam aplicados corretamente
             cloneElement.style.width = '800px';
             cloneElement.style.maxWidth = '800px';
             cloneElement.style.margin = '0';
             
+            // Remover o botão de captura do clone para não aparecer na imagem
             const btnClone = cloneElement.querySelector('#btn-capturar-imagem');
             if (btnClone) btnClone.remove();
             
             document.body.appendChild(cloneElement);
             
+            // Usar html2canvas para gerar a imagem
             const canvas = await html2canvas(cloneElement, {
                 scale: 2,
                 backgroundColor: '#ffffff',
@@ -2611,8 +2603,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 allowTaint: false
             });
             
+            // Remover o clone
             document.body.removeChild(cloneElement);
             
+            // Criar link para download
             const link = document.createElement('a');
             const clienteNome = document.querySelector('.vis-value')?.textContent || 'proposta';
             const dataAtual = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
@@ -2624,6 +2618,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             console.error('Erro ao gerar imagem:', error);
             alert('Erro ao gerar imagem. Tente novamente.');
         } finally {
+            // Restaurar botão
             if (btnCapture) {
                 btnCapture.innerHTML = textoOriginal;
                 btnCapture.disabled = false;
@@ -2631,10 +2626,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
+    // ========== VISUALIZAÇÃO RESUMIDA PARA CLIENTE ==========
     function carregarVisualizacaoResumida(proposta) {
         const container = document.getElementById('cargos-container');
         if (!container) return;
         
+        // Usar a função formatarMoeda que já existe no escopo global
         const formatMoney = (valor) => {
             return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         };
@@ -2663,6 +2660,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </div>
         `;
         
+        // Para cada cargo, mostrar apenas valores resumidos
         let cargoIndex = 0;
         let totalGeralProposta = 0;
         
@@ -2713,6 +2711,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         container.innerHTML = html;
         
+        // Adicionar CSS específico para visualização resumida
         const styleId = 'vis-resumida-style';
         if (!document.getElementById(styleId)) {
             const style = document.createElement('style');
@@ -2891,12 +2890,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             document.head.appendChild(style);
         }
         
+        // Adicionar evento ao botão de capturar imagem
         const btnCapturar = document.getElementById('btn-capturar-imagem');
         if (btnCapturar) {
             btnCapturar.addEventListener('click', capturarImagemProposta);
         }
     }
     
+    // ========== VERIFICAR MODO VISUALIZAÇÃO ==========
     function checkVisualizacao() {
         const urlParams = new URLSearchParams(window.location.search);
         const isVisualizacao = urlParams.get('visualizacao') === 'true';
@@ -2905,12 +2906,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             const propostaId = urlParams.get('id');
             if (!propostaId) return;
             
+            // Buscar a proposta no Firebase para exibir a versão resumida
             db.collection('propostas').doc(propostaId).get()
                 .then((doc) => {
                     if (doc.exists) {
                         const proposta = doc.data();
+                        // Exibir versão resumida
                         carregarVisualizacaoResumida(proposta);
                         
+                        // Esconder elementos de edição
                         const btnAdicionar = document.getElementById('adicionar-cargo');
                         const btnSalvar = document.getElementById('btn-salvar');
                         const btnGerarPDF = document.getElementById('btn-gerar-pdf');
@@ -2926,14 +2930,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                             clienteInput.value = proposta.cliente || '';
                         }
                         
+                        // Esconder todas as seções expansíveis originais
                         document.querySelectorAll('.expandable-section, .exames-section, .despesas-section, .cargo-linha, .cargo-header, .cargo-resultados').forEach(el => {
                             if (el) el.style.display = 'none';
                         });
                         
-                        document.querySelectorAll('.btn-remover, .btn-remover-beneficio, .btn-add-beneficio, .btn-add-uniforme-custom, .btn-add-epi-custom, .btn-add-exame-custom').forEach(btn => {
+                        // Esconder botões de remover
+                        document.querySelectorAll('.btn-remover, .btn-remover-beneficio, .btn-add-beneficio').forEach(btn => {
                             if (btn) btn.style.display = 'none';
                         });
                         
+                        // Adicionar aviso de visualização
                         const aviso = document.createElement('div');
                         aviso.className = 'aviso-visualizacao';
                         aviso.innerHTML = `
@@ -2956,6 +2963,73 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
+    // ========== VERIFICAR MODO VISUALIZAÇÃO ==========
+    function checkVisualizacao() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const isVisualizacao = urlParams.get('visualizacao') === 'true';
+        
+        if (isVisualizacao) {
+            const propostaId = urlParams.get('id');
+            if (!propostaId) return;
+            
+            // Buscar a proposta no Firebase para exibir a versão resumida
+            db.collection('propostas').doc(propostaId).get()
+                .then((doc) => {
+                    if (doc.exists) {
+                        const proposta = doc.data();
+                        // Exibir versão resumida
+                        carregarVisualizacaoResumida(proposta);
+                        
+                        // Esconder elementos de edição
+                        const btnAdicionar = document.getElementById('adicionar-cargo');
+                        const btnSalvar = document.getElementById('btn-salvar');
+                        const btnGerarPDF = document.getElementById('btn-gerar-pdf');
+                        const btnCompartilhar = document.getElementById('btn-compartilhar');
+                        const clienteInput = document.getElementById('cliente-nome');
+                        
+                        if (btnAdicionar) btnAdicionar.style.display = 'none';
+                        if (btnSalvar) btnSalvar.style.display = 'none';
+                        if (btnGerarPDF) btnGerarPDF.style.display = 'none';
+                        if (btnCompartilhar) btnCompartilhar.style.display = 'none';
+                        if (clienteInput) {
+                            clienteInput.disabled = true;
+                            clienteInput.value = proposta.cliente || '';
+                        }
+                        
+                        // Esconder todas as seções expansíveis originais
+                        document.querySelectorAll('.expandable-section, .exames-section, .despesas-section, .cargo-linha, .cargo-header, .cargo-resultados').forEach(el => {
+                            if (el) el.style.display = 'none';
+                        });
+                        
+                        // Esconder botões de remover
+                        document.querySelectorAll('.btn-remover, .btn-remover-beneficio, .btn-add-beneficio').forEach(btn => {
+                            if (btn) btn.style.display = 'none';
+                        });
+                        
+                        // Adicionar aviso de visualização
+                        const aviso = document.createElement('div');
+                        aviso.className = 'aviso-visualizacao';
+                        aviso.innerHTML = `
+                            <div style="background: #c10404; color: #fff; text-align: center; padding: 0.8rem; border-radius: 8px; margin-bottom: 1rem;">
+                                <i class="fas fa-eye"></i> <strong>Modo de visualização</strong> - Versão resumida da proposta
+                            </div>
+                        `;
+                        const containerDiv = document.querySelector('.container');
+                        if (containerDiv && !containerDiv.querySelector('.aviso-visualizacao')) {
+                            containerDiv.insertBefore(aviso, containerDiv.firstChild);
+                        }
+                    } else {
+                        document.getElementById('cargos-container').innerHTML = '<p style="text-align:center;padding:2rem;">Proposta não encontrada.</p>';
+                    }
+                })
+                .catch((error) => {
+                    console.error('Erro ao carregar proposta:', error);
+                    document.getElementById('cargos-container').innerHTML = '<p style="text-align:center;padding:2rem;">Erro ao carregar proposta.</p>';
+                });
+        }
+    }
+    
+    // ========== SALVAR PROPOSTA ==========
     document.getElementById('btn-salvar').addEventListener('click', async function() {
         const vendedor = document.getElementById('vendedor-nome').textContent;
         const cliente = clienteInput.value || 'SEM CLIENTE';
@@ -2980,6 +3054,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const heHoras = parseFloat(adicionaisSection?.querySelector('.he-horas')?.value) || 0;
             const anHoras = parseFloat(adicionaisSection?.querySelector('.an-horas')?.value) || 0;
             
+            // Uniformes e EPIs (mantém igual)
             const uniformesSection = item.querySelectorAll('.expandable-section')[1];
             let uniformes = {}, epis = {};
             if (uniformesSection && uniformesSection.__getUniformesDados) {
@@ -2989,7 +3064,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             } else {
                 const uniformesBox = item.querySelector('.uniformes-box');
                 if (uniformesBox) {
-                    uniformesBox.querySelectorAll('.uniformes-lista-padrao .item-lista').forEach(lista => {
+                    uniformesBox.querySelectorAll('.item-lista').forEach(lista => {
                         const nomeItem = lista.querySelector('.item-nome')?.textContent;
                         const qtdInput = lista.querySelector('.quantidade-uniforme');
                         const depInput = lista.querySelector('.depreciacao-uniforme');
@@ -3003,7 +3078,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
                 const episBox = item.querySelector('.epis-box');
                 if (episBox) {
-                    episBox.querySelectorAll('.epis-lista-padrao .item-lista').forEach(lista => {
+                    episBox.querySelectorAll('.item-lista').forEach(lista => {
                         const nomeItem = lista.querySelector('.item-nome')?.textContent;
                         const qtdInput = lista.querySelector('.quantidade-epi');
                         const depInput = lista.querySelector('.depreciacao-epi');
@@ -3017,6 +3092,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
             
+            // Benefícios (mantém igual)
             const beneficiosSection = item.querySelectorAll('.expandable-section')[2];
             let beneficios = {};
             let beneficiosPersonalizados = [];
@@ -3048,6 +3124,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
             
+            // Segurança (mantém igual)
             const segurancaSection = item.querySelectorAll('.expandable-section')[3];
             let seguranca = {};
             if (segurancaSection && segurancaSection.__getSegurancaDados) {
@@ -3065,23 +3142,29 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
             
+            // ========== CORREÇÃO: Capturar EXAMES corretamente para o Firebase ==========
             const examesSection = item.querySelector('.exames-section');
             let exames = {};
             let treinamento = 0;
             
             if (examesSection) {
-                examesSection.querySelectorAll('.exames-lista-padrao .exame-checkbox').forEach(cb => {
+                // Capturar exames marcados
+                examesSection.querySelectorAll('.exame-checkbox').forEach(cb => {
                     if (cb.checked) {
                         exames[cb.dataset.nome] = true;
                     }
                 });
                 
+                // Capturar treinamento
                 const treinamentoInput = examesSection.querySelector('.treinamento-valor');
                 if (treinamentoInput) {
                     treinamento = parseFloat(treinamentoInput.value.replace(/\./g, '').replace(',', '.')) || 0;
                 }
             }
             
+            console.log('Exames sendo salvos no Firebase:', exames); // LOG PARA DEBUG
+            
+            // Insumos (mantém igual)
             const insumosSection = item.querySelectorAll('.expandable-section')[5];
             let insumos = {};
             if (insumosSection && insumosSection.__getInsumosDados) {
@@ -3124,7 +3207,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 beneficios,
                 beneficiosPersonalizados,
                 seguranca,
-                exames,
+                exames, // AGORA exames é um OBJETO com os nomes marcados
                 treinamento,
                 insumos,
                 despesas,
@@ -3143,6 +3226,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             totalGeral
         };
         
+        console.log('Proposta sendo salva:', proposta); // LOG PARA DEBUG
+        
         try {
             if (propostaId) {
                 await db.collection('propostas').doc(propostaId).update(proposta);
@@ -3160,6 +3245,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 
+    // ========== INICIALIZAR FUNCIONALIDADES ==========
     initTema();
     initCompartilhar();
     checkVisualizacao();
