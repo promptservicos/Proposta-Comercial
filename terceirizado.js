@@ -2248,8 +2248,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Calcular Encargos Fiscais (13,75% sobre subtotalInsumosBeneficios)
             const despesasResult = calcularDespesas(subtotalInsumosBeneficios);
             
-            // Total final da vaga = salário + encargos + adicionais (multiplicados) + insumos/benefícios + encargos fiscais + ACÚMULO
+            // Total final da vaga (JÁ MULTIPLICADO PELA QUANTIDADE)
             const totalFinalVaga = subtotalSalarioEncargos + subtotalInsumosBeneficios + despesasResult + totalAcumulo;
+            
+            // Armazenar o valor total do cargo em um atributo data
+            item.dataset.totalCargo = totalFinalVaga;
             
             // Atualizar o campo de porcentagem de encargos
             encargosPercentualInput.addEventListener('input', function(e) {
@@ -2262,6 +2265,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Valores para exibição
             const valorEncargosTotal = valorEncargosPorFuncionario * qtdTotalFuncionarios;
             const totalAdicionaisVariaveisTotal = totalAdicionaisVariaveis * qtdTotalFuncionarios;
+            const totalUniformeEpiGeral = totalUniformeEpiPorFuncionario * qtdTotalFuncionarios;
+            const totalBeneficiosGeral = totalBeneficiosPorFuncionario * qtdTotalFuncionarios;
+            const totalSegurancaGeral = totalSegurancaPorFuncionario * qtdTotalFuncionarios;
+            const totalExamesGeral = totalExamesPorFuncionario * qtdTotalFuncionarios;
+            const totalInsumosGeral = totalInsumosPorFuncionario * qtdTotalFuncionarios;
             
             let resultadosHTML = `
                 <div class="resultado-bloco">
@@ -2287,7 +2295,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             `;
             
             if (totalUniformeEpiPorFuncionario > 0) {
-                const totalUniformeEpiGeral = totalUniformeEpiPorFuncionario * qtdTotalFuncionarios;
                 resultadosHTML += `
                     <div class="resultado-bloco">
                         <span class="rotulo"><i class="fas fa-tshirt"></i> Uniformes/EPIs</span>
@@ -2296,7 +2303,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 `;
             }
             if (totalBeneficiosPorFuncionario > 0) {
-                const totalBeneficiosGeral = totalBeneficiosPorFuncionario * qtdTotalFuncionarios;
                 resultadosHTML += `
                     <div class="resultado-bloco">
                         <span class="rotulo"><i class="fas fa-gift"></i> Benefícios</span>
@@ -2305,7 +2311,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 `;
             }
             if (totalSegurancaPorFuncionario > 0) {
-                const totalSegurancaGeral = totalSegurancaPorFuncionario * qtdTotalFuncionarios;
                 resultadosHTML += `
                     <div class="resultado-bloco">
                         <span class="rotulo"><i class="fas fa-shield-alt"></i> SST + Seguro</span>
@@ -2314,7 +2319,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 `;
             }
             if (totalExamesPorFuncionario > 0) {
-                const totalExamesGeral = totalExamesPorFuncionario * qtdTotalFuncionarios;
                 resultadosHTML += `
                     <div class="resultado-bloco">
                         <span class="rotulo"><i class="fas fa-stethoscope"></i> Exames e Treinamentos</span>
@@ -2323,7 +2327,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 `;
             }
             if (totalInsumosPorFuncionario > 0) {
-                const totalInsumosGeral = totalInsumosPorFuncionario * qtdTotalFuncionarios;
                 resultadosHTML += `
                     <div class="resultado-bloco">
                         <span class="rotulo"><i class="fas fa-boxes"></i> Insumos</span>
@@ -2358,6 +2361,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </div>
             `;
             resultadosDiv.innerHTML = resultadosHTML;
+            
+            // Atualizar o total geral
             calcularTotalGeral();
         }
         
