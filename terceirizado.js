@@ -2102,7 +2102,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         item.__getDespesasDados = getDespesasDados;
         
         function atualizarResultados() {
-            const qtd = parseInt(item.querySelector('.cargo-quantidade').value) || 1;
+            const qtdTotalFuncionarios = parseInt(item.querySelector('.cargo-quantidade').value) || 1;
             const salarioInput = item.querySelector('.cargo-salario').value;
             let salario = parseFloat(salarioInput.replace(/\./g, '').replace(',', '.')) || 0;
             const valorHora = salario / HORAS_MENSAL;
@@ -2113,8 +2113,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             taxaEncargos = taxaEncargos / 100; // Converter para decimal
             
             let totalAdicionais = 0;
+            let totalAdicionaisVariaveis = 0; // Adicionais que variam por funcionário (HE, Noturno, Periculosidade, Insalubridade)
+            let totalAcumulo = 0; // Acúmulo separado
             
-            // Horas Extras
+            // Horas Extras (aplica a TODOS os funcionários)
             const heCheck = adicionaisContent.querySelector('.he-check');
             const heConteudo = adicionaisContent.querySelector('.he-conteudo');
             const heResultado = adicionaisContent.querySelector('.he-resultado');
@@ -2125,8 +2127,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const dsr = (valorHoraExtra / 25) * 5;
                     const encargosHE = (valorHoraExtra + dsr) * taxaEncargos;
                     const totalHE = valorHoraExtra + dsr + encargosHE;
-                    if (heResultado) heResultado.innerHTML = `<span class="valor-label">Total Horas Extras</span><span class="valor-number">${formatarMoeda(totalHE)}</span>`;
-                    totalAdicionais += totalHE;
+                    if (heResultado) heResultado.innerHTML = `<span class="valor-label">Total Horas Extras (por funcionário)</span><span class="valor-number">${formatarMoeda(totalHE)}</span>`;
+                    totalAdicionaisVariaveis += totalHE;
                 } else {
                     if (heResultado) heResultado.innerHTML = '';
                 }
@@ -2135,7 +2137,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             if (heConteudo) heConteudo.classList.toggle('hidden', !(heCheck && heCheck.checked));
             
-            // Adicional Noturno
+            // Adicional Noturno (aplica a TODOS os funcionários)
             const anCheck = adicionaisContent.querySelector('.an-check');
             const anConteudo = adicionaisContent.querySelector('.an-conteudo');
             const anResultado = adicionaisContent.querySelector('.an-resultado');
@@ -2145,8 +2147,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const valorAdicionalNoturno = valorHora * 0.2 * horasNoturnas;
                     const encargosAN = valorAdicionalNoturno * taxaEncargos;
                     const totalAN = valorAdicionalNoturno + encargosAN;
-                    if (anResultado) anResultado.innerHTML = `<span class="valor-label">Total Ad. Noturno</span><span class="valor-number">${formatarMoeda(totalAN)}</span>`;
-                    totalAdicionais += totalAN;
+                    if (anResultado) anResultado.innerHTML = `<span class="valor-label">Total Ad. Noturno (por funcionário)</span><span class="valor-number">${formatarMoeda(totalAN)}</span>`;
+                    totalAdicionaisVariaveis += totalAN;
                 } else {
                     if (anResultado) anResultado.innerHTML = '';
                 }
@@ -2155,7 +2157,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             if (anConteudo) anConteudo.classList.toggle('hidden', !(anCheck && anCheck.checked));
             
-            // Periculosidade
+            // Periculosidade (aplica a TODOS os funcionários)
             const perCheck = adicionaisContent.querySelector('.per-check');
             const perConteudo = adicionaisContent.querySelector('.per-conteudo');
             const perResultado = adicionaisContent.querySelector('.per-resultado');
@@ -2163,14 +2165,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const periculosidade = salario * 0.3;
                 const encargosPer = periculosidade * taxaEncargos;
                 const totalPer = periculosidade + encargosPer;
-                if (perResultado) perResultado.innerHTML = `<span class="valor-label">Total Periculosidade</span><span class="valor-number">${formatarMoeda(totalPer)}</span>`;
-                totalAdicionais += totalPer;
+                if (perResultado) perResultado.innerHTML = `<span class="valor-label">Total Periculosidade (por funcionário)</span><span class="valor-number">${formatarMoeda(totalPer)}</span>`;
+                totalAdicionaisVariaveis += totalPer;
             } else {
                 if (perResultado) perResultado.innerHTML = '';
             }
             if (perConteudo) perConteudo.classList.toggle('hidden', !(perCheck && perCheck.checked));
             
-            // Insalubridade
+            // Insalubridade (aplica a TODOS os funcionários)
             const insCheck = adicionaisContent.querySelector('.ins-check');
             const insConteudo = adicionaisContent.querySelector('.ins-conteudo');
             const insResultado = adicionaisContent.querySelector('.ins-resultado');
@@ -2178,33 +2180,33 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const insalubridade = SALARIO_MINIMO * 0.2;
                 const encargosIns = insalubridade * taxaEncargos;
                 const totalIns = insalubridade + encargosIns;
-                if (insResultado) insResultado.innerHTML = `<span class="valor-label">Total Insalubridade</span><span class="valor-number">${formatarMoeda(totalIns)}</span>`;
-                totalAdicionais += totalIns;
+                if (insResultado) insResultado.innerHTML = `<span class="valor-label">Total Insalubridade (por funcionário)</span><span class="valor-number">${formatarMoeda(totalIns)}</span>`;
+                totalAdicionaisVariaveis += totalIns;
             } else {
                 if (insResultado) insResultado.innerHTML = '';
             }
             if (insConteudo) insConteudo.classList.toggle('hidden', !(insCheck && insCheck.checked));
             
-            // ========== ACÚMULO DE FUNÇÃO ==========
+            // ========== ACÚMULO DE FUNÇÃO (calculado separadamente) ==========
             const acumuloCheck = adicionaisContent.querySelector('.acumulo-check');
             const acumuloConteudo = adicionaisContent.querySelector('.acumulo-conteudo');
             const acumuloResultado = adicionaisContent.querySelector('.acumulo-resultado');
             if (acumuloCheck && acumuloCheck.checked) {
                 const qtdAcumulo = parseInt(adicionaisContent.querySelector('.acumulo-qtd')?.value) || 1;
-                if (qtdAcumulo > 0) {
+                if (qtdAcumulo > 0 && qtdAcumulo <= qtdTotalFuncionarios) {
                     // Acúmulo de função = 20% do salário
                     const acumuloBase = salario * 0.2;
                     const encargosAcumulo = acumuloBase * taxaEncargos;
                     const totalPorFuncionario = acumuloBase + encargosAcumulo;
-                    const totalAcumulo = totalPorFuncionario * qtdAcumulo;
+                    const totalAcumuloValor = totalPorFuncionario * qtdAcumulo;
+                    totalAcumulo = totalAcumuloValor;
                     
                     if (acumuloResultado) {
                         acumuloResultado.innerHTML = `
-                            <span class="valor-label">Total Acúmulo (${qtdAcumulo} funcionário${qtdAcumulo > 1 ? 's' : ''})</span>
-                            <span class="valor-number">${formatarMoeda(totalAcumulo)}</span>
+                            <span class="valor-label">Total Acúmulo (${qtdAcumulo} de ${qtdTotalFuncionarios} funcionário${qtdAcumulo > 1 ? 's' : ''})</span>
+                            <span class="valor-number">${formatarMoeda(totalAcumuloValor)}</span>
                         `;
                     }
-                    totalAdicionais += totalAcumulo;
                 } else {
                     if (acumuloResultado) acumuloResultado.innerHTML = '';
                 }
@@ -2213,7 +2215,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             if (acumuloConteudo) acumuloConteudo.classList.toggle('hidden', !(acumuloCheck && acumuloCheck.checked));
             
-            updateAdicionaisSummary(totalAdicionais);
+            // Total de adicionais que serão multiplicados pela quantidade total de funcionários
+            totalAdicionais = totalAdicionaisVariaveis * qtdTotalFuncionarios;
+            
+            // Atualizar o resumo dos adicionais
+            updateAdicionaisSummary(totalAdicionais + totalAcumulo);
             
             // Uniformes e EPIs (já são valores mensais por causa da depreciação)
             const uniformesData = atualizarUniformesTotais();
@@ -2232,18 +2238,21 @@ document.addEventListener('DOMContentLoaded', async function() {
             const totalInsumos = calcularInsumos();
             
             // ========== CÁLCULOS TERCEIRIZADO ==========
-            // SUB TOTAL SALARIO + ENCARGOS
+            // SUB TOTAL SALARIO + ENCARGOS (por funcionário)
             const valorEncargos = salario * taxaEncargos;
-            const subtotalSalarioEncargos = salario + valorEncargos + totalAdicionais;
+            const subtotalPorFuncionario = salario + valorEncargos + totalAdicionaisVariaveis;
             
-            // SUB TOTAL DOS INSUMOS E BENEFICIOS (todos já são valores mensais)
-            const subtotalInsumosBeneficios = totalUniformeEpi + totalBeneficios + totalSeguranca + totalExames + totalInsumos;
+            // Total para todos os funcionários (sem o acúmulo ainda)
+            const subtotalSalarioEncargos = subtotalPorFuncionario * qtdTotalFuncionarios;
+            
+            // SUB TOTAL DOS INSUMOS E BENEFICIOS (multiplicado pela quantidade total de funcionários)
+            const subtotalInsumosBeneficios = (totalUniformeEpi + totalBeneficios + totalSeguranca + totalExames + totalInsumos) * qtdTotalFuncionarios;
             
             // Calcular Encargos Fiscais (13,75% sobre subtotalInsumosBeneficios)
             const despesasResult = calcularDespesas(subtotalInsumosBeneficios);
             
-            // Total final da vaga
-            const totalFinalVaga = subtotalSalarioEncargos + subtotalInsumosBeneficios + despesasResult;
+            // Total final da vaga = salário + encargos + adicionais (multiplicados) + insumos/benefícios + encargos fiscais + ACÚMULO
+            const totalFinalVaga = subtotalSalarioEncargos + subtotalInsumosBeneficios + despesasResult + totalAcumulo;
             
             // Atualizar o campo de porcentagem de encargos
             encargosPercentualInput.addEventListener('input', function(e) {
@@ -2253,17 +2262,21 @@ document.addEventListener('DOMContentLoaded', async function() {
                 salvarRascunho();
             });
             
+            // Valores para exibição
+            const valorEncargosTotal = valorEncargos * qtdTotalFuncionarios;
+            const totalAdicionaisExibir = totalAdicionais + totalAcumulo;
+            
             let resultadosHTML = `
                 <div class="resultado-bloco">
                     <span class="rotulo"><i class="fas fa-calculator"></i> Encargos (${(taxaEncargos * 100).toFixed(2)}%)</span>
-                    <span class="valor">${formatarMoeda(valorEncargos)}</span>
+                    <span class="valor">${formatarMoeda(valorEncargosTotal)}</span>
                 </div>
             `;
-            if (totalAdicionais > 0) {
+            if (totalAdicionaisExibir > 0) {
                 resultadosHTML += `
                     <div class="resultado-bloco">
                         <span class="rotulo"><i class="fas fa-plus-circle"></i> Adicionais (c/ encargos)</span>
-                        <span class="valor">${formatarMoeda(totalAdicionais)}</span>
+                        <span class="valor">${formatarMoeda(totalAdicionaisExibir)}</span>
                     </div>
                 `;
             }
@@ -2275,42 +2288,47 @@ document.addEventListener('DOMContentLoaded', async function() {
             `;
             
             if (totalUniformeEpi > 0) {
+                const totalUniformeEpiGeral = totalUniformeEpi * qtdTotalFuncionarios;
                 resultadosHTML += `
                     <div class="resultado-bloco">
                         <span class="rotulo"><i class="fas fa-tshirt"></i> Uniformes/EPIs</span>
-                        <span class="valor">${formatarMoeda(totalUniformeEpi)}</span>
+                        <span class="valor">${formatarMoeda(totalUniformeEpiGeral)}</span>
                     </div>
                 `;
             }
             if (totalBeneficios > 0) {
+                const totalBeneficiosGeral = totalBeneficios * qtdTotalFuncionarios;
                 resultadosHTML += `
                     <div class="resultado-bloco">
                         <span class="rotulo"><i class="fas fa-gift"></i> Benefícios</span>
-                        <span class="valor">${formatarMoeda(totalBeneficios)}</span>
+                        <span class="valor">${formatarMoeda(totalBeneficiosGeral)}</span>
                     </div>
                 `;
             }
             if (totalSeguranca > 0) {
+                const totalSegurancaGeral = totalSeguranca * qtdTotalFuncionarios;
                 resultadosHTML += `
                     <div class="resultado-bloco">
                         <span class="rotulo"><i class="fas fa-shield-alt"></i> SST + Seguro</span>
-                        <span class="valor">${formatarMoeda(totalSeguranca)}</span>
+                        <span class="valor">${formatarMoeda(totalSegurancaGeral)}</span>
                     </div>
                 `;
             }
             if (totalExames > 0) {
+                const totalExamesGeral = totalExames * qtdTotalFuncionarios;
                 resultadosHTML += `
                     <div class="resultado-bloco">
                         <span class="rotulo"><i class="fas fa-stethoscope"></i> Exames e Treinamentos</span>
-                        <span class="valor">${formatarMoeda(totalExames)}</span>
+                        <span class="valor">${formatarMoeda(totalExamesGeral)}</span>
                     </div>
                 `;
             }
             if (totalInsumos > 0) {
+                const totalInsumosGeral = totalInsumos * qtdTotalFuncionarios;
                 resultadosHTML += `
                     <div class="resultado-bloco">
                         <span class="rotulo"><i class="fas fa-boxes"></i> Insumos</span>
-                        <span class="valor">${formatarMoeda(totalInsumos)}</span>
+                        <span class="valor">${formatarMoeda(totalInsumosGeral)}</span>
                     </div>
                 `;
             }
@@ -2323,6 +2341,18 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <span class="rotulo"><i class="fas fa-chart-line"></i> Encargos Fiscais (Benefícios)</span>
                     <span class="valor">${formatarMoeda(despesasResult)}</span>
                 </div>
+            `;
+            
+            if (totalAcumulo > 0) {
+                resultadosHTML += `
+                    <div class="resultado-bloco">
+                        <span class="rotulo"><i class="fas fa-briefcase"></i> Acúmulo de Função</span>
+                        <span class="valor">${formatarMoeda(totalAcumulo)}</span>
+                    </div>
+                `;
+            }
+            
+            resultadosHTML += `
                 <div class="resultado-bloco total-prestacao">
                     <span class="rotulo"><i class="fas fa-calculator"></i> Total da vaga</span>
                     <span class="valor" style="color: #c10404; font-size: 1.2rem;">${formatarMoeda(totalFinalVaga)}</span>
