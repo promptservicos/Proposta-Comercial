@@ -2149,7 +2149,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         item.__getDespesasDados = getDespesasDados;
         
         function atualizarResultados() {
-            const qtd = parseInt(item.querySelector('.cargo-quantidade').value) || 1;
+            // Quantidade TOTAL de funcionários no cargo (usada para uniformes, benefícios, etc.)
+            const qtdTotalFuncionarios = parseInt(item.querySelector('.cargo-quantidade').value) || 1;
             const salarioInput = item.querySelector('.cargo-salario').value;
             let salario = parseFloat(salarioInput.replace(/\./g, '').replace(',', '.')) || 0;
             const valorHora = salario / HORAS_MENSAL;
@@ -2240,6 +2241,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const acumuloQuantidade = adicionaisContent.querySelector('.acumulo-quantidade');
             
             if (acumuloCheck && acumuloCheck.checked) {
+                // IMPORTANTE: Usar a quantidade ESPECÍFICA do acúmulo, NÃO a quantidade total do cargo
                 const qtdAcumulo = parseInt(acumuloQuantidade?.value) || 0;
                 
                 if (qtdAcumulo > 0) {
@@ -2249,6 +2251,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const valorPorFuncionario = valorBaseAcumulo + encargosAcumulo;
                     
                     // Total do adicional = Valor por funcionário × quantidade de funcionários com acúmulo
+                    // NÃO multiplica pela quantidade total do cargo!
                     totalAcumulo = valorPorFuncionario * qtdAcumulo;
                     
                     if (acumuloResultado) {
@@ -2259,9 +2262,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 } else {
                     if (acumuloResultado) acumuloResultado.innerHTML = '';
+                    totalAcumulo = 0;
                 }
             } else {
                 if (acumuloResultado) acumuloResultado.innerHTML = '';
+                totalAcumulo = 0;
             }
             
             // Mostrar/esconder o conteúdo do acúmulo baseado no checkbox
@@ -2272,14 +2277,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             updateAdicionaisSummary(totalAdicionais);
             
             // ========== UNIFORMES E EPIS ==========
-            // Chamar a função para atualizar e obter os valores
             let totalUniformeEpi = 0;
             if (typeof atualizarUniformesTotais === 'function') {
                 const uniformesData = atualizarUniformesTotais();
                 totalUniformeEpi = uniformesData?.totalGeral || 0;
-            } else {
-                // Fallback: calcular manualmente se a função não existir
-                totalUniformeEpi = 0;
             }
             
             // ========== BENEFÍCIOS ==========
@@ -2409,7 +2410,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             calcularTotalGeral();
         }
         
-        // Event listeners
+        // ========== EVENT LISTENERS ==========
+        
+        // Event listeners para campos básicos
         item.querySelector('.cargo-nome').addEventListener('input', () => { atualizarResultados(); salvarRascunho(); });
         item.querySelector('.cargo-quantidade').addEventListener('input', () => { atualizarResultados(); salvarRascunho(); });
         item.querySelector('.cargo-salario').addEventListener('input', function(e) {
@@ -2419,6 +2422,18 @@ document.addEventListener('DOMContentLoaded', async function() {
             salvarRascunho();
         });
         
+        // Event listeners para encargos
+        const encargosInput = item.querySelector('.encargos-percentual');
+        if (encargosInput) {
+            encargosInput.addEventListener('input', function(e) {
+                let valor = e.target.value.replace(/\D/g, '');
+                e.target.value = valor ? (parseInt(valor) / 100).toFixed(2).replace('.', ',') : '';
+                atualizarResultados();
+                salvarRascunho();
+            });
+        }
+        
+        // Event listeners para adicionais existentes
         adicionaisContent.querySelectorAll('.he-check, .an-check, .per-check, .ins-check').forEach(chk => {
             chk.addEventListener('change', () => { atualizarResultados(); salvarRascunho(); });
         });
@@ -2426,35 +2441,78 @@ document.addEventListener('DOMContentLoaded', async function() {
             input.addEventListener('input', () => { atualizarResultados(); salvarRascunho(); });
         });
         
+        // ========== NOVOS EVENT LISTENERS PARA ACÚMULO DE FUNÇÃO ==========
+        const acumuloCheck = adicionaisContent.querySelector('.acumulo-check');
+        const acumuloQuantidade = adicionaisContent.querySelector('.acumulo-quantidade');
+        
+        if (acumuloCheck) {
+            acumuloCheck.addEventListener('change', () => { 
+                atualizarResultados(); 
+                salvarRascunho(); 
+            });
+        }
+        
+        if (acumuloQuantidade) {
+            acumuloQuantidade.addEventListener('input', () => { 
+                atualizarResultados(); 
+                salvarRascunho(); 
+            });
+        }
+        
+        // Event listeners para eventos personalizados
         item.addEventListener('recalcular', atualizarResultados);
         item.addEventListener('recalcular-despesas', atualizarResultados);
         item.addEventListener('recalcular-exames', atualizarResultados);
         
+        // Botão remover cargo
         item.querySelector('.btn-remover').addEventListener('click', function() {
             item.remove();
             calcularTotalGeral();
             salvarRascunho();
         });
         
-        // Preencher dados adicionais se existirem
+        // ========== PREENCHER DADOS EXISTENTES ==========
+        
+        // Preencher dados adicionais existentes
         if (dadosAdicionais) {
-            if (dadosAdicionais.horasExtras && adicionaisContent.querySelector('.he-check')) adicionaisContent.querySelector('.he-check').checked = true;
-            if (dadosAdicionais.noturno && adicionaisContent.querySelector('.an-check')) adicionaisContent.querySelector('.an-check').checked = true;
-            if (dadosAdicionais.periculosidade && adicionaisContent.querySelector('.per-check')) adicionaisContent.querySelector('.per-check').checked = true;
-            if (dadosAdicionais.insalubridade && adicionaisContent.querySelector('.ins-check')) adicionaisContent.querySelector('.ins-check').checked = true;
-            if (dadosAdicionais.heHoras && adicionaisContent.querySelector('.he-horas')) adicionaisContent.querySelector('.he-horas').value = dadosAdicionais.heHoras;
-            if (dadosAdicionais.anHoras && adicionaisContent.querySelector('.an-horas')) adicionaisContent.querySelector('.an-horas').value = dadosAdicionais.anHoras;
+            if (dadosAdicionais.horasExtras && adicionaisContent.querySelector('.he-check')) 
+                adicionaisContent.querySelector('.he-check').checked = true;
+            if (dadosAdicionais.noturno && adicionaisContent.querySelector('.an-check')) 
+                adicionaisContent.querySelector('.an-check').checked = true;
+            if (dadosAdicionais.periculosidade && adicionaisContent.querySelector('.per-check')) 
+                adicionaisContent.querySelector('.per-check').checked = true;
+            if (dadosAdicionais.insalubridade && adicionaisContent.querySelector('.ins-check')) 
+                adicionaisContent.querySelector('.ins-check').checked = true;
+            if (dadosAdicionais.heHoras && adicionaisContent.querySelector('.he-horas')) 
+                adicionaisContent.querySelector('.he-horas').value = dadosAdicionais.heHoras;
+            if (dadosAdicionais.anHoras && adicionaisContent.querySelector('.an-horas')) 
+                adicionaisContent.querySelector('.an-horas').value = dadosAdicionais.anHoras;
+            
+            // ========== PREENCHER DADOS DO ACÚMULO ==========
+            if (dadosAdicionais.acumulo !== undefined && adicionaisContent.querySelector('.acumulo-check')) {
+                adicionaisContent.querySelector('.acumulo-check').checked = dadosAdicionais.acumulo;
+                // Forçar atualização do conteúdo
+                const acumuloConteudo = adicionaisContent.querySelector('.acumulo-conteudo');
+                if (acumuloConteudo) {
+                    acumuloConteudo.classList.toggle('hidden', !dadosAdicionais.acumulo);
+                }
+            }
+            if (dadosAdicionais.acumuloQuantidade !== undefined && adicionaisContent.querySelector('.acumulo-quantidade')) {
+                adicionaisContent.querySelector('.acumulo-quantidade').value = dadosAdicionais.acumuloQuantidade;
+            }
         }
         
         // Preencher porcentagem de encargos
         if (dadosAdicionais && dadosAdicionais.encargosPercentual) {
-            const encargosInput = item.querySelector('.encargos-percentual');
-            if (encargosInput) {
-                encargosInput.value = dadosAdicionais.encargosPercentual.toFixed(2).replace('.', ',');
+            const encargosInputElem = item.querySelector('.encargos-percentual');
+            if (encargosInputElem) {
+                encargosInputElem.value = dadosAdicionais.encargosPercentual.toFixed(2).replace('.', ',');
             }
         }
         
+        // Executar atualização inicial
         atualizarResultados();
+        
         return item;
     }
     
