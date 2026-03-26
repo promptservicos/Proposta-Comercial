@@ -2161,7 +2161,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             taxaEncargos = taxaEncargos / 100; // Converter para decimal
             
             let totalAdicionais = 0;
-            let totalAcumulo = 0;
+            let totalAcumulo = 0; // Valor do acúmulo (independente, NÃO multiplica pela quantidade de vagas)
             
             // ========== HORAS EXTRAS ==========
             const heCheck = adicionaisContent.querySelector('.he-check');
@@ -2241,7 +2241,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const acumuloQuantidade = adicionaisContent.querySelector('.acumulo-quantidade');
             
             if (acumuloCheck && acumuloCheck.checked) {
-                // IMPORTANTE: Usar a quantidade ESPECÍFICA do acúmulo, NÃO a quantidade total do cargo
+                // Quantidade ESPECÍFICA de funcionários que terão acúmulo
                 const qtdAcumulo = parseInt(acumuloQuantidade?.value) || 0;
                 
                 if (qtdAcumulo > 0) {
@@ -2250,8 +2250,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const encargosAcumulo = valorBaseAcumulo * taxaEncargos;
                     const valorPorFuncionario = valorBaseAcumulo + encargosAcumulo;
                     
-                    // Total do adicional = Valor por funcionário × quantidade de funcionários com acúmulo
-                    // NÃO multiplica pela quantidade total do cargo!
+                    // Total do acúmulo = Valor por funcionário × quantidade de funcionários com acúmulo
+                    // IMPORTANTE: Este valor NÃO será multiplicado pela quantidade total de vagas
                     totalAcumulo = valorPorFuncionario * qtdAcumulo;
                     
                     if (acumuloResultado) {
@@ -2296,7 +2296,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const totalInsumos = typeof calcularInsumos === 'function' ? calcularInsumos() : 0;
             
             // ========== CÁLCULOS TERCEIRIZADO ==========
-            // SUB TOTAL SALARIO + ENCARGOS (sem o acúmulo)
+            // SUB TOTAL SALARIO + ENCARGOS (NÃO inclui o acúmulo)
             const valorEncargos = salario * taxaEncargos;
             const subtotalSalarioEncargos = salario + valorEncargos + totalAdicionais;
             
@@ -2309,8 +2309,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                 despesasResult = calcularDespesas(subtotalInsumosBeneficios);
             }
             
-            // Total final da vaga (incluindo o acúmulo)
-            const totalFinalVaga = subtotalSalarioEncargos + subtotalInsumosBeneficios + despesasResult + totalAcumulo;
+            // ========== CÁLCULO DO TOTAL POR VAGA (SEM ACÚMULO) ==========
+            // Este é o valor base da vaga, sem o acúmulo
+            const totalPorVaga = subtotalSalarioEncargos + subtotalInsumosBeneficios + despesasResult;
+            
+            // ========== CÁLCULO DO TOTAL COM MULTIPLICAÇÃO PELA QUANTIDADE DE VAGAS ==========
+            // Multiplica o valor por vaga pela quantidade total de funcionários
+            const totalVagasMultiplicado = totalPorVaga * qtdTotalFuncionarios;
+            
+            // ========== TOTAL FINAL DA VAGA (COM ACÚMULO) ==========
+            // O acúmulo é somado APÓS a multiplicação das vagas, e NÃO é multiplicado
+            const totalFinalVaga = totalVagasMultiplicado + totalAcumulo;
             
             // ========== ATUALIZAR RESULTADOS NA TELA ==========
             let resultadosHTML = `
@@ -2325,16 +2334,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <div class="resultado-bloco">
                         <span class="rotulo"><i class="fas fa-plus-circle"></i> Adicionais (c/ encargos)</span>
                         <span class="valor">${formatarMoeda(totalAdicionais)}</span>
-                    </div>
-                `;
-            }
-            
-            // Mostrar acúmulo se houver
-            if (totalAcumulo > 0) {
-                resultadosHTML += `
-                    <div class="resultado-bloco">
-                        <span class="rotulo"><i class="fas fa-chart-line"></i> Acúmulo de Função</span>
-                        <span class="valor">${formatarMoeda(totalAcumulo)}</span>
                     </div>
                 `;
             }
@@ -2400,8 +2399,35 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <span class="rotulo"><i class="fas fa-chart-line"></i> Encargos Fiscais (Benefícios)</span>
                     <span class="valor">${formatarMoeda(despesasResult)}</span>
                 </div>
+                <div class="resultado-bloco">
+                    <span class="rotulo"><i class="fas fa-calculator"></i> Valor por vaga (${qtdTotalFuncionarios} vaga${qtdTotalFuncionarios > 1 ? 's' : ''})</span>
+                    <span class="valor">${formatarMoeda(totalPorVaga)}</span>
+                </div>
+            `;
+            
+            // Mostrar acúmulo se houver (como valor separado)
+            if (totalAcumulo > 0) {
+                resultadosHTML += `
+                    <div class="resultado-bloco">
+                        <span class="rotulo"><i class="fas fa-chart-line"></i> Acúmulo de Função</span>
+                        <span class="valor">${formatarMoeda(totalAcumulo)}</span>
+                    </div>
+                `;
+            }
+            
+            // Mostrar total das vagas multiplicado
+            if (qtdTotalFuncionarios > 1) {
+                resultadosHTML += `
+                    <div class="resultado-bloco">
+                        <span class="rotulo"><i class="fas fa-times"></i> Total (${qtdTotalFuncionarios} vaga${qtdTotalFuncionarios > 1 ? 's' : ''})</span>
+                        <span class="valor">${formatarMoeda(totalVagasMultiplicado)}</span>
+                    </div>
+                `;
+            }
+            
+            resultadosHTML += `
                 <div class="resultado-bloco total-prestacao">
-                    <span class="rotulo"><i class="fas fa-calculator"></i> Total da vaga</span>
+                    <span class="rotulo"><i class="fas fa-calculator"></i> TOTAL FINAL DA VAGA</span>
                     <span class="valor" style="color: #c10404; font-size: 1.2rem;">${formatarMoeda(totalFinalVaga)}</span>
                 </div>
             `;
