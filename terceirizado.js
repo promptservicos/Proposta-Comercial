@@ -161,21 +161,23 @@ document.addEventListener('DOMContentLoaded', async function() {
                         noturno: item.querySelector('.an-check')?.checked || false,
                         periculosidade: item.querySelector('.per-check')?.checked || false,
                         insalubridade: item.querySelector('.ins-check')?.checked || false,
+                        acumuloFuncao: item.querySelector('.acumulo-check')?.checked || false,
                         heHoras: item.querySelector('.he-horas')?.value || 0,
-                        anHoras: item.querySelector('.an-horas')?.value || 0
+                        anHoras: item.querySelector('.an-horas')?.value || 0,
+                        acumuloQtd: item.querySelector('.acumulo-qtd')?.value || 0
                     },
                     uniformes: {},
                     epis: {},
                     beneficios: {},
                     beneficiosPersonalizados: [],
                     seguranca: {},
-                    exames: {}, // OBJETO, não array!
+                    exames: {},
                     insumos: {},
                     treinamento: 0
                 };
                 
-                // Capturar uniformes
-                item.querySelectorAll('.uniformes-box .item-lista').forEach(lista => {
+                // ========== CAPTURAR UNIFORMES (PADRÃO) ==========
+                item.querySelectorAll('.uniformes-lista-padrao .item-lista').forEach(lista => {
                     const nome = lista.querySelector('.item-nome')?.textContent;
                     const qtdInput = lista.querySelector('.quantidade-uniforme');
                     const depInput = lista.querySelector('.depreciacao-uniforme');
@@ -187,8 +189,30 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 });
                 
-                // Capturar EPIs
-                item.querySelectorAll('.epis-box .item-lista').forEach(lista => {
+                // ========== CAPTURAR UNIFORMES PERSONALIZADOS ==========
+                item.querySelectorAll('.uniformes-custom-grid .item-custom').forEach(custom => {
+                    const nome = custom.querySelector('.item-custom-nome')?.value;
+                    const precoInput = custom.querySelector('.item-custom-preco');
+                    const qtdInput = custom.querySelector('.item-custom-quantidade');
+                    const depInput = custom.querySelector('.item-custom-depreciacao');
+                    if (nome && nome.trim() !== '') {
+                        const preco = parseFloat(precoInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
+                        const qtd = parseInt(qtdInput?.value) || 0;
+                        const depreciacao = parseInt(depInput?.value) || 1;
+                        if (qtd > 0 && preco > 0) {
+                            if (!cargo.uniformes.custom) cargo.uniformes.custom = [];
+                            cargo.uniformes.custom.push({
+                                nome: nome,
+                                preco: preco,
+                                quantidade: qtd,
+                                depreciacao: depreciacao
+                            });
+                        }
+                    }
+                });
+                
+                // ========== CAPTURAR EPIs (PADRÃO) ==========
+                item.querySelectorAll('.epis-lista-padrao .item-lista').forEach(lista => {
                     const nome = lista.querySelector('.item-nome')?.textContent;
                     const qtdInput = lista.querySelector('.quantidade-epi');
                     const depInput = lista.querySelector('.depreciacao-epi');
@@ -200,7 +224,29 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 });
                 
-                // Capturar benefícios fixos
+                // ========== CAPTURAR EPIs PERSONALIZADOS ==========
+                item.querySelectorAll('.epis-custom-grid .item-custom').forEach(custom => {
+                    const nome = custom.querySelector('.item-custom-nome')?.value;
+                    const precoInput = custom.querySelector('.item-custom-preco');
+                    const qtdInput = custom.querySelector('.item-custom-quantidade');
+                    const depInput = custom.querySelector('.item-custom-depreciacao');
+                    if (nome && nome.trim() !== '') {
+                        const preco = parseFloat(precoInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
+                        const qtd = parseInt(qtdInput?.value) || 0;
+                        const depreciacao = parseInt(depInput?.value) || 1;
+                        if (qtd > 0 && preco > 0) {
+                            if (!cargo.epis.custom) cargo.epis.custom = [];
+                            cargo.epis.custom.push({
+                                nome: nome,
+                                preco: preco,
+                                quantidade: qtd,
+                                depreciacao: depreciacao
+                            });
+                        }
+                    }
+                });
+                
+                // ========== CAPTURAR BENEFÍCIOS FIXOS ==========
                 item.querySelectorAll('.beneficio-fixo-card').forEach(card => {
                     const campo = card.querySelector('.beneficio-valor')?.dataset.campo;
                     const valorInput = card.querySelector('.beneficio-valor');
@@ -214,7 +260,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 });
                 
-                // Capturar benefícios personalizados
+                // ========== CAPTURAR BENEFÍCIOS PERSONALIZADOS ==========
                 item.querySelectorAll('.beneficio-custom-card').forEach((card, idx) => {
                     const nomeInput = card.querySelector('.beneficio-custom-nome');
                     const valorInput = card.querySelector('.beneficio-custom-valor');
@@ -227,7 +273,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 });
                 
-                // Capturar SST e Seguro
+                // ========== CAPTURAR SST E SEGURO ==========
                 item.querySelectorAll('.seguranca-item').forEach(card => {
                     const campo = card.querySelector('.seguranca-valor')?.dataset.campo;
                     const valorInput = card.querySelector('.seguranca-valor');
@@ -241,13 +287,32 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 });
                 
-                // ========== CAPTURAR EXAMES CORRETAMENTE ==========
+                // ========== CAPTURAR EXAMES (PADRÃO) ==========
                 const examesSection = item.querySelector('.exames-section');
                 if (examesSection) {
-                    // Capturar exames marcados como OBJETO
-                    examesSection.querySelectorAll('.exame-checkbox').forEach(cb => {
+                    // Capturar exames padrão marcados
+                    examesSection.querySelectorAll('.exames-lista-padrao .exame-checkbox').forEach(cb => {
                         if (cb.checked) {
                             cargo.exames[cb.dataset.nome] = true;
+                        }
+                    });
+                    
+                    // ========== CAPTURAR EXAMES PERSONALIZADOS ==========
+                    examesSection.querySelectorAll('.exames-custom-grid .exame-custom-item').forEach(custom => {
+                        const nome = custom.querySelector('.exame-custom-nome')?.value;
+                        const precoInput = custom.querySelector('.exame-custom-preco');
+                        const checkbox = custom.querySelector('.exame-custom-checkbox');
+                        if (nome && nome.trim() !== '') {
+                            const preco = parseFloat(precoInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
+                            const checked = checkbox?.checked || false;
+                            if (checked) {
+                                if (!cargo.exames.custom) cargo.exames.custom = [];
+                                cargo.exames.custom.push({
+                                    nome: nome,
+                                    preco: preco,
+                                    checked: checked
+                                });
+                            }
                         }
                     });
                     
@@ -258,7 +323,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 }
                 
-                // Capturar insumos
+                // ========== CAPTURAR INSUMOS ==========
                 item.querySelectorAll('.insumo-card').forEach(card => {
                     const campo = card.querySelector('.insumo-valor')?.dataset.campo;
                     const valorInput = card.querySelector('.insumo-valor');
@@ -290,11 +355,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (dadosRascunho.cargos && dadosRascunho.cargos.length > 0) {
                     container.innerHTML = '';
                     dadosRascunho.cargos.forEach(c => {
-                        // Os exames já são um objeto, usa direto
                         const examesObj = c.exames || {};
-                        
-                        console.log('Carregando exames:', examesObj); // Debug
-                        
                         container.appendChild(criarCargoItem(
                             c.nome,
                             c.quantidade,
@@ -304,7 +365,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                             c.epis || {},
                             c.beneficios || {},
                             c.seguranca || {},
-                            examesObj, // Passa o objeto diretamente
+                            examesObj,
                             c.insumos || {},
                             { encargos_fiscais: { porcentagem: 13.75 } },
                             c.treinamento || 0,
@@ -336,7 +397,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             <div class="section-summary">
                 <span class="summary-label">Subtotal:</span>
                 <span class="summary-value">R$ 0,00</span>
-                <i class="fas fa-chevron-down section-toggle"></i>  <!-- Mudado: sempre começa com chevron-down -->
+                <i class="fas fa-chevron-down section-toggle"></i>
             </div>
         `;
         
@@ -347,15 +408,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         section.appendChild(header);
         section.appendChild(content);
         
-        let isExpanded = !iniciarRetraido;  // Se iniciar retraído, isExpanded = false
+        let isExpanded = !iniciarRetraido;
         
         if (iniciarRetraido) {
             content.classList.add('collapsed');
-            // Quando fechado (retraído), seta pra BAIXO (chevron-down)
             header.querySelector('.section-toggle').classList.remove('fa-chevron-up');
             header.querySelector('.section-toggle').classList.add('fa-chevron-down');
         } else {
-            // Quando aberto, seta pra CIMA (chevron-up)
             header.querySelector('.section-toggle').classList.remove('fa-chevron-down');
             header.querySelector('.section-toggle').classList.add('fa-chevron-up');
         }
@@ -365,12 +424,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             isExpanded = !isExpanded;
             if (isExpanded) {
                 content.classList.remove('collapsed');
-                // ABERTO: seta pra CIMA
                 header.querySelector('.section-toggle').classList.remove('fa-chevron-down');
                 header.querySelector('.section-toggle').classList.add('fa-chevron-up');
             } else {
                 content.classList.add('collapsed');
-                // FECHADO: seta pra BAIXO
                 header.querySelector('.section-toggle').classList.remove('fa-chevron-up');
                 header.querySelector('.section-toggle').classList.add('fa-chevron-down');
             }
@@ -430,11 +487,21 @@ document.addEventListener('DOMContentLoaded', async function() {
         depreciacaoInput.addEventListener('input', atualizar);
         atualizar();
         
-        return { div, atualizar, getQuantidade: () => parseInt(quantidadeInput.value) || 0, getDepreciacao: () => parseInt(depreciacaoInput.value) || 1, getMensal: () => {
-            const qtd = parseInt(quantidadeInput.value) || 0;
-            const depreciacao = parseInt(depreciacaoInput.value) || 1;
-            return (qtd * item.preco) / depreciacao;
-        } };
+        return { 
+            div, 
+            atualizar, 
+            getQuantidade: () => parseInt(quantidadeInput.value) || 0, 
+            getDepreciacao: () => parseInt(depreciacaoInput.value) || 1, 
+            getMensal: () => {
+                const qtd = parseInt(quantidadeInput.value) || 0;
+                const depreciacao = parseInt(depreciacaoInput.value) || 1;
+                return (qtd * item.preco) / depreciacao;
+            },
+            getTotal: () => {
+                const qtd = parseInt(quantidadeInput.value) || 0;
+                return qtd * item.preco;
+            }
+        };
     }
 
     function criarUniformesEpisSection(cargoItem, dadosUniformes = {}, dadosEpis = {}) {
@@ -464,16 +531,40 @@ document.addEventListener('DOMContentLoaded', async function() {
                         <h4><i class="fas fa-shirt"></i> Uniformes</h4>
                         <i class="fas fa-chevron-down"></i>
                     </div>
-                    <div class="dropdown-menu uniformes-menu"></div>
-                    <div class="uniformes-total">Total Mensal Uniformes: <span>R$ 0,00</span></div>
+                    <div class="dropdown-menu uniformes-menu">
+                        <div class="uniformes-lista-padrao"></div>
+                        <div class="uniformes-custom-header" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid rgba(193,4,4,0.3);">
+                            <h5 style="color: #c10404; margin: 0.5rem 0 0.5rem 0; font-size: 0.8rem;">Itens Personalizados</h5>
+                            <div class="uniformes-custom-grid"></div>
+                            <button type="button" class="btn-add-uniforme-custom" style="background: transparent; border: 1px dashed #c10404; color: #c10404; padding: 0.3rem; border-radius: 20px; width: 100%; margin-top: 0.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem; font-size: 0.8rem;">
+                                <i class="fas fa-plus-circle"></i> Adicionar Uniforme Personalizado
+                            </button>
+                        </div>
+                    </div>
+                    <div class="uniformes-total">
+                        <div>Total Mensal Uniformes: <span>R$ 0,00</span></div>
+                        <div class="uniformes-total-geral" style="font-size: 0.8rem; color: #c10404; margin-top: 0.25rem;">Total para ${cargoItem ? (cargoItem.querySelector('.cargo-quantidade')?.value || 1) : 1} funcionário(s): <strong>R$ 0,00</strong></div>
+                    </div>
                 </div>
                 <div class="epis-box">
                     <div class="box-header">
                         <h4><i class="fas fa-hard-hat"></i> EPIs</h4>
                         <i class="fas fa-chevron-down"></i>
                     </div>
-                    <div class="dropdown-menu epis-menu"></div>
-                    <div class="epis-total">Total Mensal EPIs: <span>R$ 0,00</span></div>
+                    <div class="dropdown-menu epis-menu">
+                        <div class="epis-lista-padrao"></div>
+                        <div class="epis-custom-header" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid rgba(193,4,4,0.3);">
+                            <h5 style="color: #c10404; margin: 0.5rem 0 0.5rem 0; font-size: 0.8rem;">Itens Personalizados</h5>
+                            <div class="epis-custom-grid"></div>
+                            <button type="button" class="btn-add-epi-custom" style="background: transparent; border: 1px dashed #c10404; color: #c10404; padding: 0.3rem; border-radius: 20px; width: 100%; margin-top: 0.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem; font-size: 0.8rem;">
+                                <i class="fas fa-plus-circle"></i> Adicionar EPI Personalizado
+                            </button>
+                        </div>
+                    </div>
+                    <div class="epis-total">
+                        <div>Total Mensal EPIs: <span>R$ 0,00</span></div>
+                        <div class="epis-total-geral" style="font-size: 0.8rem; color: #c10404; margin-top: 0.25rem;">Total para ${cargoItem ? (cargoItem.querySelector('.cargo-quantidade')?.value || 1) : 1} funcionário(s): <strong>R$ 0,00</strong></div>
+                    </div>
                 </div>
             </div>
         `;
@@ -483,7 +574,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         let isExpanded = false;
         content.classList.add('collapsed');
-        // Quando fechado, seta pra BAIXO
         header.querySelector('.section-toggle').classList.remove('fa-chevron-up');
         header.querySelector('.section-toggle').classList.add('fa-chevron-down');
         
@@ -492,12 +582,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             isExpanded = !isExpanded;
             if (isExpanded) {
                 content.classList.remove('collapsed');
-                // ABERTO: seta pra CIMA
                 header.querySelector('.section-toggle').classList.remove('fa-chevron-down');
                 header.querySelector('.section-toggle').classList.add('fa-chevron-up');
             } else {
                 content.classList.add('collapsed');
-                // FECHADO: seta pra BAIXO
                 header.querySelector('.section-toggle').classList.remove('fa-chevron-up');
                 header.querySelector('.section-toggle').classList.add('fa-chevron-down');
             }
@@ -507,14 +595,167 @@ document.addEventListener('DOMContentLoaded', async function() {
         const episBox = content.querySelector('.epis-box');
         const uniformesMenu = content.querySelector('.uniformes-menu');
         const episMenu = content.querySelector('.epis-menu');
+        const uniformesListaPadrao = content.querySelector('.uniformes-lista-padrao');
+        const episListaPadrao = content.querySelector('.epis-lista-padrao');
         const uniformesTotalSpan = content.querySelector('.uniformes-total span');
         const episTotalSpan = content.querySelector('.epis-total span');
+        const uniformesTotalGeralSpan = content.querySelector('.uniformes-total-geral strong');
+        const episTotalGeralSpan = content.querySelector('.epis-total-geral strong');
+        const uniformesCustomGrid = content.querySelector('.uniformes-custom-grid');
+        const episCustomGrid = content.querySelector('.epis-custom-grid');
+        const btnAddUniformeCustom = content.querySelector('.btn-add-uniforme-custom');
+        const btnAddEpiCustom = content.querySelector('.btn-add-epi-custom');
         
         const uniformesItems = [];
         const episItems = [];
+        const uniformesCustomItems = [];
+        const episCustomItems = [];
         
+        function criarItemPersonalizado(tipo, itemData = null) {
+            const div = document.createElement('div');
+            div.className = 'item-custom';
+            div.style.cssText = 'background: linear-gradient(135deg, #141414 0%, #0d0d0d 100%); border: 1px solid #2a2a2a; border-radius: 16px; padding: 0.6rem; margin-bottom: 0.6rem;';
+            
+            const nome = itemData?.nome || '';
+            const preco = itemData?.preco || 0;
+            const quantidade = itemData?.quantidade || 0;
+            const depreciacao = itemData?.depreciacao || 1;
+            
+            div.innerHTML = `
+                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                    <input type="text" class="item-custom-nome" placeholder="Nome do item" value="${nome}" style="flex: 2; min-width: 120px; background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%); border: 1px solid #2c2c2c; border-radius: 30px; padding: 0.4rem 0.8rem; color: #fff; font-size: 0.85rem;">
+                    <div class="item-input" style="display: flex; align-items: center; gap: 0.3rem;">
+                        <input type="text" class="item-custom-preco" placeholder="Preço" value="${preco.toFixed(2).replace('.', ',')}" style="width: 80px; background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%); border: 1px solid #2c2c2c; border-radius: 30px; padding: 0.4rem 0.5rem; color: #fff; text-align: center;">
+                        <span>R$</span>
+                    </div>
+                    <div class="item-input" style="display: flex; align-items: center; gap: 0.3rem;">
+                        <input type="number" min="0" step="1" value="${quantidade}" class="item-custom-quantidade" style="width: 60px; background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%); border: 1px solid #2c2c2c; border-radius: 30px; padding: 0.4rem 0.5rem; color: #fff; text-align: center;">
+                        <span>un.</span>
+                    </div>
+                    <div class="item-input" style="display: flex; align-items: center; gap: 0.3rem;">
+                        <input type="number" min="1" step="1" value="${depreciacao}" class="item-custom-depreciacao" style="width: 60px; background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%); border: 1px solid #2c2c2c; border-radius: 30px; padding: 0.4rem 0.5rem; color: #fff; text-align: center;">
+                        <span>meses</span>
+                    </div>
+                    <div class="item-custom-total" style="font-size: 0.75rem; color: #c10404; min-width: 80px;">Total: R$ 0,00</div>
+                    <div class="item-custom-mensal" style="font-size: 0.7rem; color: #888; min-width: 80px;">Mensal: R$ 0,00</div>
+                    <button type="button" class="btn-remover-custom" style="background: transparent; border: none; color: #c10404; cursor: pointer; padding: 0.3rem;">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            `;
+            
+            const nomeInput = div.querySelector('.item-custom-nome');
+            const precoInput = div.querySelector('.item-custom-preco');
+            const quantidadeInput = div.querySelector('.item-custom-quantidade');
+            const depreciacaoInput = div.querySelector('.item-custom-depreciacao');
+            const totalSpan = div.querySelector('.item-custom-total');
+            const mensalSpan = div.querySelector('.item-custom-mensal');
+            
+            function atualizar() {
+                const preco = parseFloat(precoInput.value.replace(/\./g, '').replace(',', '.')) || 0;
+                const qtd = parseInt(quantidadeInput.value) || 0;
+                const depreciacao = parseInt(depreciacaoInput.value) || 1;
+                const total = qtd * preco;
+                const mensal = total / depreciacao;
+                totalSpan.textContent = `Total: ${formatarMoeda(total)}`;
+                mensalSpan.textContent = `Mensal: ${formatarMoeda(mensal)}`;
+                return { total, mensal, preco, qtd, depreciacao };
+            }
+            
+            precoInput.addEventListener('input', function(e) {
+                let valor = e.target.value.replace(/\D/g, '');
+                e.target.value = valor ? (parseInt(valor) / 100).toFixed(2).replace('.', ',') : '';
+                atualizar();
+                calcularTotais();
+                salvarRascunho();
+            });
+            
+            quantidadeInput.addEventListener('input', () => {
+                atualizar();
+                calcularTotais();
+                salvarRascunho();
+            });
+            
+            depreciacaoInput.addEventListener('input', () => {
+                atualizar();
+                calcularTotais();
+                salvarRascunho();
+            });
+            
+            nomeInput.addEventListener('input', () => {
+                salvarRascunho();
+            });
+            
+            const btnRemover = div.querySelector('.btn-remover-custom');
+            btnRemover.addEventListener('click', () => {
+                div.remove();
+                calcularTotais();
+                salvarRascunho();
+                if (cargoItem && cargoItem.dispatchEvent) {
+                    cargoItem.dispatchEvent(new Event('recalcular'));
+                }
+            });
+            
+            atualizar();
+            
+            return {
+                div,
+                getNome: () => nomeInput.value,
+                getPreco: () => parseFloat(precoInput.value.replace(/\./g, '').replace(',', '.')) || 0,
+                getQuantidade: () => parseInt(quantidadeInput.value) || 0,
+                getDepreciacao: () => parseInt(depreciacaoInput.value) || 1,
+                getTotal: () => {
+                    const preco = parseFloat(precoInput.value.replace(/\./g, '').replace(',', '.')) || 0;
+                    const qtd = parseInt(quantidadeInput.value) || 0;
+                    return qtd * preco;
+                },
+                getMensal: () => {
+                    const preco = parseFloat(precoInput.value.replace(/\./g, '').replace(',', '.')) || 0;
+                    const qtd = parseInt(quantidadeInput.value) || 0;
+                    const depreciacao = parseInt(depreciacaoInput.value) || 1;
+                    return (qtd * preco) / depreciacao;
+                },
+                atualizar
+            };
+        }
+        
+        // Carregar uniformes personalizados existentes
+        if (dadosUniformes && dadosUniformes.custom) {
+            dadosUniformes.custom.forEach(item => {
+                const customItem = criarItemPersonalizado('uniforme', item);
+                uniformesCustomGrid.appendChild(customItem.div);
+                uniformesCustomItems.push(customItem);
+            });
+        }
+        
+        // Carregar EPIs personalizados existentes
+        if (dadosEpis && dadosEpis.custom) {
+            dadosEpis.custom.forEach(item => {
+                const customItem = criarItemPersonalizado('epi', item);
+                episCustomGrid.appendChild(customItem.div);
+                episCustomItems.push(customItem);
+            });
+        }
+        
+        btnAddUniformeCustom.addEventListener('click', () => {
+            const customItem = criarItemPersonalizado('uniforme');
+            uniformesCustomGrid.appendChild(customItem.div);
+            uniformesCustomItems.push(customItem);
+            calcularTotais();
+            salvarRascunho();
+        });
+        
+        btnAddEpiCustom.addEventListener('click', () => {
+            const customItem = criarItemPersonalizado('epi');
+            episCustomGrid.appendChild(customItem.div);
+            episCustomItems.push(customItem);
+            calcularTotais();
+            salvarRascunho();
+        });
+        
+        // Adicionar itens padrão
         UNIFORMES.forEach(u => {
-            const { div, atualizar, getQuantidade, getDepreciacao, getMensal } = criarItemListaComDepreciacao(u, 'uniforme');
+            const { div, atualizar, getQuantidade, getDepreciacao, getMensal, getTotal } = criarItemListaComDepreciacao(u, 'uniforme');
             const quantidadeInput = div.querySelector('.quantidade-uniforme');
             const depreciacaoInput = div.querySelector('.depreciacao-uniforme');
             if (dadosUniformes && dadosUniformes[u.nome]) {
@@ -522,12 +763,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 depreciacaoInput.value = dadosUniformes[u.nome].depreciacao || 1;
                 atualizar();
             }
-            uniformesMenu.appendChild(div);
+            uniformesListaPadrao.appendChild(div);
             uniformesItems.push({ 
                 atualizar, 
                 getQuantidade, 
                 getDepreciacao,
                 getMensal,
+                getTotal,
                 getPreco: () => u.preco,
                 getNome: () => u.nome,
                 div
@@ -535,7 +777,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
         
         EPIS.forEach(e => {
-            const { div, atualizar, getQuantidade, getDepreciacao, getMensal } = criarItemListaComDepreciacao(e, 'epi');
+            const { div, atualizar, getQuantidade, getDepreciacao, getMensal, getTotal } = criarItemListaComDepreciacao(e, 'epi');
             const quantidadeInput = div.querySelector('.quantidade-epi');
             const depreciacaoInput = div.querySelector('.depreciacao-epi');
             if (dadosEpis && dadosEpis[e.nome]) {
@@ -543,12 +785,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 depreciacaoInput.value = dadosEpis[e.nome].depreciacao || 1;
                 atualizar();
             }
-            episMenu.appendChild(div);
+            episListaPadrao.appendChild(div);
             episItems.push({ 
                 atualizar, 
                 getQuantidade, 
                 getDepreciacao,
                 getMensal,
+                getTotal,
                 getPreco: () => e.preco,
                 getNome: () => e.nome,
                 div
@@ -560,8 +803,22 @@ document.addEventListener('DOMContentLoaded', async function() {
             uniformesItems.forEach(item => {
                 total += item.getMensal();
             });
+            uniformesCustomItems.forEach(item => {
+                total += item.getMensal();
+            });
             uniformesTotalSpan.textContent = formatarMoeda(total);
             return total;
+        }
+        
+        function calcularTotalUniformeGeral(qtdFuncionarios) {
+            let total = 0;
+            uniformesItems.forEach(item => {
+                total += item.getTotal();
+            });
+            uniformesCustomItems.forEach(item => {
+                total += item.getTotal();
+            });
+            return total * qtdFuncionarios;
         }
         
         function calcularTotalEpiMensal() {
@@ -569,22 +826,57 @@ document.addEventListener('DOMContentLoaded', async function() {
             episItems.forEach(item => {
                 total += item.getMensal();
             });
+            episCustomItems.forEach(item => {
+                total += item.getMensal();
+            });
             episTotalSpan.textContent = formatarMoeda(total);
             return total;
         }
         
-        function atualizarTotais() {
+        function calcularTotalEpiGeral(qtdFuncionarios) {
+            let total = 0;
+            episItems.forEach(item => {
+                total += item.getTotal();
+            });
+            episCustomItems.forEach(item => {
+                total += item.getTotal();
+            });
+            return total * qtdFuncionarios;
+        }
+        
+        function calcularTotais() {
             const totalUniforme = calcularTotalUniformeMensal();
             const totalEpi = calcularTotalEpiMensal();
             const totalGeral = totalUniforme + totalEpi;
             header.querySelector('.summary-value').textContent = formatarMoeda(totalGeral);
+            
+            const qtdFuncionarios = parseInt(cargoItem?.querySelector('.cargo-quantidade')?.value) || 1;
+            const totalUniformeGeral = calcularTotalUniformeGeral(qtdFuncionarios);
+            const totalEpiGeral = calcularTotalEpiGeral(qtdFuncionarios);
+            
+            if (uniformesTotalGeralSpan) {
+                uniformesTotalGeralSpan.textContent = formatarMoeda(totalUniformeGeral);
+            }
+            if (episTotalGeralSpan) {
+                episTotalGeralSpan.textContent = formatarMoeda(totalEpiGeral);
+            }
+            
+            const uniformesTotalGeralDiv = content.querySelector('.uniformes-total-geral');
+            const episTotalGeralDiv = content.querySelector('.epis-total-geral');
+            if (uniformesTotalGeralDiv) {
+                uniformesTotalGeralDiv.innerHTML = `Total para ${qtdFuncionarios} funcionário(s): <strong>${formatarMoeda(totalUniformeGeral)}</strong>`;
+            }
+            if (episTotalGeralDiv) {
+                episTotalGeralDiv.innerHTML = `Total para ${qtdFuncionarios} funcionário(s): <strong>${formatarMoeda(totalEpiGeral)}</strong>`;
+            }
+            
             return { totalUniforme, totalEpi, totalGeral };
         }
         
         uniformesItems.forEach(item => {
             item.div.querySelectorAll('input').forEach(input => {
                 input.addEventListener('input', () => {
-                    atualizarTotais();
+                    calcularTotais();
                     if (cargoItem && cargoItem.dispatchEvent) {
                         cargoItem.dispatchEvent(new Event('recalcular'));
                     }
@@ -596,7 +888,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         episItems.forEach(item => {
             item.div.querySelectorAll('input').forEach(input => {
                 input.addEventListener('input', () => {
-                    atualizarTotais();
+                    calcularTotais();
                     if (cargoItem && cargoItem.dispatchEvent) {
                         cargoItem.dispatchEvent(new Event('recalcular'));
                     }
@@ -605,12 +897,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
         
+        if (cargoItem) {
+            const qtdInput = cargoItem.querySelector('.cargo-quantidade');
+            if (qtdInput) {
+                qtdInput.addEventListener('input', () => {
+                    calcularTotais();
+                });
+            }
+        }
+        
         const uniformesHeader = uniformesBox.querySelector('.box-header');
         const episHeader = episBox.querySelector('.box-header');
         const uniformesMenuEl = uniformesMenu;
         const episMenuEl = episMenu;
-        
-        // Configurar setas dos dropdowns
         const uniformesIcon = uniformesHeader.querySelector('i');
         const episIcon = episHeader.querySelector('i');
         
@@ -676,11 +975,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         uniformesMenuEl.addEventListener('click', (e) => e.stopPropagation());
         episMenuEl.addEventListener('click', (e) => e.stopPropagation());
         
-        atualizarTotais();
+        calcularTotais();
         
         return { 
             section, 
-            atualizarTotais, 
+            atualizarTotais: calcularTotais, 
             getDados: () => {
                 const uniformes = {};
                 uniformesItems.forEach(item => {
@@ -692,6 +991,26 @@ document.addEventListener('DOMContentLoaded', async function() {
                         };
                     }
                 });
+                
+                const uniformesCustom = [];
+                uniformesCustomItems.forEach(item => {
+                    const nome = item.getNome();
+                    const qtd = item.getQuantidade();
+                    const preco = item.getPreco();
+                    const depreciacao = item.getDepreciacao();
+                    if (nome && qtd > 0 && preco > 0) {
+                        uniformesCustom.push({
+                            nome: nome,
+                            preco: preco,
+                            quantidade: qtd,
+                            depreciacao: depreciacao
+                        });
+                    }
+                });
+                if (uniformesCustom.length > 0) {
+                    uniformes.custom = uniformesCustom;
+                }
+                
                 const epis = {};
                 episItems.forEach(item => {
                     const qtd = item.getQuantidade();
@@ -702,6 +1021,26 @@ document.addEventListener('DOMContentLoaded', async function() {
                         };
                     }
                 });
+                
+                const episCustom = [];
+                episCustomItems.forEach(item => {
+                    const nome = item.getNome();
+                    const qtd = item.getQuantidade();
+                    const preco = item.getPreco();
+                    const depreciacao = item.getDepreciacao();
+                    if (nome && qtd > 0 && preco > 0) {
+                        episCustom.push({
+                            nome: nome,
+                            preco: preco,
+                            quantidade: qtd,
+                            depreciacao: depreciacao
+                        });
+                    }
+                });
+                if (episCustom.length > 0) {
+                    epis.custom = episCustom;
+                }
+                
                 return { uniformes, epis };
             } 
         };
@@ -721,15 +1060,31 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <i class="fas fa-plus-circle"></i> Adicionar Benefício
                 </button>
             </div>
+            <div class="beneficios-total-geral" style="margin-top: 1rem; padding-top: 0.5rem; border-top: 1px solid rgba(193, 4, 4, 0.3); text-align: right; font-size: 0.9rem;">
+                Total para <span class="beneficios-qtd-funcionarios">1</span> funcionário(s): <strong class="beneficios-valor-geral">R$ 0,00</strong>
+            </div>
         `;
         const { section, updateSummary, content } = criarSecaoExpansivel('Benefícios', 'fa-gift', conteudoHtml, true);
         const fixosGrid = content.querySelector('.beneficios-fixos-grid');
         const customGrid = content.querySelector('.beneficios-custom-grid');
         const btnAdicionar = content.querySelector('.btn-add-beneficio');
+        const beneficiosTotalGeralSpan = content.querySelector('.beneficios-valor-geral');
+        const beneficiosQtdFuncionariosSpan = content.querySelector('.beneficios-qtd-funcionarios');
         
         let customBeneficios = [...dadosBeneficiosPersonalizados];
         
-        // Criar benefícios fixos
+        function atualizarTotalGeral(totalPorFuncionario) {
+            const qtdFuncionarios = parseInt(cargoItem?.querySelector('.cargo-quantidade')?.value) || 1;
+            const totalGeral = totalPorFuncionario * qtdFuncionarios;
+            if (beneficiosTotalGeralSpan) {
+                beneficiosTotalGeralSpan.textContent = formatarMoeda(totalGeral);
+            }
+            if (beneficiosQtdFuncionariosSpan) {
+                beneficiosQtdFuncionariosSpan.textContent = qtdFuncionarios;
+            }
+            return totalGeral;
+        }
+        
         BENEFICIOS_FIXOS.forEach(b => {
             const card = document.createElement('div');
             card.className = 'beneficio-fixo-card';
@@ -753,7 +1108,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             fixosGrid.appendChild(card);
         });
         
-        // Função para criar um benefício personalizado
         function criarBeneficioCustomizado(beneficio = null) {
             const card = document.createElement('div');
             card.className = 'beneficio-custom-card';
@@ -794,12 +1148,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             return card;
         }
         
-        // Adicionar benefícios personalizados existentes
         customBeneficios.forEach(b => {
             customGrid.appendChild(criarBeneficioCustomizado(b));
         });
         
-        // Botão para adicionar novo benefício personalizado
         btnAdicionar.addEventListener('click', () => {
             customGrid.appendChild(criarBeneficioCustomizado());
             calcularTotal();
@@ -809,7 +1161,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         function calcularTotal() {
             let total = 0;
             
-            // Benefícios fixos
             fixosGrid.querySelectorAll('.beneficio-fixo-card').forEach(card => {
                 const valorInput = card.querySelector('.beneficio-valor');
                 const diasInput = card.querySelector('.beneficio-dias');
@@ -821,7 +1172,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 totalSpan.textContent = `Total: ${formatarMoeda(subtotal)}`;
             });
             
-            // Benefícios personalizados
             customGrid.querySelectorAll('.beneficio-custom-card').forEach(card => {
                 const valorInput = card.querySelector('.beneficio-custom-valor');
                 const diasInput = card.querySelector('.beneficio-custom-dias');
@@ -834,10 +1184,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
             
             updateSummary(total);
+            atualizarTotalGeral(total);
             return total;
         }
         
-        // Event listeners para benefícios fixos
         fixosGrid.querySelectorAll('.beneficio-valor, .beneficio-dias').forEach(input => {
             input.addEventListener('input', function(e) {
                 if (e.target.classList.contains('beneficio-valor')) {
@@ -852,7 +1202,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
         
-        // Event listeners para benefícios personalizados (delegação)
         customGrid.addEventListener('input', function(e) {
             if (e.target.classList.contains('beneficio-custom-valor')) {
                 let valor = e.target.value.replace(/\D/g, '');
@@ -872,6 +1221,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                 salvarRascunho();
             }
         });
+        
+        if (cargoItem) {
+            const qtdInput = cargoItem.querySelector('.cargo-quantidade');
+            if (qtdInput) {
+                const totalAtual = calcularTotal();
+                qtdInput.addEventListener('input', () => {
+                    atualizarTotalGeral(totalAtual);
+                });
+            }
+        }
         
         calcularTotal();
         
@@ -906,9 +1265,28 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function criarSegurancaSection(cargoItem, dadosSeguranca = {}) {
-        const conteudoHtml = `<div class="seguranca-grid"></div>`;
+        const conteudoHtml = `
+            <div class="seguranca-grid"></div>
+            <div class="seguranca-total-geral" style="margin-top: 1rem; padding-top: 0.5rem; border-top: 1px solid rgba(193, 4, 4, 0.3); text-align: right; font-size: 0.9rem;">
+                Total para <span class="seguranca-qtd-funcionarios">1</span> funcionário(s): <strong class="seguranca-valor-geral">R$ 0,00</strong>
+            </div>
+        `;
         const { section, updateSummary, content } = criarSecaoExpansivel('Segurança e Seguro', 'fa-shield-alt', conteudoHtml, true);
         const grid = content.querySelector('.seguranca-grid');
+        const segurancaTotalGeralSpan = content.querySelector('.seguranca-valor-geral');
+        const segurancaQtdFuncionariosSpan = content.querySelector('.seguranca-qtd-funcionarios');
+        
+        function atualizarTotalGeral(totalPorFuncionario) {
+            const qtdFuncionarios = parseInt(cargoItem?.querySelector('.cargo-quantidade')?.value) || 1;
+            const totalGeral = totalPorFuncionario * qtdFuncionarios;
+            if (segurancaTotalGeralSpan) {
+                segurancaTotalGeralSpan.textContent = formatarMoeda(totalGeral);
+            }
+            if (segurancaQtdFuncionariosSpan) {
+                segurancaQtdFuncionariosSpan.textContent = qtdFuncionarios;
+            }
+            return totalGeral;
+        }
         
         SEGURANCA_FIXOS.forEach(s => {
             const card = document.createElement('div');
@@ -953,6 +1331,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 `;
             });
             updateSummary(totalMensal);
+            atualizarTotalGeral(totalMensal);
             return { totalMensal, totalGeral };
         }
         
@@ -969,6 +1348,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             });
         });
+        
+        if (cargoItem) {
+            const qtdInput = cargoItem.querySelector('.cargo-quantidade');
+            if (qtdInput) {
+                const result = calcularTotal();
+                qtdInput.addEventListener('input', () => {
+                    atualizarTotalGeral(result.totalMensal);
+                });
+            }
+        }
         
         calcularTotal();
         
@@ -1015,7 +1404,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                         <h4><i class="fas fa-notes-medical"></i> Exames</h4>
                         <i class="fas fa-chevron-down"></i>
                     </div>
-                    <div class="dropdown-menu exames-menu"></div>
+                    <div class="dropdown-menu exames-menu">
+                        <div class="exames-lista-padrao"></div>
+                        <div class="exames-custom-header" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid rgba(193,4,4,0.3);">
+                            <h5 style="color: #c10404; margin: 0.5rem 0 0.5rem 0; font-size: 0.8rem;">Exames Personalizados</h5>
+                            <div class="exames-custom-grid"></div>
+                            <button type="button" class="btn-add-exame-custom" style="background: transparent; border: 1px dashed #c10404; color: #c10404; padding: 0.3rem; border-radius: 20px; width: 100%; margin-top: 0.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem; font-size: 0.8rem;">
+                                <i class="fas fa-plus-circle"></i> Adicionar Exame Personalizado
+                            </button>
+                        </div>
+                    </div>
                     <div class="exames-total">Total Exames: <span>R$ 0,00</span></div>
                 </div>
                 <div class="treinamento-box">
@@ -1029,6 +1427,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             <div class="exames-resumo">
                 Total da seção: <span class="total-secao">R$ 0,00</span>
             </div>
+            <div class="exames-total-geral" style="margin-top: 1rem; padding-top: 0.5rem; border-top: 1px solid rgba(193, 4, 4, 0.3); text-align: right; font-size: 0.9rem;">
+                Total para <span class="exames-qtd-funcionarios">1</span> funcionário(s): <strong class="exames-valor-geral">R$ 0,00</strong>
+            </div>
         `;
         
         section.appendChild(header);
@@ -1036,7 +1437,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         let isExpanded = false;
         content.classList.add('collapsed');
-        // Quando fechado, seta pra BAIXO
         header.querySelector('.exames-toggle').classList.remove('fa-chevron-up');
         header.querySelector('.exames-toggle').classList.add('fa-chevron-down');
         
@@ -1045,12 +1445,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             isExpanded = !isExpanded;
             if (isExpanded) {
                 content.classList.remove('collapsed');
-                // ABERTO: seta pra CIMA
                 header.querySelector('.exames-toggle').classList.remove('fa-chevron-down');
                 header.querySelector('.exames-toggle').classList.add('fa-chevron-up');
             } else {
                 content.classList.add('collapsed');
-                // FECHADO: seta pra BAIXO
                 header.querySelector('.exames-toggle').classList.remove('fa-chevron-up');
                 header.querySelector('.exames-toggle').classList.add('fa-chevron-down');
             }
@@ -1058,13 +1456,118 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         const examesBox = content.querySelector('.exames-box');
         const examesMenu = content.querySelector('.exames-menu');
+        const examesListaPadrao = content.querySelector('.exames-lista-padrao');
         const examesTotalSpan = content.querySelector('.exames-total span');
         const treinamentoInput = content.querySelector('.treinamento-valor');
         const totalSecaoSpan = content.querySelector('.total-secao');
+        const examesTotalGeralSpan = content.querySelector('.exames-valor-geral');
+        const examesQtdFuncionariosSpan = content.querySelector('.exames-qtd-funcionarios');
+        const examesCustomGrid = content.querySelector('.exames-custom-grid');
+        const btnAddExameCustom = content.querySelector('.btn-add-exame-custom');
         
         const examesItems = [];
+        const examesCustomItems = [];
         
-        // Adicionar exame Admissional/Demissional/Acuidade
+        function criarExamePersonalizado(exameData = null) {
+            const div = document.createElement('div');
+            div.className = 'exame-custom-item';
+            div.style.cssText = 'background: linear-gradient(135deg, #141414 0%, #0d0d0d 100%); border: 1px solid #2a2a2a; border-radius: 16px; padding: 0.6rem; margin-bottom: 0.6rem; display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem;';
+            
+            const nome = exameData?.nome || '';
+            const preco = exameData?.preco || 0;
+            const isChecked = exameData?.checked || false;
+            
+            div.innerHTML = `
+                <input type="text" class="exame-custom-nome" placeholder="Nome do exame" value="${nome}" style="flex: 2; min-width: 150px; background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%); border: 1px solid #2c2c2c; border-radius: 30px; padding: 0.4rem 0.8rem; color: #fff; font-size: 0.85rem;">
+                <div style="display: flex; align-items: center; gap: 0.3rem;">
+                    <input type="text" class="exame-custom-preco" placeholder="Preço" value="${preco.toFixed(2).replace('.', ',')}" style="width: 80px; background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%); border: 1px solid #2c2c2c; border-radius: 30px; padding: 0.4rem 0.5rem; color: #fff; text-align: center;">
+                    <span>R$</span>
+                </div>
+                <label style="display: flex; align-items: center; gap: 0.3rem; cursor: pointer;">
+                    <input type="checkbox" class="exame-custom-checkbox" ${isChecked ? 'checked' : ''} style="width: 18px; height: 18px; cursor: pointer; accent-color: #c10404;">
+                    <span style="font-size: 0.75rem;">Selecionar</span>
+                </label>
+                <button type="button" class="btn-remover-exame-custom" style="background: transparent; border: none; color: #c10404; cursor: pointer; padding: 0.3rem;">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            `;
+            
+            const nomeInput = div.querySelector('.exame-custom-nome');
+            const precoInput = div.querySelector('.exame-custom-preco');
+            const checkbox = div.querySelector('.exame-custom-checkbox');
+            
+            function getPreco() {
+                return parseFloat(precoInput.value.replace(/\./g, '').replace(',', '.')) || 0;
+            }
+            
+            precoInput.addEventListener('input', function(e) {
+                let valor = e.target.value.replace(/\D/g, '');
+                e.target.value = valor ? (parseInt(valor) / 100).toFixed(2).replace('.', ',') : '';
+                calcularTotal();
+                salvarRascunho();
+            });
+            
+            nomeInput.addEventListener('input', () => {
+                salvarRascunho();
+            });
+            
+            checkbox.addEventListener('change', () => {
+                calcularTotal();
+                salvarRascunho();
+                if (cargoItem && cargoItem.dispatchEvent) {
+                    cargoItem.dispatchEvent(new Event('recalcular-exames'));
+                }
+            });
+            
+            const btnRemover = div.querySelector('.btn-remover-exame-custom');
+            btnRemover.addEventListener('click', () => {
+                div.remove();
+                const index = examesCustomItems.findIndex(item => item.div === div);
+                if (index !== -1) examesCustomItems.splice(index, 1);
+                calcularTotal();
+                salvarRascunho();
+                if (cargoItem && cargoItem.dispatchEvent) {
+                    cargoItem.dispatchEvent(new Event('recalcular-exames'));
+                }
+            });
+            
+            return {
+                div,
+                getNome: () => nomeInput.value,
+                getPreco,
+                isChecked: () => checkbox.checked,
+                checkbox
+            };
+        }
+        
+        if (dadosExames && dadosExames.custom) {
+            dadosExames.custom.forEach(item => {
+                const customItem = criarExamePersonalizado(item);
+                examesCustomGrid.appendChild(customItem.div);
+                examesCustomItems.push(customItem);
+            });
+        }
+        
+        btnAddExameCustom.addEventListener('click', () => {
+            const customItem = criarExamePersonalizado();
+            examesCustomGrid.appendChild(customItem.div);
+            examesCustomItems.push(customItem);
+            calcularTotal();
+            salvarRascunho();
+        });
+        
+        function atualizarTotalGeral(totalPorFuncionario) {
+            const qtdFuncionarios = parseInt(cargoItem?.querySelector('.cargo-quantidade')?.value) || 1;
+            const totalGeral = totalPorFuncionario * qtdFuncionarios;
+            if (examesTotalGeralSpan) {
+                examesTotalGeralSpan.textContent = formatarMoeda(totalGeral);
+            }
+            if (examesQtdFuncionariosSpan) {
+                examesQtdFuncionariosSpan.textContent = qtdFuncionarios;
+            }
+            return totalGeral;
+        }
+        
         EXAMES_ADMISSIONAL.forEach(e => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'exames-item';
@@ -1076,7 +1579,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <input type="checkbox" class="exame-checkbox" data-nome="${e.nome}" data-preco="${e.preco}" ${isChecked ? 'checked' : ''}>
                 </div>
             `;
-            examesMenu.appendChild(itemDiv);
+            examesListaPadrao.appendChild(itemDiv);
             examesItems.push({
                 nome: e.nome,
                 preco: e.preco,
@@ -1084,7 +1587,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
         
-        // Adicionar exames complementares
         EXAMES_COMPLEMENTARES.forEach(e => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'exames-item';
@@ -1096,7 +1598,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <input type="checkbox" class="exame-checkbox" data-nome="${e.nome}" data-preco="${e.preco}" ${isChecked ? 'checked' : ''}>
                 </div>
             `;
-            examesMenu.appendChild(itemDiv);
+            examesListaPadrao.appendChild(itemDiv);
             examesItems.push({
                 nome: e.nome,
                 preco: e.preco,
@@ -1111,6 +1613,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                     totalExames += item.preco;
                 }
             });
+            examesCustomItems.forEach(item => {
+                if (item.isChecked()) {
+                    totalExames += item.getPreco();
+                }
+            });
             examesTotalSpan.textContent = formatarMoeda(totalExames);
             return totalExames;
         }
@@ -1121,10 +1628,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             const totalGeral = totalExames + totalTreinamento;
             totalSecaoSpan.textContent = formatarMoeda(totalGeral);
             header.querySelector('.summary-value').textContent = formatarMoeda(totalGeral);
+            atualizarTotalGeral(totalGeral);
             return totalGeral;
         }
         
-        // Event listeners
         examesItems.forEach(item => {
             item.checkbox.addEventListener('change', () => {
                 calcularTotal();
@@ -1145,7 +1652,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         });
         
-        // Dropdown toggle para exames
+        if (cargoItem) {
+            const qtdInput = cargoItem.querySelector('.cargo-quantidade');
+            if (qtdInput) {
+                const totalAtual = calcularTotal();
+                qtdInput.addEventListener('input', () => {
+                    atualizarTotalGeral(totalAtual);
+                });
+            }
+        }
+        
         const examesHeader = examesBox.querySelector('.box-header');
         const examesMenuEl = examesMenu;
         const examesIcon = examesHeader.querySelector('i');
@@ -1206,7 +1722,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         examesMenuEl.addEventListener('click', (e) => e.stopPropagation());
         
-        // Inicializar com os valores
         calcularTotal();
         
         return { 
@@ -1219,6 +1734,30 @@ document.addEventListener('DOMContentLoaded', async function() {
                         exames[item.nome] = true;
                     }
                 });
+                
+                const examesCustom = [];
+                examesCustomItems.forEach(item => {
+                    const nome = item.getNome();
+                    const preco = item.getPreco();
+                    const checked = item.isChecked();
+                    if (nome && preco > 0) {
+                        examesCustom.push({
+                            nome: nome,
+                            preco: preco,
+                            checked: checked
+                        });
+                    } else if (nome && checked) {
+                        examesCustom.push({
+                            nome: nome,
+                            preco: 0,
+                            checked: checked
+                        });
+                    }
+                });
+                if (examesCustom.length > 0) {
+                    exames.custom = examesCustom;
+                }
+                
                 const treinamento = parseFloat(treinamentoInput.value.replace(/\./g, '').replace(',', '.')) || 0;
                 return { exames, treinamento };
             } 
@@ -1226,9 +1765,28 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function criarInsumosSection(cargoItem, dadosInsumos = {}) {
-        const conteudoHtml = `<div class="insumos-grid"></div>`;
+        const conteudoHtml = `
+            <div class="insumos-grid"></div>
+            <div class="insumos-total-geral" style="margin-top: 1rem; padding-top: 0.5rem; border-top: 1px solid rgba(193, 4, 4, 0.3); text-align: right; font-size: 0.9rem;">
+                Total para <span class="insumos-qtd-funcionarios">1</span> funcionário(s): <strong class="insumos-valor-geral">R$ 0,00</strong>
+            </div>
+        `;
         const { section, updateSummary, content } = criarSecaoExpansivel('Insumos', 'fa-boxes', conteudoHtml, true);
         const grid = content.querySelector('.insumos-grid');
+        const insumosTotalGeralSpan = content.querySelector('.insumos-valor-geral');
+        const insumosQtdFuncionariosSpan = content.querySelector('.insumos-qtd-funcionarios');
+        
+        function atualizarTotalGeral(totalPorFuncionario) {
+            const qtdFuncionarios = parseInt(cargoItem?.querySelector('.cargo-quantidade')?.value) || 1;
+            const totalGeral = totalPorFuncionario * qtdFuncionarios;
+            if (insumosTotalGeralSpan) {
+                insumosTotalGeralSpan.textContent = formatarMoeda(totalGeral);
+            }
+            if (insumosQtdFuncionariosSpan) {
+                insumosQtdFuncionariosSpan.textContent = qtdFuncionarios;
+            }
+            return totalGeral;
+        }
         
         INSUMOS.forEach(i => {
             const card = document.createElement('div');
@@ -1255,6 +1813,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 totalSpan.textContent = formatarMoeda(valor);
             });
             updateSummary(total);
+            atualizarTotalGeral(total);
             return total;
         }
         
@@ -1269,6 +1828,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             });
         });
+        
+        if (cargoItem) {
+            const qtdInput = cargoItem.querySelector('.cargo-quantidade');
+            if (qtdInput) {
+                const totalAtual = calcularTotal();
+                qtdInput.addEventListener('input', () => {
+                    atualizarTotalGeral(totalAtual);
+                });
+            }
+        }
         
         calcularTotal();
         
@@ -1331,7 +1900,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         let isExpanded = false;
         content.classList.add('collapsed');
-        // Quando fechado, seta pra BAIXO
         header.querySelector('.despesas-toggle').classList.remove('fa-chevron-up');
         header.querySelector('.despesas-toggle').classList.add('fa-chevron-down');
         
@@ -1340,12 +1908,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             isExpanded = !isExpanded;
             if (isExpanded) {
                 content.classList.remove('collapsed');
-                // ABERTO: seta pra CIMA
                 header.querySelector('.despesas-toggle').classList.remove('fa-chevron-down');
                 header.querySelector('.despesas-toggle').classList.add('fa-chevron-up');
             } else {
                 content.classList.add('collapsed');
-                // FECHADO: seta pra BAIXO
                 header.querySelector('.despesas-toggle').classList.remove('fa-chevron-up');
                 header.querySelector('.despesas-toggle').classList.add('fa-chevron-down');
             }
@@ -1417,7 +1983,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         `;
         item.appendChild(linha);
         
-        // Seção Adicionais
+        // Seção Adicionais (COM O NOVO ACÚMULO DE FUNÇÃO)
         const adicionaisHtml = `
             <div class="adicionais-grid">
                 <div class="adicional-card">
@@ -1474,6 +2040,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                     </div>
                     <div class="adicional-conteudo ins-conteudo hidden">
                         <div class="adicional-valor ins-resultado"></div>
+                    </div>
+                </div>
+                <div class="adicional-card">
+                    <div class="adicional-header">
+                        <label class="checkbox-label">
+                            <input type="checkbox" class="acumulo-check">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-text">Acúmulo de Função (20%)</span>
+                        </label>
+                    </div>
+                    <div class="adicional-conteudo acumulo-conteudo hidden">
+                        <div class="adicional-campo">
+                            <span class="input-symbol"><i class="fas fa-users"></i></span>
+                            <input type="number" class="input-moderno acumulo-qtd" placeholder="Qtd. funcionários" min="0" step="1" value="1">
+                        </div>
+                        <div class="adicional-valor acumulo-resultado"></div>
                     </div>
                 </div>
             </div>
@@ -1602,6 +2184,34 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (insResultado) insResultado.innerHTML = '';
             }
             if (insConteudo) insConteudo.classList.toggle('hidden', !(insCheck && insCheck.checked));
+            
+            // ========== ACÚMULO DE FUNÇÃO ==========
+            const acumuloCheck = adicionaisContent.querySelector('.acumulo-check');
+            const acumuloConteudo = adicionaisContent.querySelector('.acumulo-conteudo');
+            const acumuloResultado = adicionaisContent.querySelector('.acumulo-resultado');
+            if (acumuloCheck && acumuloCheck.checked) {
+                const qtdAcumulo = parseInt(adicionaisContent.querySelector('.acumulo-qtd')?.value) || 1;
+                if (qtdAcumulo > 0) {
+                    // Acúmulo de função = 20% do salário
+                    const acumuloBase = salario * 0.2;
+                    const encargosAcumulo = acumuloBase * taxaEncargos;
+                    const totalPorFuncionario = acumuloBase + encargosAcumulo;
+                    const totalAcumulo = totalPorFuncionario * qtdAcumulo;
+                    
+                    if (acumuloResultado) {
+                        acumuloResultado.innerHTML = `
+                            <span class="valor-label">Total Acúmulo (${qtdAcumulo} funcionário${qtdAcumulo > 1 ? 's' : ''})</span>
+                            <span class="valor-number">${formatarMoeda(totalAcumulo)}</span>
+                        `;
+                    }
+                    totalAdicionais += totalAcumulo;
+                } else {
+                    if (acumuloResultado) acumuloResultado.innerHTML = '';
+                }
+            } else {
+                if (acumuloResultado) acumuloResultado.innerHTML = '';
+            }
+            if (acumuloConteudo) acumuloConteudo.classList.toggle('hidden', !(acumuloCheck && acumuloCheck.checked));
             
             updateAdicionaisSummary(totalAdicionais);
             
@@ -1732,6 +2342,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             salvarRascunho();
         });
         
+        // Event listeners para os adicionais existentes
         adicionaisContent.querySelectorAll('.he-check, .an-check, .per-check, .ins-check').forEach(chk => {
             chk.addEventListener('change', () => { atualizarResultados(); salvarRascunho(); });
         });
@@ -1739,10 +2350,30 @@ document.addEventListener('DOMContentLoaded', async function() {
             input.addEventListener('input', () => { atualizarResultados(); salvarRascunho(); });
         });
         
+        // Event listeners para Acúmulo de Função
+        const acumuloCheck = adicionaisContent.querySelector('.acumulo-check');
+        const acumuloQtd = adicionaisContent.querySelector('.acumulo-qtd');
+        
+        if (acumuloCheck) {
+            acumuloCheck.addEventListener('change', () => { 
+                atualizarResultados(); 
+                salvarRascunho(); 
+            });
+        }
+        
+        if (acumuloQtd) {
+            acumuloQtd.addEventListener('input', () => { 
+                atualizarResultados(); 
+                salvarRascunho(); 
+            });
+        }
+        
+        // Event listeners para recalcular
         item.addEventListener('recalcular', atualizarResultados);
         item.addEventListener('recalcular-despesas', atualizarResultados);
         item.addEventListener('recalcular-exames', atualizarResultados);
         
+        // Botão remover
         item.querySelector('.btn-remover').addEventListener('click', function() {
             item.remove();
             calcularTotalGeral();
@@ -1755,8 +2386,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (dadosAdicionais.noturno && adicionaisContent.querySelector('.an-check')) adicionaisContent.querySelector('.an-check').checked = true;
             if (dadosAdicionais.periculosidade && adicionaisContent.querySelector('.per-check')) adicionaisContent.querySelector('.per-check').checked = true;
             if (dadosAdicionais.insalubridade && adicionaisContent.querySelector('.ins-check')) adicionaisContent.querySelector('.ins-check').checked = true;
+            if (dadosAdicionais.acumuloFuncao && adicionaisContent.querySelector('.acumulo-check')) adicionaisContent.querySelector('.acumulo-check').checked = true;
             if (dadosAdicionais.heHoras && adicionaisContent.querySelector('.he-horas')) adicionaisContent.querySelector('.he-horas').value = dadosAdicionais.heHoras;
             if (dadosAdicionais.anHoras && adicionaisContent.querySelector('.an-horas')) adicionaisContent.querySelector('.an-horas').value = dadosAdicionais.anHoras;
+            if (dadosAdicionais.acumuloQtd && adicionaisContent.querySelector('.acumulo-qtd')) adicionaisContent.querySelector('.acumulo-qtd').value = dadosAdicionais.acumuloQtd;
         }
         
         // Preencher porcentagem de encargos
@@ -1793,16 +2426,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                     container.innerHTML = '';
                     if (propostaData.cargos && propostaData.cargos.length > 0) {
                         propostaData.cargos.forEach(c => {
-                            // Garantir que exames seja um objeto
                             let examesObj = {};
                             if (c.exames) {
                                 if (Array.isArray(c.exames)) {
-                                    // Se for array, converte para objeto
                                     c.exames.forEach(nomeExame => {
                                         examesObj[nomeExame] = true;
                                     });
                                 } else {
-                                    // Já é objeto
                                     examesObj = c.exames;
                                 }
                             }
@@ -1848,7 +2478,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     await carregarPropostaExistente();
     
-    // Botão adicionar cargo
     btnAdicionar.addEventListener('click', function() {
         const novoCargo = criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, {}, 0, []);
         container.appendChild(novoCargo);
@@ -1856,25 +2485,21 @@ document.addEventListener('DOMContentLoaded', async function() {
         salvarRascunho();
     });
     
-    // ========== TEMA CLARO/ESCURO ==========
     function initTema() {
         const temaSalvo = localStorage.getItem('tema_terceirizado');
         const btnTema = document.getElementById('btn-tema');
         const iconTema = btnTema?.querySelector('i');
         
-        // Se NÃO houver tema salvo, ou se o tema salvo for 'light', aplica o tema claro
         if (!temaSalvo || temaSalvo === 'light') {
             document.body.classList.add('light-mode');
             if (iconTema) {
                 iconTema.classList.remove('fa-moon');
                 iconTema.classList.add('fa-sun');
             }
-            // Salvar como 'light' se não houver tema salvo
             if (!temaSalvo) {
                 localStorage.setItem('tema_terceirizado', 'light');
             }
         } else if (temaSalvo === 'dark') {
-            // Apenas se o tema salvo for 'dark', aplica o tema escuro
             document.body.classList.remove('light-mode');
             if (iconTema) {
                 iconTema.classList.remove('fa-sun');
@@ -1901,7 +2526,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // ========== COMPARTILHAR LINK ==========
     function initCompartilhar() {
         const btnCompartilhar = document.getElementById('btn-compartilhar');
         const modalShare = document.getElementById('modal-share');
@@ -1941,7 +2565,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // ========== VERIFICAR MODO VISUALIZAÇÃO ==========
     function escapeHtml(text) {
         if (!text) return '';
         const div = document.createElement('div');
@@ -1949,7 +2572,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         return div.innerHTML;
     }
     
-    // ========== VISUALIZAÇÃO RESUMIDA PARA CLIENTE ==========
     async function capturarImagemProposta() {
         const elemento = document.querySelector('.visualizacao-resumida');
         if (!elemento) {
@@ -1957,7 +2579,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
         
-        // Mostrar indicador de carregamento
         const btnCapture = document.getElementById('btn-capturar-imagem');
         const textoOriginal = btnCapture ? btnCapture.innerHTML : '';
         if (btnCapture) {
@@ -1966,7 +2587,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         try {
-            // Clonar o elemento para não afetar o original
             const cloneElement = elemento.cloneNode(true);
             cloneElement.style.position = 'absolute';
             cloneElement.style.left = '-9999px';
@@ -1974,19 +2594,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             cloneElement.style.backgroundColor = '#ffffff';
             cloneElement.style.padding = '2rem';
             cloneElement.style.borderRadius = '16px';
-            
-            // Garantir que os estilos sejam aplicados corretamente
             cloneElement.style.width = '800px';
             cloneElement.style.maxWidth = '800px';
             cloneElement.style.margin = '0';
             
-            // Remover o botão de captura do clone para não aparecer na imagem
             const btnClone = cloneElement.querySelector('#btn-capturar-imagem');
             if (btnClone) btnClone.remove();
             
             document.body.appendChild(cloneElement);
             
-            // Usar html2canvas para gerar a imagem
             const canvas = await html2canvas(cloneElement, {
                 scale: 2,
                 backgroundColor: '#ffffff',
@@ -1995,10 +2611,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 allowTaint: false
             });
             
-            // Remover o clone
             document.body.removeChild(cloneElement);
             
-            // Criar link para download
             const link = document.createElement('a');
             const clienteNome = document.querySelector('.vis-value')?.textContent || 'proposta';
             const dataAtual = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
@@ -2010,7 +2624,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             console.error('Erro ao gerar imagem:', error);
             alert('Erro ao gerar imagem. Tente novamente.');
         } finally {
-            // Restaurar botão
             if (btnCapture) {
                 btnCapture.innerHTML = textoOriginal;
                 btnCapture.disabled = false;
@@ -2018,12 +2631,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // ========== VISUALIZAÇÃO RESUMIDA PARA CLIENTE ==========
     function carregarVisualizacaoResumida(proposta) {
         const container = document.getElementById('cargos-container');
         if (!container) return;
         
-        // Usar a função formatarMoeda que já existe no escopo global
         const formatMoney = (valor) => {
             return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         };
@@ -2052,7 +2663,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </div>
         `;
         
-        // Para cada cargo, mostrar apenas valores resumidos
         let cargoIndex = 0;
         let totalGeralProposta = 0;
         
@@ -2103,7 +2713,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         container.innerHTML = html;
         
-        // Adicionar CSS específico para visualização resumida
         const styleId = 'vis-resumida-style';
         if (!document.getElementById(styleId)) {
             const style = document.createElement('style');
@@ -2282,14 +2891,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             document.head.appendChild(style);
         }
         
-        // Adicionar evento ao botão de capturar imagem
         const btnCapturar = document.getElementById('btn-capturar-imagem');
         if (btnCapturar) {
             btnCapturar.addEventListener('click', capturarImagemProposta);
         }
     }
     
-    // ========== VERIFICAR MODO VISUALIZAÇÃO ==========
     function checkVisualizacao() {
         const urlParams = new URLSearchParams(window.location.search);
         const isVisualizacao = urlParams.get('visualizacao') === 'true';
@@ -2298,15 +2905,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             const propostaId = urlParams.get('id');
             if (!propostaId) return;
             
-            // Buscar a proposta no Firebase para exibir a versão resumida
             db.collection('propostas').doc(propostaId).get()
                 .then((doc) => {
                     if (doc.exists) {
                         const proposta = doc.data();
-                        // Exibir versão resumida
                         carregarVisualizacaoResumida(proposta);
                         
-                        // Esconder elementos de edição
                         const btnAdicionar = document.getElementById('adicionar-cargo');
                         const btnSalvar = document.getElementById('btn-salvar');
                         const btnGerarPDF = document.getElementById('btn-gerar-pdf');
@@ -2322,17 +2926,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                             clienteInput.value = proposta.cliente || '';
                         }
                         
-                        // Esconder todas as seções expansíveis originais
                         document.querySelectorAll('.expandable-section, .exames-section, .despesas-section, .cargo-linha, .cargo-header, .cargo-resultados').forEach(el => {
                             if (el) el.style.display = 'none';
                         });
                         
-                        // Esconder botões de remover
-                        document.querySelectorAll('.btn-remover, .btn-remover-beneficio, .btn-add-beneficio').forEach(btn => {
+                        document.querySelectorAll('.btn-remover, .btn-remover-beneficio, .btn-add-beneficio, .btn-add-uniforme-custom, .btn-add-epi-custom, .btn-add-exame-custom').forEach(btn => {
                             if (btn) btn.style.display = 'none';
                         });
                         
-                        // Adicionar aviso de visualização
                         const aviso = document.createElement('div');
                         aviso.className = 'aviso-visualizacao';
                         aviso.innerHTML = `
@@ -2355,73 +2956,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // ========== VERIFICAR MODO VISUALIZAÇÃO ==========
-    function checkVisualizacao() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const isVisualizacao = urlParams.get('visualizacao') === 'true';
-        
-        if (isVisualizacao) {
-            const propostaId = urlParams.get('id');
-            if (!propostaId) return;
-            
-            // Buscar a proposta no Firebase para exibir a versão resumida
-            db.collection('propostas').doc(propostaId).get()
-                .then((doc) => {
-                    if (doc.exists) {
-                        const proposta = doc.data();
-                        // Exibir versão resumida
-                        carregarVisualizacaoResumida(proposta);
-                        
-                        // Esconder elementos de edição
-                        const btnAdicionar = document.getElementById('adicionar-cargo');
-                        const btnSalvar = document.getElementById('btn-salvar');
-                        const btnGerarPDF = document.getElementById('btn-gerar-pdf');
-                        const btnCompartilhar = document.getElementById('btn-compartilhar');
-                        const clienteInput = document.getElementById('cliente-nome');
-                        
-                        if (btnAdicionar) btnAdicionar.style.display = 'none';
-                        if (btnSalvar) btnSalvar.style.display = 'none';
-                        if (btnGerarPDF) btnGerarPDF.style.display = 'none';
-                        if (btnCompartilhar) btnCompartilhar.style.display = 'none';
-                        if (clienteInput) {
-                            clienteInput.disabled = true;
-                            clienteInput.value = proposta.cliente || '';
-                        }
-                        
-                        // Esconder todas as seções expansíveis originais
-                        document.querySelectorAll('.expandable-section, .exames-section, .despesas-section, .cargo-linha, .cargo-header, .cargo-resultados').forEach(el => {
-                            if (el) el.style.display = 'none';
-                        });
-                        
-                        // Esconder botões de remover
-                        document.querySelectorAll('.btn-remover, .btn-remover-beneficio, .btn-add-beneficio').forEach(btn => {
-                            if (btn) btn.style.display = 'none';
-                        });
-                        
-                        // Adicionar aviso de visualização
-                        const aviso = document.createElement('div');
-                        aviso.className = 'aviso-visualizacao';
-                        aviso.innerHTML = `
-                            <div style="background: #c10404; color: #fff; text-align: center; padding: 0.8rem; border-radius: 8px; margin-bottom: 1rem;">
-                                <i class="fas fa-eye"></i> <strong>Modo de visualização</strong> - Versão resumida da proposta
-                            </div>
-                        `;
-                        const containerDiv = document.querySelector('.container');
-                        if (containerDiv && !containerDiv.querySelector('.aviso-visualizacao')) {
-                            containerDiv.insertBefore(aviso, containerDiv.firstChild);
-                        }
-                    } else {
-                        document.getElementById('cargos-container').innerHTML = '<p style="text-align:center;padding:2rem;">Proposta não encontrada.</p>';
-                    }
-                })
-                .catch((error) => {
-                    console.error('Erro ao carregar proposta:', error);
-                    document.getElementById('cargos-container').innerHTML = '<p style="text-align:center;padding:2rem;">Erro ao carregar proposta.</p>';
-                });
-        }
-    }
-    
-    // ========== SALVAR PROPOSTA ==========
     document.getElementById('btn-salvar').addEventListener('click', async function() {
         const vendedor = document.getElementById('vendedor-nome').textContent;
         const cliente = clienteInput.value || 'SEM CLIENTE';
@@ -2446,7 +2980,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             const heHoras = parseFloat(adicionaisSection?.querySelector('.he-horas')?.value) || 0;
             const anHoras = parseFloat(adicionaisSection?.querySelector('.an-horas')?.value) || 0;
             
-            // Uniformes e EPIs (mantém igual)
             const uniformesSection = item.querySelectorAll('.expandable-section')[1];
             let uniformes = {}, epis = {};
             if (uniformesSection && uniformesSection.__getUniformesDados) {
@@ -2456,7 +2989,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             } else {
                 const uniformesBox = item.querySelector('.uniformes-box');
                 if (uniformesBox) {
-                    uniformesBox.querySelectorAll('.item-lista').forEach(lista => {
+                    uniformesBox.querySelectorAll('.uniformes-lista-padrao .item-lista').forEach(lista => {
                         const nomeItem = lista.querySelector('.item-nome')?.textContent;
                         const qtdInput = lista.querySelector('.quantidade-uniforme');
                         const depInput = lista.querySelector('.depreciacao-uniforme');
@@ -2470,7 +3003,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
                 const episBox = item.querySelector('.epis-box');
                 if (episBox) {
-                    episBox.querySelectorAll('.item-lista').forEach(lista => {
+                    episBox.querySelectorAll('.epis-lista-padrao .item-lista').forEach(lista => {
                         const nomeItem = lista.querySelector('.item-nome')?.textContent;
                         const qtdInput = lista.querySelector('.quantidade-epi');
                         const depInput = lista.querySelector('.depreciacao-epi');
@@ -2484,7 +3017,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
             
-            // Benefícios (mantém igual)
             const beneficiosSection = item.querySelectorAll('.expandable-section')[2];
             let beneficios = {};
             let beneficiosPersonalizados = [];
@@ -2516,7 +3048,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
             
-            // Segurança (mantém igual)
             const segurancaSection = item.querySelectorAll('.expandable-section')[3];
             let seguranca = {};
             if (segurancaSection && segurancaSection.__getSegurancaDados) {
@@ -2534,29 +3065,23 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
             
-            // ========== CORREÇÃO: Capturar EXAMES corretamente para o Firebase ==========
             const examesSection = item.querySelector('.exames-section');
             let exames = {};
             let treinamento = 0;
             
             if (examesSection) {
-                // Capturar exames marcados
-                examesSection.querySelectorAll('.exame-checkbox').forEach(cb => {
+                examesSection.querySelectorAll('.exames-lista-padrao .exame-checkbox').forEach(cb => {
                     if (cb.checked) {
                         exames[cb.dataset.nome] = true;
                     }
                 });
                 
-                // Capturar treinamento
                 const treinamentoInput = examesSection.querySelector('.treinamento-valor');
                 if (treinamentoInput) {
                     treinamento = parseFloat(treinamentoInput.value.replace(/\./g, '').replace(',', '.')) || 0;
                 }
             }
             
-            console.log('Exames sendo salvos no Firebase:', exames); // LOG PARA DEBUG
-            
-            // Insumos (mantém igual)
             const insumosSection = item.querySelectorAll('.expandable-section')[5];
             let insumos = {};
             if (insumosSection && insumosSection.__getInsumosDados) {
@@ -2599,7 +3124,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 beneficios,
                 beneficiosPersonalizados,
                 seguranca,
-                exames, // AGORA exames é um OBJETO com os nomes marcados
+                exames,
                 treinamento,
                 insumos,
                 despesas,
@@ -2618,8 +3143,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             totalGeral
         };
         
-        console.log('Proposta sendo salva:', proposta); // LOG PARA DEBUG
-        
         try {
             if (propostaId) {
                 await db.collection('propostas').doc(propostaId).update(proposta);
@@ -2637,7 +3160,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 
-    // ========== INICIALIZAR FUNCIONALIDADES ==========
     initTema();
     initCompartilhar();
     checkVisualizacao();
