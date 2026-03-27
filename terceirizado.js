@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     function salvarRascunho() {
         try {
             const dados = {
-                cliente: clienteInput.value,
+                cliente: document.getElementById('cliente-nome').value,
                 cargos: []
             };
             
@@ -158,170 +158,135 @@ document.addEventListener('DOMContentLoaded', async function() {
                     nome: item.querySelector('.cargo-nome')?.value || '',
                     quantidade: item.querySelector('.cargo-quantidade')?.value || 1,
                     salario: item.querySelector('.cargo-salario')?.value || '',
-                    encargosPercentual: item.querySelector('.encargos-percentual')?.value || '113,00',
-                    // Ao criar o cargo com dados existentes
-                    adicionais: {
-                        horasExtras: c.adicionais?.horasExtras || false,
-                        noturno: c.adicionais?.noturno || false,
-                        periculosidade: c.adicionais?.periculosidade || false,
-                        insalubridade: c.adicionais?.insalubridade || false,
-                        heHoras: c.adicionais?.heHoras || 0,
-                        anHoras: c.adicionais?.anHoras || 0,
-                        // NOVOS CAMPOS
-                        acumulo: c.adicionais?.acumulo || false,
-                        acumuloQuantidade: c.adicionais?.acumuloQuantidade || 0
-                    },
-                    uniformes: {},
-                    epis: {},
-                    beneficios: {},
-                    beneficiosPersonalizados: [],
-                    seguranca: {},
-                    exames: {},
-                    insumos: {},
-                    treinamento: 0
+                    encargosPercentual: item.querySelector('.encargos-percentual')?.value || '113,00'
                 };
                 
-                // ========== CAPTURAR UNIFORMES (PADRÃO) ==========
-                item.querySelectorAll('.uniformes-box .item-lista').forEach(lista => {
-                    const nome = lista.querySelector('.item-nome')?.textContent;
-                    const qtdInput = lista.querySelector('.quantidade-uniforme');
-                    const depInput = lista.querySelector('.depreciacao-uniforme');
-                    if (nome && qtdInput && parseInt(qtdInput.value) > 0) {
-                        cargo.uniformes[nome] = {
-                            quantidade: parseInt(qtdInput.value),
-                            depreciacao: parseInt(depInput?.value) || 1
-                        };
-                    }
-                });
+                // ========== CAPTURAR ADICIONAIS ==========
+                const adicionaisSection = item.querySelector('.expandable-section .adicionais-grid')?.closest('.expandable-section') 
+                    || item.querySelector('.expandable-section:first-child');
                 
-                // ========== CAPTURAR UNIFORMES PERSONALIZADOS ==========
-                item.querySelectorAll('.uniformes-custom-grid .item-custom').forEach(custom => {
-                    const nome = custom.querySelector('.item-custom-nome')?.value;
-                    const precoInput = custom.querySelector('.item-custom-preco');
-                    const qtdInput = custom.querySelector('.item-custom-quantidade');
-                    const depInput = custom.querySelector('.item-custom-depreciacao');
-                    if (nome && nome.trim() !== '') {
-                        const preco = parseFloat(precoInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
-                        const qtd = parseInt(qtdInput?.value) || 0;
-                        const depreciacao = parseInt(depInput?.value) || 1;
-                        if (qtd > 0 && preco > 0) {
-                            if (!cargo.uniformes.custom) cargo.uniformes.custom = [];
-                            cargo.uniformes.custom.push({
-                                nome: nome,
-                                preco: preco,
-                                quantidade: qtd,
-                                depreciacao: depreciacao
-                            });
+                const adicionaisContent = adicionaisSection?.querySelector('.section-content');
+                
+                if (adicionaisContent) {
+                    cargo.adicionais = {
+                        horasExtras: adicionaisContent.querySelector('.he-check')?.checked || false,
+                        noturno: adicionaisContent.querySelector('.an-check')?.checked || false,
+                        periculosidade: adicionaisContent.querySelector('.per-check')?.checked || false,
+                        insalubridade: adicionaisContent.querySelector('.ins-check')?.checked || false,
+                        heHoras: parseFloat(adicionaisContent.querySelector('.he-horas')?.value) || 0,
+                        anHoras: parseFloat(adicionaisContent.querySelector('.an-horas')?.value) || 0,
+                        // ACÚMULO DE FUNÇÃO
+                        acumulo: adicionaisContent.querySelector('.acumulo-check')?.checked || false,
+                        acumuloQuantidade: parseInt(adicionaisContent.querySelector('.acumulo-quantidade')?.value) || 0
+                    };
+                } else {
+                    cargo.adicionais = {
+                        horasExtras: false,
+                        noturno: false,
+                        periculosidade: false,
+                        insalubridade: false,
+                        heHoras: 0,
+                        anHoras: 0,
+                        acumulo: false,
+                        acumuloQuantidade: 0
+                    };
+                }
+                
+                // ========== CAPTURAR UNIFORMES ==========
+                cargo.uniformes = {};
+                const uniformesBox = item.querySelector('.uniformes-box');
+                if (uniformesBox) {
+                    uniformesBox.querySelectorAll('.item-lista').forEach(lista => {
+                        const nome = lista.querySelector('.item-nome')?.textContent;
+                        const qtdInput = lista.querySelector('.quantidade-uniforme');
+                        const depInput = lista.querySelector('.depreciacao-uniforme');
+                        if (nome && qtdInput && parseInt(qtdInput.value) > 0) {
+                            cargo.uniformes[nome] = {
+                                quantidade: parseInt(qtdInput.value),
+                                depreciacao: parseInt(depInput?.value) || 1
+                            };
                         }
-                    }
-                });
+                    });
+                }
                 
-                // ========== CAPTURAR EPIs (PADRÃO) ==========
-                item.querySelectorAll('.epis-box .item-lista').forEach(lista => {
-                    const nome = lista.querySelector('.item-nome')?.textContent;
-                    const qtdInput = lista.querySelector('.quantidade-epi');
-                    const depInput = lista.querySelector('.depreciacao-epi');
-                    if (nome && qtdInput && parseInt(qtdInput.value) > 0) {
-                        cargo.epis[nome] = {
-                            quantidade: parseInt(qtdInput.value),
-                            depreciacao: parseInt(depInput?.value) || 1
-                        };
-                    }
-                });
-                
-                // ========== CAPTURAR EPIs PERSONALIZADOS ==========
-                item.querySelectorAll('.epis-custom-grid .item-custom').forEach(custom => {
-                    const nome = custom.querySelector('.item-custom-nome')?.value;
-                    const precoInput = custom.querySelector('.item-custom-preco');
-                    const qtdInput = custom.querySelector('.item-custom-quantidade');
-                    const depInput = custom.querySelector('.item-custom-depreciacao');
-                    if (nome && nome.trim() !== '') {
-                        const preco = parseFloat(precoInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
-                        const qtd = parseInt(qtdInput?.value) || 0;
-                        const depreciacao = parseInt(depInput?.value) || 1;
-                        if (qtd > 0 && preco > 0) {
-                            if (!cargo.epis.custom) cargo.epis.custom = [];
-                            cargo.epis.custom.push({
-                                nome: nome,
-                                preco: preco,
-                                quantidade: qtd,
-                                depreciacao: depreciacao
-                            });
+                // ========== CAPTURAR EPIs ==========
+                cargo.epis = {};
+                const episBox = item.querySelector('.epis-box');
+                if (episBox) {
+                    episBox.querySelectorAll('.item-lista').forEach(lista => {
+                        const nome = lista.querySelector('.item-nome')?.textContent;
+                        const qtdInput = lista.querySelector('.quantidade-epi');
+                        const depInput = lista.querySelector('.depreciacao-epi');
+                        if (nome && qtdInput && parseInt(qtdInput.value) > 0) {
+                            cargo.epis[nome] = {
+                                quantidade: parseInt(qtdInput.value),
+                                depreciacao: parseInt(depInput?.value) || 1
+                            };
                         }
-                    }
-                });
+                    });
+                }
                 
-                // ========== CAPTURAR BENEFÍCIOS FIXOS ==========
-                item.querySelectorAll('.beneficio-fixo-card').forEach(card => {
-                    const campo = card.querySelector('.beneficio-valor')?.dataset.campo;
-                    const valorInput = card.querySelector('.beneficio-valor');
-                    const diasInput = card.querySelector('.beneficio-dias');
-                    if (campo) {
+                // ========== CAPTURAR BENEFÍCIOS ==========
+                cargo.beneficios = {};
+                cargo.beneficiosPersonalizados = [];
+                
+                const beneficiosSection = item.querySelectorAll('.expandable-section')[2];
+                if (beneficiosSection) {
+                    beneficiosSection.querySelectorAll('.beneficio-fixo-card').forEach(card => {
+                        const campo = card.querySelector('.beneficio-valor')?.dataset.campo;
+                        const valorInput = card.querySelector('.beneficio-valor');
+                        const diasInput = card.querySelector('.beneficio-dias');
+                        if (campo) {
+                            const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
+                            const dias = parseInt(diasInput?.value) || 0;
+                            if (valor > 0 || dias > 0) {
+                                cargo.beneficios[campo] = { valorDiario: valor, dias: dias };
+                            }
+                        }
+                    });
+                    
+                    beneficiosSection.querySelectorAll('.beneficio-custom-card').forEach(card => {
+                        const nomeInput = card.querySelector('.beneficio-custom-nome');
+                        const valorInput = card.querySelector('.beneficio-custom-valor');
+                        const diasInput = card.querySelector('.beneficio-custom-dias');
+                        const nome = nomeInput?.value || '';
                         const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
                         const dias = parseInt(diasInput?.value) || 0;
-                        if (valor > 0 || dias > 0) {
-                            cargo.beneficios[campo] = { valorDiario: valor, dias: dias };
+                        if (nome && (valor > 0 || dias > 0)) {
+                            cargo.beneficiosPersonalizados.push({ nome, valorDiario: valor, dias });
                         }
-                    }
-                });
+                    });
+                }
                 
-                // ========== CAPTURAR BENEFÍCIOS PERSONALIZADOS ==========
-                item.querySelectorAll('.beneficio-custom-card').forEach((card, idx) => {
-                    const nomeInput = card.querySelector('.beneficio-custom-nome');
-                    const valorInput = card.querySelector('.beneficio-custom-valor');
-                    const diasInput = card.querySelector('.beneficio-custom-dias');
-                    const nome = nomeInput?.value || '';
-                    const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
-                    const dias = parseInt(diasInput?.value) || 0;
-                    if (nome && (valor > 0 || dias > 0)) {
-                        cargo.beneficiosPersonalizados.push({ nome, valorDiario: valor, dias });
-                    }
-                });
-                
-                // ========== CAPTURAR SST E SEGURO ==========
-                item.querySelectorAll('.seguranca-item').forEach(card => {
-                    const campo = card.querySelector('.seguranca-valor')?.dataset.campo;
-                    const valorInput = card.querySelector('.seguranca-valor');
-                    const depInput = card.querySelector('.seguranca-depreciacao');
-                    if (campo) {
-                        const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
-                        const depreciacao = parseInt(depInput?.value) || 1;
-                        if (valor > 0) {
-                            cargo.seguranca[campo] = { valor: valor, depreciacao: depreciacao };
+                // ========== CAPTURAR SEGURANÇA ==========
+                cargo.seguranca = {};
+                const segurancaSection = item.querySelectorAll('.expandable-section')[3];
+                if (segurancaSection) {
+                    segurancaSection.querySelectorAll('.seguranca-item').forEach(card => {
+                        const campo = card.querySelector('.seguranca-valor')?.dataset.campo;
+                        const valorInput = card.querySelector('.seguranca-valor');
+                        const depInput = card.querySelector('.seguranca-depreciacao');
+                        if (campo) {
+                            const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
+                            const depreciacao = parseInt(depInput?.value) || 1;
+                            if (valor > 0) {
+                                cargo.seguranca[campo] = { valor: valor, depreciacao: depreciacao };
+                            }
                         }
-                    }
-                });
+                    });
+                }
                 
-                // ========== CAPTURAR EXAMES (PADRÃO) ==========
+                // ========== CAPTURAR EXAMES ==========
+                cargo.exames = {};
+                cargo.treinamento = 0;
                 const examesSection = item.querySelector('.exames-section');
                 if (examesSection) {
-                    // Capturar exames padrão marcados
                     examesSection.querySelectorAll('.exame-checkbox').forEach(cb => {
                         if (cb.checked) {
                             cargo.exames[cb.dataset.nome] = true;
                         }
                     });
                     
-                    // ========== CAPTURAR EXAMES PERSONALIZADOS ==========
-                    examesSection.querySelectorAll('.exames-custom-grid .exame-custom-item').forEach(custom => {
-                        const nome = custom.querySelector('.exame-custom-nome')?.value;
-                        const precoInput = custom.querySelector('.exame-custom-preco');
-                        const checkbox = custom.querySelector('.exame-custom-checkbox');
-                        if (nome && nome.trim() !== '') {
-                            const preco = parseFloat(precoInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
-                            const checked = checkbox?.checked || false;
-                            if (checked) {
-                                if (!cargo.exames.custom) cargo.exames.custom = [];
-                                cargo.exames.custom.push({
-                                    nome: nome,
-                                    preco: preco,
-                                    checked: checked
-                                });
-                            }
-                        }
-                    });
-                    
-                    // Capturar valor do treinamento
                     const treinamentoInput = examesSection.querySelector('.treinamento-valor');
                     if (treinamentoInput) {
                         cargo.treinamento = parseFloat(treinamentoInput.value.replace(/\./g, '').replace(',', '.')) || 0;
@@ -329,16 +294,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
                 
                 // ========== CAPTURAR INSUMOS ==========
-                item.querySelectorAll('.insumo-card').forEach(card => {
-                    const campo = card.querySelector('.insumo-valor')?.dataset.campo;
-                    const valorInput = card.querySelector('.insumo-valor');
-                    if (campo) {
-                        const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
-                        if (valor > 0) {
-                            cargo.insumos[campo] = { valor: valor };
+                cargo.insumos = {};
+                const insumosSection = item.querySelectorAll('.expandable-section')[5];
+                if (insumosSection) {
+                    insumosSection.querySelectorAll('.insumo-card').forEach(card => {
+                        const campo = card.querySelector('.insumo-valor')?.dataset.campo;
+                        const valorInput = card.querySelector('.insumo-valor');
+                        if (campo) {
+                            const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
+                            if (valor > 0) {
+                                cargo.insumos[campo] = { valor: valor };
+                            }
                         }
-                    }
-                });
+                    });
+                }
                 
                 dados.cargos.push(cargo);
             });
@@ -356,25 +325,25 @@ document.addEventListener('DOMContentLoaded', async function() {
             const draft = localStorage.getItem(DRAFT_KEY);
             if (draft) {
                 const dadosRascunho = JSON.parse(draft);
-                if (dadosRascunho.cliente) clienteInput.value = dadosRascunho.cliente;
+                if (dadosRascunho.cliente) {
+                    document.getElementById('cliente-nome').value = dadosRascunho.cliente;
+                }
                 if (dadosRascunho.cargos && dadosRascunho.cargos.length > 0) {
+                    const container = document.getElementById('cargos-container');
                     container.innerHTML = '';
                     dadosRascunho.cargos.forEach(c => {
-                        // Os exames já são um objeto, usa direto
                         const examesObj = c.exames || {};
-                        
-                        console.log('Carregando exames:', examesObj); // Debug
                         
                         container.appendChild(criarCargoItem(
                             c.nome,
                             c.quantidade,
                             parseFloat(c.salario?.replace(/\./g, '').replace(',', '.')) || 0,
-                            c.adicionais || {},
+                            c.adicionais || {},  // Inclui acumulo e acumuloQuantidade
                             c.uniformes || {},
                             c.epis || {},
                             c.beneficios || {},
                             c.seguranca || {},
-                            examesObj, // Passa o objeto diretamente
+                            examesObj,
                             c.insumos || {},
                             { encargos_fiscais: { porcentagem: 13.75 } },
                             c.treinamento || 0,
