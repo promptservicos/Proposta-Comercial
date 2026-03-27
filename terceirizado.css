@@ -2434,3 +2434,78 @@ body.light-mode .btn-add-exame-custom:hover {
     background: rgba(193, 4, 4, 0.1) !important;
     color: #c10404 !important;
 }
+
+/* Estilos para a visualização temporária da imagem */
+.visualizacao-temporaria {
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+.visualizacao-temporaria .vis-cargo {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 16px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+}
+
+.visualizacao-temporaria .vis-cargo-header {
+    background: #f8f8f8;
+    padding: 1rem;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.visualizacao-temporaria .vis-cargo-header h3 {
+    color: #c10404;
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.visualizacao-temporaria .vis-resumo {
+    padding: 1rem;
+}
+
+.visualizacao-temporaria .vis-resumo-item {
+    padding: 0.5rem 0;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px dashed #eee;
+}
+
+.visualizacao-temporaria .vis-destaque {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #c10404;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #ddd;
+}
+
+.visualizacao-temporaria .vis-total-geral {
+    background: linear-gradient(135deg, #c10404 0%, #a00303 100%);
+    color: #fff;
+    padding: 1.5rem;
+    border-radius: 16px;
+    text-align: center;
+    margin: 2rem 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.2rem;
+}
+
+.visualizacao-temporaria .vis-total-geral span {
+    font-size: 1.8rem;
+    font-weight: bold;
+}
+
+.visualizacao-temporaria .vis-footer {
+    text-align: center;
+    padding: 1rem;
+    color: #888;
+    font-size: 0.8rem;
+    border-top: 1px solid #e0e0e0;
+    margin-top: 1rem;
+}

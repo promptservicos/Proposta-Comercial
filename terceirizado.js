@@ -92,6 +92,152 @@ const EXAMES_COMPLEMENTARES = [
 // Chave para salvar rascunho no localStorage
 const DRAFT_KEY = 'proposta_terceirizado_draft';
 
+// ========== FUNÇÃO PARA GERAR IMAGEM DA PROPOSTA DIRETAMENTE ==========
+async function gerarImagemProposta() {
+    // Mostrar indicador de carregamento
+    const btnBaixar = document.getElementById('btn-baixar-proposta');
+    const textoOriginal = btnBaixar ? btnBaixar.innerHTML : '';
+    if (btnBaixar) {
+        btnBaixar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando imagem...';
+        btnBaixar.disabled = true;
+    }
+    
+    try {
+        // Criar um elemento temporário para a visualização
+        const elementoVisualizacao = document.createElement('div');
+        elementoVisualizacao.className = 'visualizacao-temporaria';
+        elementoVisualizacao.style.position = 'fixed';
+        elementoVisualizacao.style.left = '-9999px';
+        elementoVisualizacao.style.top = '-9999px';
+        elementoVisualizacao.style.backgroundColor = '#ffffff';
+        elementoVisualizacao.style.padding = '2rem';
+        elementoVisualizacao.style.borderRadius = '16px';
+        elementoVisualizacao.style.width = '800px';
+        elementoVisualizacao.style.maxWidth = '800px';
+        elementoVisualizacao.style.fontFamily = "'Inter', sans-serif";
+        
+        // Coletar dados da proposta atual
+        const cliente = document.getElementById('cliente-nome').value || 'Não informado';
+        const vendedor = document.getElementById('vendedor-nome').textContent || 'Não informado';
+        const dataAtual = new Date().toLocaleDateString('pt-BR');
+        
+        // Coletar dados dos cargos
+        let cargosHTML = '';
+        let cargoIndex = 0;
+        let totalGeralProposta = 0;
+        
+        document.querySelectorAll('.cargo-item').forEach(item => {
+            cargoIndex++;
+            const nomeCargo = item.querySelector('.cargo-nome').value.trim() || 'Cargo sem nome';
+            const qtdVagas = parseInt(item.querySelector('.cargo-quantidade').value) || 1;
+            
+            // Pegar o TOTAL FINAL DA VAGA (já com multiplicação e acúmulo)
+            const totalVagaElem = item.querySelector('.total-prestacao .valor');
+            let totalVaga = 0;
+            if (totalVagaElem) {
+                const totalText = totalVagaElem.textContent;
+                totalVaga = parseFloat(totalText.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
+            }
+            
+            totalGeralProposta += totalVaga;
+            
+            // Calcular valor por vaga (sem multiplicação)
+            let valorPorVaga = totalVaga;
+            if (qtdVagas > 1) {
+                valorPorVaga = totalVaga / qtdVagas;
+            }
+            
+            cargosHTML += `
+                <div class="vis-cargo" style="background: #fff; border: 1px solid #e0e0e0; border-radius: 16px; margin-bottom: 1.5rem; overflow: hidden;">
+                    <div class="vis-cargo-header" style="background: #f8f8f8; padding: 1rem; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="color: #c10404; margin: 0; font-size: 1.1rem;">${cargoIndex}. ${escapeHtml(nomeCargo)}</h3>
+                        <span class="vis-quantidade" style="background: #c10404; color: #fff; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem;">${qtdVagas} vaga${qtdVagas > 1 ? 's' : ''}</span>
+                    </div>
+                    <div class="vis-resumo" style="padding: 1rem;">
+                        <div class="vis-resumo-item" style="padding: 0.5rem 0; display: flex; justify-content: space-between; border-bottom: 1px dashed #eee;">
+                            <strong>Valor por vaga:</strong>
+                            <span>${formatarMoeda(valorPorVaga)}</span>
+                        </div>
+                        <div class="vis-resumo-item vis-destaque" style="padding: 0.5rem 0; display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: bold; color: #c10404; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid #ddd;">
+                            <strong>Total (${qtdVagas} vaga${qtdVagas > 1 ? 's' : ''}):</strong>
+                            <span>${formatarMoeda(totalVaga)}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        // Construir HTML da visualização
+        elementoVisualizacao.innerHTML = `
+            <div class="visualizacao-resumida" style="max-width: 800px; margin: 0 auto;">
+                <div class="vis-header" style="text-align: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #c10404;">
+                    <i class="fas fa-chart-line" style="font-size: 2rem; color: #c10404;"></i>
+                    <h2 style="color: #c10404; margin: 0.5rem 0;">Proposta Comercial</h2>
+                    <p class="vis-subtitle" style="color: #666; font-size: 0.9rem;">Prompt Serviços - Contrato Terceirizado</p>
+                </div>
+                
+                <div class="vis-info" style="background: #f5f5f5; padding: 1rem; border-radius: 12px; margin-bottom: 2rem;">
+                    <div class="vis-info-item" style="display: flex; justify-content: space-between; padding: 0.3rem 0;">
+                        <span class="vis-label" style="font-weight: 600; color: #666;">Cliente:</span>
+                        <span class="vis-value" style="color: #333;">${escapeHtml(cliente)}</span>
+                    </div>
+                    <div class="vis-info-item" style="display: flex; justify-content: space-between; padding: 0.3rem 0;">
+                        <span class="vis-label" style="font-weight: 600; color: #666;">Vendedor:</span>
+                        <span class="vis-value" style="color: #333;">${escapeHtml(vendedor)}</span>
+                    </div>
+                    <div class="vis-info-item" style="display: flex; justify-content: space-between; padding: 0.3rem 0;">
+                        <span class="vis-label" style="font-weight: 600; color: #666;">Data:</span>
+                        <span class="vis-value" style="color: #333;">${dataAtual}</span>
+                    </div>
+                </div>
+                
+                ${cargosHTML}
+                
+                <div class="vis-total-geral" style="background: linear-gradient(135deg, #c10404 0%, #a00303 100%); color: #fff; padding: 1.5rem; border-radius: 16px; text-align: center; margin: 2rem 0; display: flex; justify-content: space-between; align-items: center; font-size: 1.2rem;">
+                    <strong>TOTAL DA PROPOSTA:</strong>
+                    <span style="font-size: 1.8rem; font-weight: bold;">${formatarMoeda(totalGeralProposta)}</span>
+                </div>
+                
+                <div class="vis-footer" style="text-align: center; padding: 1rem; color: #888; font-size: 0.8rem; border-top: 1px solid #e0e0e0; margin-top: 1rem;">
+                    <p>Documento gerado em ${dataAtual}</p>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(elementoVisualizacao);
+        
+        // Usar html2canvas para gerar a imagem
+        const canvas = await html2canvas(elementoVisualizacao, {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            logging: false,
+            useCORS: true,
+            allowTaint: false
+        });
+        
+        // Remover o elemento temporário
+        document.body.removeChild(elementoVisualizacao);
+        
+        // Criar link para download
+        const link = document.createElement('a');
+        const clienteNome = cliente.replace(/[^a-zA-Z0-9]/g, '_');
+        const dataAtualFormatada = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+        link.download = `Proposta_${clienteNome}_${dataAtualFormatada}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        
+    } catch (error) {
+        console.error('Erro ao gerar imagem:', error);
+        alert('Erro ao gerar imagem. Tente novamente.');
+    } finally {
+        // Restaurar botão
+        if (btnBaixar) {
+            btnBaixar.innerHTML = textoOriginal;
+            btnBaixar.disabled = false;
+        }
+    }
+}
+
 // ================== INICIALIZAÇÃO ==================
 document.addEventListener('DOMContentLoaded', async function() {
     const container = document.getElementById('cargos-container');
@@ -2711,44 +2857,28 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // ========== COMPARTILHAR LINK ==========
-    function initCompartilhar() {
-        const btnCompartilhar = document.getElementById('btn-compartilhar');
-        const modalShare = document.getElementById('modal-share');
-        const shareLinkInput = document.getElementById('share-link');
-        const btnCopiarLink = document.getElementById('btn-copiar-link');
-        const modalShareOk = document.getElementById('modal-share-ok');
+    // ========== BAIXAR PROPOSTA COMO IMAGEM ==========
+    function initBaixarProposta() {
+        const btnBaixar = document.getElementById('btn-baixar-proposta');
         
-        if (!btnCompartilhar) return;
+        if (!btnBaixar) return;
         
-        btnCompartilhar.addEventListener('click', async () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const propostaId = urlParams.get('id');
-            
-            if (!propostaId) {
-                mostrarModal('Salve a proposta primeiro antes de compartilhar.');
+        btnBaixar.addEventListener('click', async () => {
+            // Verificar se há dados para baixar
+            const cargos = document.querySelectorAll('.cargo-item');
+            if (cargos.length === 0) {
+                mostrarModal('Adicione pelo menos um cargo antes de baixar a proposta.');
                 return;
             }
             
-            const linkVisualizacao = `${window.location.origin}${window.location.pathname}?id=${propostaId}&visualizacao=true`;
-            if (shareLinkInput) shareLinkInput.value = linkVisualizacao;
-            if (modalShare) modalShare.classList.remove('hidden');
+            const cliente = document.getElementById('cliente-nome').value;
+            if (!cliente) {
+                mostrarModal('Informe o nome do cliente antes de baixar a proposta.');
+                return;
+            }
+            
+            await gerarImagemProposta();
         });
-        
-        if (btnCopiarLink && shareLinkInput) {
-            btnCopiarLink.addEventListener('click', () => {
-                shareLinkInput.select();
-                document.execCommand('copy');
-                mostrarModal('Link copiado para a área de transferência!');
-            });
-        }
-        
-        if (modalShareOk && modalShare) {
-            modalShareOk.addEventListener('click', () => modalShare.classList.add('hidden'));
-            modalShare.addEventListener('click', (e) => {
-                if (e.target === modalShare) modalShare.classList.add('hidden');
-            });
-        }
     }
     
     // ========== VERIFICAR MODO VISUALIZAÇÃO ==========
@@ -3474,7 +3604,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // ========== INICIALIZAR FUNCIONALIDADES ==========
     initTema();
-    initCompartilhar();
+    initBaixarProposta();
     checkVisualizacao();
     
 });
