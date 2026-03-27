@@ -195,7 +195,7 @@ async function gerarImagemProposta() {
                     </div>
                     <div class="vis-info-item" style="display: flex; justify-content: space-between; padding: 0.3rem 0;">
                         <span class="vis-label" style="font-weight: 600; color: #666;">Data:</span>
-                        <span class="vis-value" style="color: #333;">${dataAtual}</span>
+                        <span class="vis-value" style="color: #333;">${escapeHtml(dataAtual)}</span>
                     </div>
                 </div>
                 
@@ -207,7 +207,7 @@ async function gerarImagemProposta() {
                 </div>
                 
                 <div class="vis-footer" style="text-align: center; padding: 1rem; color: #888; font-size: 0.8rem; border-top: 1px solid #e0e0e0; margin-top: 1rem;">
-                    <p>Documento gerado em ${dataAtual}</p>
+                    <p>Documento gerado em ${escapeHtml(dataAtual)}</p>
                 </div>
             </div>
         `;
