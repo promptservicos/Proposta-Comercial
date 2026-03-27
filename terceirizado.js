@@ -2503,7 +2503,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         // ========== PREENCHER DADOS EXISTENTES ==========
         
         // Preencher dados adicionais existentes
+        // ========== PREENCHER DADOS EXISTENTES ==========
+
+        // Preencher dados adicionais existentes
         if (dadosAdicionais) {
+            // Adicionais existentes
             if (dadosAdicionais.horasExtras && adicionaisContent.querySelector('.he-check')) 
                 adicionaisContent.querySelector('.he-check').checked = true;
             if (dadosAdicionais.noturno && adicionaisContent.querySelector('.an-check')) 
@@ -2520,12 +2524,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             // ========== PREENCHER DADOS DO ACÚMULO ==========
             if (dadosAdicionais.acumulo !== undefined && adicionaisContent.querySelector('.acumulo-check')) {
                 adicionaisContent.querySelector('.acumulo-check').checked = dadosAdicionais.acumulo;
-                // Forçar atualização do conteúdo
+                
+                // Mostrar/esconder o conteúdo baseado no checkbox
                 const acumuloConteudo = adicionaisContent.querySelector('.acumulo-conteudo');
                 if (acumuloConteudo) {
                     acumuloConteudo.classList.toggle('hidden', !dadosAdicionais.acumulo);
                 }
             }
+            
             if (dadosAdicionais.acumuloQuantidade !== undefined && adicionaisContent.querySelector('.acumulo-quantidade')) {
                 adicionaisContent.querySelector('.acumulo-quantidade').value = dadosAdicionais.acumuloQuantidade;
             }
