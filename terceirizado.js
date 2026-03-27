@@ -100,6 +100,11 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// ========== FUNÇÃO FORMATAR MOEDA ==========
+function formatarMoeda(valor) {
+    return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
 // ========== FUNÇÃO PARA GERAR IMAGEM DA PROPOSTA DIRETAMENTE ==========
 async function gerarImagemProposta() {
     // Mostrar indicador de carregamento
@@ -246,6 +251,8 @@ async function gerarImagemProposta() {
     }
 }
 
+
+
 // ================== INICIALIZAÇÃO ==================
 document.addEventListener('DOMContentLoaded', async function() {
     const container = document.getElementById('cargos-container');
@@ -276,10 +283,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         this.value = this.value.toUpperCase();
         salvarRascunho();
     });
-
-    function formatarMoeda(valor) {
-        return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    }
 
     function calcularTotalGeral() {
         let total = 0;
