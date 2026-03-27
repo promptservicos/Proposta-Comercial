@@ -2545,6 +2545,34 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
         
+        // ========== PREENCHER DADOS DO ACÚMULO ==========
+        console.log('PREENCHENDO ACÚMULO - dadosAdicionais:', dadosAdicionais);
+
+        if (dadosAdicionais) {
+            const acumuloCheckElem = adicionaisContent.querySelector('.acumulo-check');
+            const acumuloQuantidadeElem = adicionaisContent.querySelector('.acumulo-quantidade');
+            const acumuloConteudoElem = adicionaisContent.querySelector('.acumulo-conteudo');
+            
+            console.log('Elementos encontrados - checkbox:', !!acumuloCheckElem, 'quantidade:', !!acumuloQuantidadeElem);
+            
+            // Preencher checkbox
+            if (acumuloCheckElem && dadosAdicionais.acumulo !== undefined) {
+                acumuloCheckElem.checked = dadosAdicionais.acumulo;
+                console.log('Checkbox preenchido com:', dadosAdicionais.acumulo);
+                
+                // Mostrar/esconder o conteúdo
+                if (acumuloConteudoElem) {
+                    acumuloConteudoElem.classList.toggle('hidden', !dadosAdicionais.acumulo);
+                }
+            }
+            
+            // Preencher quantidade
+            if (acumuloQuantidadeElem && dadosAdicionais.acumuloQuantidade !== undefined) {
+                acumuloQuantidadeElem.value = dadosAdicionais.acumuloQuantidade;
+                console.log('Quantidade preenchida com:', dadosAdicionais.acumuloQuantidade);
+            }
+        }
+
         // Executar atualização inicial
         atualizarResultados();
         
@@ -3219,19 +3247,35 @@ document.addEventListener('DOMContentLoaded', async function() {
             const encargosPercentual = parseFloat(encargosPercentualInput?.value.replace(/\./g, '').replace(',', '.')) || 113.00;
             
             // ========== CAPTURAR DADOS DOS ADICIONAIS ==========
-            const adicionaisSection = item.querySelector('.expandable-section:first-child .section-content');
-            
+            // Procura a seção de adicionais de forma mais robusta
+            const adicionaisSection = item.querySelector('.expandable-section .adicionais-grid')?.closest('.expandable-section') 
+                || item.querySelector('.expandable-section:first-child');
+
+            if (!adicionaisSection) {
+                console.error('Seção de adicionais não encontrada!');
+            }
+
+            // Busca os elementos dentro da seção
+            const adicionaisContent = adicionaisSection?.querySelector('.section-content');
+            if (!adicionaisContent) {
+                console.error('Conteúdo da seção de adicionais não encontrado!');
+            }
+
             // Adicionais existentes
-            const heCheck = adicionaisSection?.querySelector('.he-check');
-            const anCheck = adicionaisSection?.querySelector('.an-check');
-            const perCheck = adicionaisSection?.querySelector('.per-check');
-            const insCheck = adicionaisSection?.querySelector('.ins-check');
-            const heHoras = parseFloat(adicionaisSection?.querySelector('.he-horas')?.value) || 0;
-            const anHoras = parseFloat(adicionaisSection?.querySelector('.an-horas')?.value) || 0;
-            
-            // NOVOS CAMPOS: ACÚMULO DE FUNÇÃO
-            const acumuloCheck = adicionaisSection?.querySelector('.acumulo-check');
-            const acumuloQuantidade = parseInt(adicionaisSection?.querySelector('.acumulo-quantidade')?.value) || 0;
+            const heCheck = adicionaisContent?.querySelector('.he-check');
+            const anCheck = adicionaisContent?.querySelector('.an-check');
+            const perCheck = adicionaisContent?.querySelector('.per-check');
+            const insCheck = adicionaisContent?.querySelector('.ins-check');
+            const heHoras = parseFloat(adicionaisContent?.querySelector('.he-horas')?.value) || 0;
+            const anHoras = parseFloat(adicionaisContent?.querySelector('.an-horas')?.value) || 0;
+
+            // NOVOS CAMPOS: ACÚMULO DE FUNÇÃO - Busca de forma mais específica
+            const acumuloCheck = adicionaisContent?.querySelector('.acumulo-check');
+            const acumuloQuantidade = parseInt(adicionaisContent?.querySelector('.acumulo-quantidade')?.value) || 0;
+
+            console.log('ACÚMULO - Checkbox encontrado:', !!acumuloCheck);
+            console.log('ACÚMULO - Checkbox checked:', acumuloCheck?.checked);
+            console.log('ACÚMULO - Quantidade:', acumuloQuantidade);
             
             // ========== UNIFORMES E EPIS ==========
             let uniformes = {}, epis = {};
