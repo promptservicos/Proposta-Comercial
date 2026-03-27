@@ -1409,13 +1409,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                         <i class="fas fa-chevron-down"></i>
                     </div>
                     <div class="dropdown-menu exames-menu"></div>
-                    <div class="exames-custom">
-                        <h5 style="color: #c10404; margin: 0.5rem 0 0.5rem 0; font-size: 0.8rem;">Exames Personalizados</h5>
-                        <div class="exames-custom-grid"></div>
-                        <button type="button" class="btn-add-exame-custom" style="background: transparent; border: 1px dashed #c10404; color: #c10404; padding: 0.3rem; border-radius: 20px; width: 100%; margin-top: 0.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem; font-size: 0.8rem;">
-                            <i class="fas fa-plus-circle"></i> Adicionar Exame Personalizado
-                        </button>
-                    </div>
                     <div class="exames-total">Total Exames: <span>R$ 0,00</span></div>
                 </div>
                 <div class="treinamento-box">
@@ -1439,7 +1432,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         let isExpanded = false;
         content.classList.add('collapsed');
-        // Quando fechado, seta pra BAIXO
         header.querySelector('.exames-toggle').classList.remove('fa-chevron-up');
         header.querySelector('.exames-toggle').classList.add('fa-chevron-down');
         
@@ -1448,12 +1440,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             isExpanded = !isExpanded;
             if (isExpanded) {
                 content.classList.remove('collapsed');
-                // ABERTO: seta pra CIMA
                 header.querySelector('.exames-toggle').classList.remove('fa-chevron-down');
                 header.querySelector('.exames-toggle').classList.add('fa-chevron-up');
             } else {
                 content.classList.add('collapsed');
-                // FECHADO: seta pra BAIXO
                 header.querySelector('.exames-toggle').classList.remove('fa-chevron-up');
                 header.querySelector('.exames-toggle').classList.add('fa-chevron-down');
             }
@@ -1466,48 +1456,66 @@ document.addEventListener('DOMContentLoaded', async function() {
         const totalSecaoSpan = content.querySelector('.total-secao');
         const examesTotalGeralSpan = content.querySelector('.exames-valor-geral');
         const examesQtdFuncionariosSpan = content.querySelector('.exames-qtd-funcionarios');
-        const examesCustomGrid = content.querySelector('.exames-custom-grid');
-        const btnAddExameCustom = content.querySelector('.btn-add-exame-custom');
         
         const examesItems = [];
         const examesCustomItems = [];
         
-        // Função para criar exame personalizado
-        function criarExamePersonalizado(exameData = null) {
+        // Função para criar exame personalizado DENTRO DO DROPDOWN
+        function criarExamePersonalizadoDropdown(exameData = null) {
             const div = document.createElement('div');
-            div.className = 'exame-custom-item';
-            div.style.cssText = 'background: linear-gradient(135deg, #141414 0%, #0d0d0d 100%); border: 1px solid #2a2a2a; border-radius: 16px; padding: 0.6rem; margin-bottom: 0.6rem; display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem;';
+            div.className = 'exame-custom-item item-lista';
+            div.style.cssText = 'margin-bottom: 0.8rem; padding-bottom: 0.5rem; border-bottom: 1px solid #2a2a2a;';
             
             const nome = exameData?.nome || '';
             const preco = exameData?.preco || 0;
             const isChecked = exameData?.checked || false;
             
             div.innerHTML = `
-                <input type="text" class="exame-custom-nome" placeholder="Nome do exame" value="${nome}" style="flex: 2; min-width: 150px; background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%); border: 1px solid #2c2c2c; border-radius: 30px; padding: 0.4rem 0.8rem; color: #fff; font-size: 0.85rem;">
-                <div style="display: flex; align-items: center; gap: 0.3rem;">
-                    <input type="text" class="exame-custom-preco" placeholder="Preço" value="${preco.toFixed(2).replace('.', ',')}" style="width: 80px; background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%); border: 1px solid #2c2c2c; border-radius: 30px; padding: 0.4rem 0.5rem; color: #fff; text-align: center;">
-                    <span>R$</span>
+                <div class="item-header" style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.2rem;">
+                    <input type="text" class="exame-custom-nome" placeholder="Nome do exame" value="${nome}" style="background: transparent; border: none; color: #c10404; font-weight: 600; width: 60%; padding: 0; font-size: 0.85rem;">
+                    <span class="exames-item-preco" style="font-size: 0.75rem; color: #c10404;">R$ <span class="preco-valor">${preco.toFixed(2).replace('.', ',')}</span></span>
                 </div>
-                <label style="display: flex; align-items: center; gap: 0.3rem; cursor: pointer;">
-                    <input type="checkbox" class="exame-custom-checkbox" ${isChecked ? 'checked' : ''} style="width: 18px; height: 18px; cursor: pointer; accent-color: #c10404;">
-                    <span style="font-size: 0.75rem;">Selecionar</span>
-                </label>
-                <button type="button" class="btn-remover-exame-custom" style="background: transparent; border: none; color: #c10404; cursor: pointer; padding: 0.3rem;">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
+                <div class="item-inputs" style="display: flex; gap: 0.5rem; margin-top: 0.3rem; flex-wrap: wrap; align-items: center;">
+                    <div class="item-input" style="display: flex; align-items: center; gap: 0.3rem;">
+                        <span style="font-size: 0.7rem;">Preço:</span>
+                        <input type="text" class="exame-custom-preco-input" placeholder="0,00" value="${preco.toFixed(2).replace('.', ',')}" style="width: 70px; background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%); border: 1px solid #2c2c2c; border-radius: 30px; padding: 0.2rem 0.4rem; color: #fff; text-align: center; font-size: 0.75rem;">
+                    </div>
+                    <label style="display: flex; align-items: center; gap: 0.3rem; cursor: pointer; margin-left: 0.5rem;">
+                        <input type="checkbox" class="exame-custom-checkbox" ${isChecked ? 'checked' : ''} style="width: 16px; height: 16px; cursor: pointer; accent-color: #c10404;">
+                        <span style="font-size: 0.7rem;">Selecionar</span>
+                    </label>
+                    <button type="button" class="btn-remover-exame-custom" style="background: transparent; border: none; color: #c10404; cursor: pointer; padding: 0.2rem; margin-left: auto;">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+                <div class="item-totals" style="margin-top: 0.3rem; font-size: 0.75rem;">
+                    <span class="exame-total">Total: R$ 0,00</span>
+                </div>
             `;
             
             const nomeInput = div.querySelector('.exame-custom-nome');
-            const precoInput = div.querySelector('.exame-custom-preco');
+            const precoInput = div.querySelector('.exame-custom-preco-input');
             const checkbox = div.querySelector('.exame-custom-checkbox');
+            const totalSpan = div.querySelector('.exame-total');
+            const precoSpan = div.querySelector('.preco-valor');
             
             function getPreco() {
                 return parseFloat(precoInput.value.replace(/\./g, '').replace(',', '.')) || 0;
             }
             
+            function atualizarTotal() {
+                const preco = getPreco();
+                const isCheckedVal = checkbox.checked;
+                const total = isCheckedVal ? preco : 0;
+                totalSpan.textContent = `Total: ${formatarMoeda(total)}`;
+                return total;
+            }
+            
             precoInput.addEventListener('input', function(e) {
                 let valor = e.target.value.replace(/\D/g, '');
                 e.target.value = valor ? (parseInt(valor) / 100).toFixed(2).replace('.', ',') : '';
+                if (precoSpan) precoSpan.textContent = e.target.value;
+                atualizarTotal();
                 calcularTotal();
                 salvarRascunho();
             });
@@ -1517,6 +1525,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
             
             checkbox.addEventListener('change', () => {
+                atualizarTotal();
                 calcularTotal();
                 salvarRascunho();
                 if (cargoItem && cargoItem.dispatchEvent) {
@@ -1536,32 +1545,30 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             });
             
+            atualizarTotal();
+            
             return {
                 div,
                 getNome: () => nomeInput.value,
                 getPreco,
                 isChecked: () => checkbox.checked,
-                checkbox
+                checkbox,
+                atualizarTotal
             };
         }
         
-        // Carregar exames personalizados existentes
-        if (dadosExames && dadosExames.custom) {
-            dadosExames.custom.forEach(item => {
-                const customItem = criarExamePersonalizado(item);
-                examesCustomGrid.appendChild(customItem.div);
-                examesCustomItems.push(customItem);
-            });
+        // Função para criar botão "Adicionar Exame Personalizado" dentro do dropdown
+        function criarBotaoAdicionarExameCustom() {
+            const btnDiv = document.createElement('div');
+            btnDiv.className = 'btn-add-custom-exame-container';
+            btnDiv.style.cssText = 'margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px dashed #c10404;';
+            btnDiv.innerHTML = `
+                <button type="button" class="btn-add-custom-exame" style="background: transparent; border: 1px dashed #c10404; color: #c10404; padding: 0.3rem; border-radius: 20px; width: 100%; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem; font-size: 0.75rem;">
+                    <i class="fas fa-plus-circle"></i> Adicionar Exame Personalizado
+                </button>
+            `;
+            return btnDiv;
         }
-        
-        // Botão adicionar exame personalizado
-        btnAddExameCustom.addEventListener('click', () => {
-            const customItem = criarExamePersonalizado();
-            examesCustomGrid.appendChild(customItem.div);
-            examesCustomItems.push(customItem);
-            calcularTotal();
-            salvarRascunho();
-        });
         
         // Função para atualizar o total geral com a quantidade de funcionários
         function atualizarTotalGeral(totalPorFuncionario) {
@@ -1579,41 +1586,65 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Adicionar exame Admissional/Demissional/Acuidade
         EXAMES_ADMISSIONAL.forEach(e => {
             const itemDiv = document.createElement('div');
-            itemDiv.className = 'exames-item';
+            itemDiv.className = 'exames-item item-lista';
+            itemDiv.style.cssText = 'margin-bottom: 0.8rem; padding-bottom: 0.5rem; border-bottom: 1px solid #2a2a2a; display: flex; justify-content: space-between; align-items: center;';
             const isChecked = (dadosExames && dadosExames[e.nome] === true);
             itemDiv.innerHTML = `
-                <div class="exames-item-nome">${e.nome}</div>
-                <div class="exames-item-checkbox">
-                    <span class="exames-item-preco">${formatarMoeda(e.preco)}</span>
-                    <input type="checkbox" class="exame-checkbox" data-nome="${e.nome}" data-preco="${e.preco}" ${isChecked ? 'checked' : ''}>
+                <div class="exames-item-nome" style="font-size: 0.85rem; color: #ddd;">${e.nome}</div>
+                <div class="exames-item-checkbox" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span class="exames-item-preco" style="font-size: 0.75rem; color: #c10404;">${formatarMoeda(e.preco)}</span>
+                    <input type="checkbox" class="exame-checkbox" data-nome="${e.nome}" data-preco="${e.preco}" ${isChecked ? 'checked' : ''} style="width: 18px; height: 18px; cursor: pointer; accent-color: #c10404;">
                 </div>
             `;
             examesMenu.appendChild(itemDiv);
             examesItems.push({
                 nome: e.nome,
                 preco: e.preco,
-                checkbox: itemDiv.querySelector('.exame-checkbox')
+                checkbox: itemDiv.querySelector('.exame-checkbox'),
+                div: itemDiv
             });
         });
         
         // Adicionar exames complementares
         EXAMES_COMPLEMENTARES.forEach(e => {
             const itemDiv = document.createElement('div');
-            itemDiv.className = 'exames-item';
+            itemDiv.className = 'exames-item item-lista';
+            itemDiv.style.cssText = 'margin-bottom: 0.8rem; padding-bottom: 0.5rem; border-bottom: 1px solid #2a2a2a; display: flex; justify-content: space-between; align-items: center;';
             const isChecked = (dadosExames && dadosExames[e.nome] === true);
             itemDiv.innerHTML = `
-                <div class="exames-item-nome">${e.nome}</div>
-                <div class="exames-item-checkbox">
-                    <span class="exames-item-preco">${formatarMoeda(e.preco)}</span>
-                    <input type="checkbox" class="exame-checkbox" data-nome="${e.nome}" data-preco="${e.preco}" ${isChecked ? 'checked' : ''}>
+                <div class="exames-item-nome" style="font-size: 0.85rem; color: #ddd;">${e.nome}</div>
+                <div class="exames-item-checkbox" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span class="exames-item-preco" style="font-size: 0.75rem; color: #c10404;">${formatarMoeda(e.preco)}</span>
+                    <input type="checkbox" class="exame-checkbox" data-nome="${e.nome}" data-preco="${e.preco}" ${isChecked ? 'checked' : ''} style="width: 18px; height: 18px; cursor: pointer; accent-color: #c10404;">
                 </div>
             `;
             examesMenu.appendChild(itemDiv);
             examesItems.push({
                 nome: e.nome,
                 preco: e.preco,
-                checkbox: itemDiv.querySelector('.exame-checkbox')
+                checkbox: itemDiv.querySelector('.exame-checkbox'),
+                div: itemDiv
             });
+        });
+        
+        // Carregar exames personalizados existentes dentro do dropdown
+        if (dadosExames && dadosExames.custom) {
+            dadosExames.custom.forEach(item => {
+                const customItem = criarExamePersonalizadoDropdown(item);
+                examesMenu.appendChild(customItem.div);
+                examesCustomItems.push(customItem);
+            });
+        }
+        
+        // Adicionar botão de adicionar exame personalizado no final do menu
+        const btnExameCustom = criarBotaoAdicionarExameCustom();
+        examesMenu.appendChild(btnExameCustom);
+        btnExameCustom.querySelector('.btn-add-custom-exame').addEventListener('click', () => {
+            const customItem = criarExamePersonalizadoDropdown();
+            examesMenu.insertBefore(customItem.div, btnExameCustom);
+            examesCustomItems.push(customItem);
+            calcularTotal();
+            salvarRascunho();
         });
         
         function calcularTotalExames() {
