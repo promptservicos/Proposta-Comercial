@@ -514,13 +514,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                         <i class="fas fa-chevron-down"></i>
                     </div>
                     <div class="dropdown-menu uniformes-menu"></div>
-                    <div class="uniformes-custom">
-                        <h5 style="color: #c10404; margin: 0.5rem 0 0.5rem 0; font-size: 0.8rem;">Itens Personalizados</h5>
-                        <div class="uniformes-custom-grid"></div>
-                        <button type="button" class="btn-add-uniforme-custom" style="background: transparent; border: 1px dashed #c10404; color: #c10404; padding: 0.3rem; border-radius: 20px; width: 100%; margin-top: 0.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem; font-size: 0.8rem;">
-                            <i class="fas fa-plus-circle"></i> Adicionar Uniforme Personalizado
-                        </button>
-                    </div>
                     <div class="uniformes-total">
                         <div>Total Mensal Uniformes: <span>R$ 0,00</span></div>
                         <div class="uniformes-total-geral" style="font-size: 0.8rem; color: #c10404; margin-top: 0.25rem;">Total para ${cargoItem ? (cargoItem.querySelector('.cargo-quantidade')?.value || 1) : 1} funcionário(s): <strong>R$ 0,00</strong></div>
@@ -532,13 +525,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                         <i class="fas fa-chevron-down"></i>
                     </div>
                     <div class="dropdown-menu epis-menu"></div>
-                    <div class="epis-custom">
-                        <h5 style="color: #c10404; margin: 0.5rem 0 0.5rem 0; font-size: 0.8rem;">Itens Personalizados</h5>
-                        <div class="epis-custom-grid"></div>
-                        <button type="button" class="btn-add-epi-custom" style="background: transparent; border: 1px dashed #c10404; color: #c10404; padding: 0.3rem; border-radius: 20px; width: 100%; margin-top: 0.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem; font-size: 0.8rem;">
-                            <i class="fas fa-plus-circle"></i> Adicionar EPI Personalizado
-                        </button>
-                    </div>
                     <div class="epis-total">
                         <div>Total Mensal EPIs: <span>R$ 0,00</span></div>
                         <div class="epis-total-geral" style="font-size: 0.8rem; color: #c10404; margin-top: 0.25rem;">Total para ${cargoItem ? (cargoItem.querySelector('.cargo-quantidade')?.value || 1) : 1} funcionário(s): <strong>R$ 0,00</strong></div>
@@ -552,7 +538,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         let isExpanded = false;
         content.classList.add('collapsed');
-        // Quando fechado, seta pra BAIXO
         header.querySelector('.section-toggle').classList.remove('fa-chevron-up');
         header.querySelector('.section-toggle').classList.add('fa-chevron-down');
         
@@ -561,12 +546,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             isExpanded = !isExpanded;
             if (isExpanded) {
                 content.classList.remove('collapsed');
-                // ABERTO: seta pra CIMA
                 header.querySelector('.section-toggle').classList.remove('fa-chevron-down');
                 header.querySelector('.section-toggle').classList.add('fa-chevron-up');
             } else {
                 content.classList.add('collapsed');
-                // FECHADO: seta pra BAIXO
                 header.querySelector('.section-toggle').classList.remove('fa-chevron-up');
                 header.querySelector('.section-toggle').classList.add('fa-chevron-down');
             }
@@ -580,21 +563,17 @@ document.addEventListener('DOMContentLoaded', async function() {
         const episTotalSpan = content.querySelector('.epis-total span');
         const uniformesTotalGeralSpan = content.querySelector('.uniformes-total-geral strong');
         const episTotalGeralSpan = content.querySelector('.epis-total-geral strong');
-        const uniformesCustomGrid = content.querySelector('.uniformes-custom-grid');
-        const episCustomGrid = content.querySelector('.epis-custom-grid');
-        const btnAddUniformeCustom = content.querySelector('.btn-add-uniforme-custom');
-        const btnAddEpiCustom = content.querySelector('.btn-add-epi-custom');
         
         const uniformesItems = [];
         const episItems = [];
         const uniformesCustomItems = [];
         const episCustomItems = [];
         
-        // Função para criar item personalizado (uniforme ou EPI)
-        function criarItemPersonalizado(tipo, itemData = null) {
+        // Função para criar item personalizado (uniforme ou EPI) que vai dentro do dropdown
+        function criarItemPersonalizadoDropdown(tipo, itemData = null) {
             const div = document.createElement('div');
-            div.className = 'item-custom';
-            div.style.cssText = 'background: linear-gradient(135deg, #141414 0%, #0d0d0d 100%); border: 1px solid #2a2a2a; border-radius: 16px; padding: 0.6rem; margin-bottom: 0.6rem;';
+            div.className = 'item-custom item-lista';
+            div.style.cssText = 'margin-bottom: 0.8rem; padding-bottom: 0.5rem; border-bottom: 1px solid #2a2a2a;';
             
             const nome = itemData?.nome || '';
             const preco = itemData?.preco || 0;
@@ -602,34 +581,41 @@ document.addEventListener('DOMContentLoaded', async function() {
             const depreciacao = itemData?.depreciacao || 1;
             
             div.innerHTML = `
-                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                    <input type="text" class="item-custom-nome" placeholder="Nome do item" value="${nome}" style="flex: 2; min-width: 120px; background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%); border: 1px solid #2c2c2c; border-radius: 30px; padding: 0.4rem 0.8rem; color: #fff; font-size: 0.85rem;">
+                <div class="item-header" style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.2rem;">
+                    <input type="text" class="item-custom-nome" placeholder="Nome do item" value="${nome}" style="background: transparent; border: none; color: #c10404; font-weight: 600; width: 60%; padding: 0; font-size: 0.85rem;">
+                    <span class="item-preco" style="font-size: 0.75rem; color: #c10404;">R$ <span class="preco-valor">${preco.toFixed(2).replace('.', ',')}</span></span>
+                </div>
+                <div class="item-inputs" style="display: flex; gap: 0.5rem; margin-top: 0.3rem; flex-wrap: wrap;">
                     <div class="item-input" style="display: flex; align-items: center; gap: 0.3rem;">
-                        <input type="text" class="item-custom-preco" placeholder="Preço" value="${preco.toFixed(2).replace('.', ',')}" style="width: 80px; background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%); border: 1px solid #2c2c2c; border-radius: 30px; padding: 0.4rem 0.5rem; color: #fff; text-align: center;">
-                        <span>R$</span>
+                        <span style="font-size: 0.7rem;">Preço:</span>
+                        <input type="text" class="item-custom-preco-input" placeholder="0,00" value="${preco.toFixed(2).replace('.', ',')}" style="width: 70px; background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%); border: 1px solid #2c2c2c; border-radius: 30px; padding: 0.2rem 0.4rem; color: #fff; text-align: center; font-size: 0.75rem;">
                     </div>
                     <div class="item-input" style="display: flex; align-items: center; gap: 0.3rem;">
-                        <input type="number" min="0" step="1" value="${quantidade}" class="item-custom-quantidade" style="width: 60px; background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%); border: 1px solid #2c2c2c; border-radius: 30px; padding: 0.4rem 0.5rem; color: #fff; text-align: center;">
-                        <span>un.</span>
+                        <span style="font-size: 0.7rem;">Quantidade:</span>
+                        <input type="number" min="0" step="1" value="${quantidade}" class="item-custom-quantidade-input" style="width: 60px; background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%); border: 1px solid #2c2c2c; border-radius: 30px; padding: 0.2rem 0.4rem; color: #fff; text-align: center; font-size: 0.75rem;">
                     </div>
                     <div class="item-input" style="display: flex; align-items: center; gap: 0.3rem;">
-                        <input type="number" min="1" step="1" value="${depreciacao}" class="item-custom-depreciacao" style="width: 60px; background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%); border: 1px solid #2c2c2c; border-radius: 30px; padding: 0.4rem 0.5rem; color: #fff; text-align: center;">
-                        <span>meses</span>
+                        <span style="font-size: 0.7rem;">Depreciação:</span>
+                        <input type="number" min="1" step="1" value="${depreciacao}" class="item-custom-depreciacao-input" style="width: 60px; background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%); border: 1px solid #2c2c2c; border-radius: 30px; padding: 0.2rem 0.4rem; color: #fff; text-align: center; font-size: 0.75rem;">
+                        <span style="font-size: 0.7rem;">meses</span>
                     </div>
-                    <div class="item-custom-total" style="font-size: 0.75rem; color: #c10404; min-width: 80px;">Total: R$ 0,00</div>
-                    <div class="item-custom-mensal" style="font-size: 0.7rem; color: #888; min-width: 80px;">Mensal: R$ 0,00</div>
-                    <button type="button" class="btn-remover-custom" style="background: transparent; border: none; color: #c10404; cursor: pointer; padding: 0.3rem;">
+                    <button type="button" class="btn-remover-custom" style="background: transparent; border: none; color: #c10404; cursor: pointer; padding: 0.2rem; margin-left: auto;">
                         <i class="fas fa-trash-alt"></i>
                     </button>
+                </div>
+                <div class="item-totals" style="margin-top: 0.3rem; font-size: 0.75rem; display: flex; justify-content: space-between;">
+                    <span class="item-total">Total: R$ 0,00</span>
+                    <span class="item-mensal">Mensal: R$ 0,00</span>
                 </div>
             `;
             
             const nomeInput = div.querySelector('.item-custom-nome');
-            const precoInput = div.querySelector('.item-custom-preco');
-            const quantidadeInput = div.querySelector('.item-custom-quantidade');
-            const depreciacaoInput = div.querySelector('.item-custom-depreciacao');
-            const totalSpan = div.querySelector('.item-custom-total');
-            const mensalSpan = div.querySelector('.item-custom-mensal');
+            const precoInput = div.querySelector('.item-custom-preco-input');
+            const quantidadeInput = div.querySelector('.item-custom-quantidade-input');
+            const depreciacaoInput = div.querySelector('.item-custom-depreciacao-input');
+            const totalSpan = div.querySelector('.item-total');
+            const mensalSpan = div.querySelector('.item-mensal');
+            const precoSpan = div.querySelector('.preco-valor');
             
             function atualizar() {
                 const preco = parseFloat(precoInput.value.replace(/\./g, '').replace(',', '.')) || 0;
@@ -639,6 +625,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const mensal = total / depreciacao;
                 totalSpan.textContent = `Total: ${formatarMoeda(total)}`;
                 mensalSpan.textContent = `Mensal: ${formatarMoeda(mensal)}`;
+                if (precoSpan) precoSpan.textContent = preco.toFixed(2).replace('.', ',');
                 return { total, mensal, preco, qtd, depreciacao };
             }
             
@@ -669,6 +656,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             const btnRemover = div.querySelector('.btn-remover-custom');
             btnRemover.addEventListener('click', () => {
                 div.remove();
+                const index = (tipo === 'uniforme' ? uniformesCustomItems : episCustomItems).findIndex(item => item.div === div);
+                if (index !== -1) (tipo === 'uniforme' ? uniformesCustomItems : episCustomItems).splice(index, 1);
                 calcularTotais();
                 salvarRascunho();
                 if (cargoItem && cargoItem.dispatchEvent) {
@@ -699,43 +688,20 @@ document.addEventListener('DOMContentLoaded', async function() {
             };
         }
         
-        // Carregar uniformes personalizados existentes
-        if (dadosUniformes && dadosUniformes.custom) {
-            dadosUniformes.custom.forEach(item => {
-                const customItem = criarItemPersonalizado('uniforme', item);
-                uniformesCustomGrid.appendChild(customItem.div);
-                uniformesCustomItems.push(customItem);
-            });
+        // Função para criar botão "Adicionar Personalizado" dentro do dropdown
+        function criarBotaoAdicionarCustom(tipo) {
+            const btnDiv = document.createElement('div');
+            btnDiv.className = 'btn-add-custom-container';
+            btnDiv.style.cssText = 'margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px dashed #c10404;';
+            btnDiv.innerHTML = `
+                <button type="button" class="btn-add-custom-${tipo}" style="background: transparent; border: 1px dashed #c10404; color: #c10404; padding: 0.3rem; border-radius: 20px; width: 100%; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem; font-size: 0.75rem;">
+                    <i class="fas fa-plus-circle"></i> Adicionar ${tipo === 'uniforme' ? 'Uniforme' : 'EPI'} Personalizado
+                </button>
+            `;
+            return btnDiv;
         }
         
-        // Carregar EPIs personalizados existentes
-        if (dadosEpis && dadosEpis.custom) {
-            dadosEpis.custom.forEach(item => {
-                const customItem = criarItemPersonalizado('epi', item);
-                episCustomGrid.appendChild(customItem.div);
-                episCustomItems.push(customItem);
-            });
-        }
-        
-        // Botão adicionar uniforme personalizado
-        btnAddUniformeCustom.addEventListener('click', () => {
-            const customItem = criarItemPersonalizado('uniforme');
-            uniformesCustomGrid.appendChild(customItem.div);
-            uniformesCustomItems.push(customItem);
-            calcularTotais();
-            salvarRascunho();
-        });
-        
-        // Botão adicionar EPI personalizado
-        btnAddEpiCustom.addEventListener('click', () => {
-            const customItem = criarItemPersonalizado('epi');
-            episCustomGrid.appendChild(customItem.div);
-            episCustomItems.push(customItem);
-            calcularTotais();
-            salvarRascunho();
-        });
-        
-        // Adicionar itens padrão
+        // Adicionar itens padrão ao menu de uniformes
         UNIFORMES.forEach(u => {
             const { div, atualizar, getQuantidade, getDepreciacao, getMensal, getTotal } = criarItemListaComDepreciacao(u, 'uniforme');
             const quantidadeInput = div.querySelector('.quantidade-uniforme');
@@ -758,6 +724,27 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
         
+        // Carregar uniformes personalizados existentes dentro do dropdown
+        if (dadosUniformes && dadosUniformes.custom) {
+            dadosUniformes.custom.forEach(item => {
+                const customItem = criarItemPersonalizadoDropdown('uniforme', item);
+                uniformesMenu.appendChild(customItem.div);
+                uniformesCustomItems.push(customItem);
+            });
+        }
+        
+        // Adicionar botão de adicionar personalizado no final do menu de uniformes
+        const btnUniformeCustom = criarBotaoAdicionarCustom('uniforme');
+        uniformesMenu.appendChild(btnUniformeCustom);
+        btnUniformeCustom.querySelector('.btn-add-custom-uniforme').addEventListener('click', () => {
+            const customItem = criarItemPersonalizadoDropdown('uniforme');
+            uniformesMenu.insertBefore(customItem.div, btnUniformeCustom);
+            uniformesCustomItems.push(customItem);
+            calcularTotais();
+            salvarRascunho();
+        });
+        
+        // Adicionar itens padrão ao menu de EPIs
         EPIS.forEach(e => {
             const { div, atualizar, getQuantidade, getDepreciacao, getMensal, getTotal } = criarItemListaComDepreciacao(e, 'epi');
             const quantidadeInput = div.querySelector('.quantidade-epi');
@@ -778,6 +765,26 @@ document.addEventListener('DOMContentLoaded', async function() {
                 getNome: () => e.nome,
                 div
             });
+        });
+        
+        // Carregar EPIs personalizados existentes dentro do dropdown
+        if (dadosEpis && dadosEpis.custom) {
+            dadosEpis.custom.forEach(item => {
+                const customItem = criarItemPersonalizadoDropdown('epi', item);
+                episMenu.appendChild(customItem.div);
+                episCustomItems.push(customItem);
+            });
+        }
+        
+        // Adicionar botão de adicionar personalizado no final do menu de EPIs
+        const btnEpiCustom = criarBotaoAdicionarCustom('epi');
+        episMenu.appendChild(btnEpiCustom);
+        btnEpiCustom.querySelector('.btn-add-custom-epi').addEventListener('click', () => {
+            const customItem = criarItemPersonalizadoDropdown('epi');
+            episMenu.insertBefore(customItem.div, btnEpiCustom);
+            episCustomItems.push(customItem);
+            calcularTotais();
+            salvarRascunho();
         });
         
         function calcularTotalUniformeMensal() {
@@ -832,7 +839,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             const totalGeral = totalUniforme + totalEpi;
             header.querySelector('.summary-value').textContent = formatarMoeda(totalGeral);
             
-            // Atualizar também os totais gerais considerando a quantidade de funcionários
             const qtdFuncionarios = parseInt(cargoItem?.querySelector('.cargo-quantidade')?.value) || 1;
             const totalUniformeGeral = calcularTotalUniformeGeral(qtdFuncionarios);
             const totalEpiGeral = calcularTotalEpiGeral(qtdFuncionarios);
@@ -844,7 +850,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 episTotalGeralSpan.textContent = formatarMoeda(totalEpiGeral);
             }
             
-            // Atualizar o texto da quantidade de funcionários
             const uniformesTotalGeralDiv = content.querySelector('.uniformes-total-geral');
             const episTotalGeralDiv = content.querySelector('.epis-total-geral');
             if (uniformesTotalGeralDiv) {
@@ -857,7 +862,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             return { totalUniforme, totalEpi, totalGeral };
         }
         
-        // Adicionar event listeners para itens padrão
+        // Event listeners para itens padrão
         uniformesItems.forEach(item => {
             item.div.querySelectorAll('input').forEach(input => {
                 input.addEventListener('input', () => {
@@ -882,7 +887,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
         
-        // Adicionar listener para quando a quantidade de funcionários mudar
+        // Listener para quantidade de funcionários
         if (cargoItem) {
             const qtdInput = cargoItem.querySelector('.cargo-quantidade');
             if (qtdInput) {
@@ -892,12 +897,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
         
+        // Dropdown toggle
         const uniformesHeader = uniformesBox.querySelector('.box-header');
         const episHeader = episBox.querySelector('.box-header');
         const uniformesMenuEl = uniformesMenu;
         const episMenuEl = episMenu;
-        
-        // Configurar setas dos dropdowns
         const uniformesIcon = uniformesHeader.querySelector('i');
         const episIcon = episHeader.querySelector('i');
         
@@ -980,7 +984,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 });
                 
-                // Capturar uniformes personalizados
                 const uniformesCustom = [];
                 uniformesCustomItems.forEach(item => {
                     const nome = item.getNome();
@@ -1011,7 +1014,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 });
                 
-                // Capturar EPIs personalizados
                 const episCustom = [];
                 episCustomItems.forEach(item => {
                     const nome = item.getNome();
