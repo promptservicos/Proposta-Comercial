@@ -110,6 +110,7 @@ function escapeHtml(text) {
 }
 
 // ========== FUNÇÃO PARA GERAR IMAGEM DA PROPOSTA COM DETALHES ==========
+// ========== FUNÇÃO PARA GERAR IMAGEM DA PROPOSTA NO FORMATO HORIZONTAL ==========
 async function gerarImagemPropostaDetalhada() {
     // Mostrar indicador de carregamento
     const btnCompartilhar = document.getElementById('btn-compartilhar');
@@ -120,17 +121,17 @@ async function gerarImagemPropostaDetalhada() {
     }
     
     try {
-        // Criar um elemento temporário para a visualização
+        // Criar um elemento temporário para a visualização em formato horizontal
         const elementoVisualizacao = document.createElement('div');
-        elementoVisualizacao.className = 'visualizacao-detalhada';
+        elementoVisualizacao.className = 'visualizacao-detalhada-horizontal';
         elementoVisualizacao.style.position = 'fixed';
         elementoVisualizacao.style.left = '-9999px';
         elementoVisualizacao.style.top = '-9999px';
         elementoVisualizacao.style.backgroundColor = '#ffffff';
-        elementoVisualizacao.style.padding = '2rem';
+        elementoVisualizacao.style.padding = '1.5rem';
         elementoVisualizacao.style.borderRadius = '16px';
-        elementoVisualizacao.style.width = '1000px';
-        elementoVisualizacao.style.maxWidth = '1000px';
+        elementoVisualizacao.style.width = '1920px';
+        elementoVisualizacao.style.maxWidth = '1920px';
         elementoVisualizacao.style.fontFamily = "'Inter', sans-serif";
         
         // Coletar dados da proposta atual
@@ -138,7 +139,7 @@ async function gerarImagemPropostaDetalhada() {
         const vendedor = document.getElementById('vendedor-nome').textContent || 'Não informado';
         const dataAtual = new Date().toLocaleDateString('pt-BR');
         
-        // Coletar dados detalhados dos cargos
+        // Coletar dados detalhados de todos os cargos em formato compacto
         let cargosHTML = '';
         let cargoIndex = 0;
         let totalGeralProposta = 0;
@@ -164,265 +165,150 @@ async function gerarImagemPropostaDetalhada() {
             
             totalGeralProposta += totalVaga;
             
-            // Coletar resultados detalhados
+            // Coletar resultados detalhados de forma compacta
             const resultadosDiv = item.querySelector('.cargo-resultados');
-            let resultadosDetalhados = '';
+            let resumoValores = '';
+            let detalhesItens = '';
+            
             if (resultadosDiv) {
                 const blocos = resultadosDiv.querySelectorAll('.resultado-bloco');
                 blocos.forEach(bloco => {
                     const rotulo = bloco.querySelector('.rotulo')?.innerHTML || '';
                     const valor = bloco.querySelector('.valor')?.textContent || '';
-                    if (rotulo && valor) {
-                        resultadosDetalhados += `
-                            <div style="display: flex; justify-content: space-between; padding: 0.3rem 0; border-bottom: 1px solid #eee;">
-                                <span style="font-size: 0.8rem;">${rotulo.replace(/<[^>]*>/g, '')}</span>
-                                <span style="font-weight: bold; color: #c10404;">${valor}</span>
-                            </div>
-                        `;
+                    const rotuloLimpo = rotulo.replace(/<[^>]*>/g, '').trim();
+                    
+                    if (rotuloLimpo && valor && !rotuloLimpo.includes('TOTAL FINAL')) {
+                        if (rotuloLimpo.includes('SUB TOTAL') || rotuloLimpo.includes('Encargos') || rotuloLimpo.includes('Valor por vaga')) {
+                            resumoValores += `
+                                <div style="display: flex; justify-content: space-between; padding: 0.2rem 0; border-bottom: 1px solid #eee;">
+                                    <span style="font-size: 0.7rem;">${rotuloLimpo}:</span>
+                                    <span style="font-weight: bold; color: #c10404; font-size: 0.7rem;">${valor}</span>
+                                </div>
+                            `;
+                        } else if (!rotuloLimpo.includes('Acúmulo')) {
+                            detalhesItens += `
+                                <div style="display: flex; justify-content: space-between; padding: 0.2rem 0; border-bottom: 1px solid #f0f0f0;">
+                                    <span style="font-size: 0.65rem;">${rotuloLimpo}:</span>
+                                    <span style="font-size: 0.65rem;">${valor}</span>
+                                </div>
+                            `;
+                        }
                     }
                 });
-            }
-            
-            // Coletar uniformes
-            let uniformesHtml = '';
-            const uniformesBox = item.querySelector('.uniformes-box');
-            if (uniformesBox) {
-                const uniformesItems = uniformesBox.querySelectorAll('.item-lista');
-                uniformesItems.forEach(uItem => {
-                    const nome = uItem.querySelector('.item-nome')?.textContent || '';
-                    const qtd = uItem.querySelector('.quantidade-uniforme')?.value || '0';
-                    const depreciacao = uItem.querySelector('.depreciacao-uniforme')?.value || '1';
-                    const total = uItem.querySelector('.item-total')?.textContent || '';
-                    if (parseInt(qtd) > 0) {
-                        uniformesHtml += `<div style="font-size: 0.7rem;">${nome}: ${qtd} un. (dep. ${depreciacao} meses) - ${total}</div>`;
-                    }
-                });
-            }
-            
-            // Coletar EPIs
-            let episHtml = '';
-            const episBox = item.querySelector('.epis-box');
-            if (episBox) {
-                const episItems = episBox.querySelectorAll('.item-lista');
-                episItems.forEach(eItem => {
-                    const nome = eItem.querySelector('.item-nome')?.textContent || '';
-                    const qtd = eItem.querySelector('.quantidade-epi')?.value || '0';
-                    const depreciacao = eItem.querySelector('.depreciacao-epi')?.value || '1';
-                    const total = eItem.querySelector('.item-total')?.textContent || '';
-                    if (parseInt(qtd) > 0) {
-                        episHtml += `<div style="font-size: 0.7rem;">${nome}: ${qtd} un. (dep. ${depreciacao} meses) - ${total}</div>`;
-                    }
-                });
-            }
-            
-            // Coletar benefícios
-            let beneficiosHtml = '';
-            const beneficiosGrid = item.querySelector('.beneficios-grid');
-            if (beneficiosGrid) {
-                const beneficioCards = beneficiosGrid.querySelectorAll('.beneficio-card');
-                beneficioCards.forEach(bCard => {
-                    const nome = bCard.querySelector('.beneficio-nome')?.textContent || '';
-                    const valorInput = bCard.querySelector('.beneficio-valor');
-                    const diasInput = bCard.querySelector('.beneficio-dias');
-                    const valor = valorInput?.value || '0';
-                    const dias = diasInput?.value || '0';
-                    const total = bCard.querySelector('.beneficio-total')?.textContent || '';
-                    if (parseFloat(valor.replace(',', '.')) > 0 && parseInt(dias) > 0) {
-                        beneficiosHtml += `<div style="font-size: 0.7rem;">${nome}: R$ ${valor}/dia × ${dias} dias = ${total}</div>`;
-                    }
-                });
-            }
-            
-            // Coletar segurança
-            let segurancaHtml = '';
-            const segurancaGrid = item.querySelector('.seguranca-grid');
-            if (segurancaGrid) {
-                const segurancaItems = segurancaGrid.querySelectorAll('.seguranca-item');
-                segurancaItems.forEach(sItem => {
-                    const nome = sItem.querySelector('.seguranca-nome')?.textContent || '';
-                    const valor = sItem.querySelector('.seguranca-valor')?.value || '0';
-                    const depreciacao = sItem.querySelector('.seguranca-depreciacao')?.value || '1';
-                    const totalMensal = sItem.querySelector('.seguranca-mensal')?.textContent || '';
-                    if (parseFloat(valor.replace(',', '.')) > 0) {
-                        segurancaHtml += `<div style="font-size: 0.7rem;">${nome}: R$ ${valor} (dep. ${depreciacao} meses) = ${totalMensal}</div>`;
-                    }
-                });
-            }
-            
-            // Coletar insumos
-            let insumosHtml = '';
-            const insumosGrid = item.querySelector('.insumos-grid');
-            if (insumosGrid) {
-                const insumoCards = insumosGrid.querySelectorAll('.insumo-card');
-                insumoCards.forEach(iCard => {
-                    const nome = iCard.querySelector('.insumo-nome')?.textContent || '';
-                    const valor = iCard.querySelector('.insumo-valor')?.value || '0';
-                    const total = iCard.querySelector('.insumo-total')?.textContent || '';
-                    if (parseFloat(valor.replace(',', '.')) > 0) {
-                        insumosHtml += `<div style="font-size: 0.7rem;">${nome}: R$ ${valor} = ${total}</div>`;
-                    }
-                });
-            }
-            
-            // Coletar despesas
-            let despesasHtml = '';
-            const despesasGrid = item.querySelector('.despesas-grid');
-            if (despesasGrid) {
-                const despesaCards = despesasGrid.querySelectorAll('.despesa-card');
-                despesaCards.forEach(dCard => {
-                    const nome = dCard.querySelector('.despesa-nome')?.textContent || '';
-                    const porcentagem = dCard.querySelector('.despesa-porcentagem')?.value || '0';
-                    const valor = dCard.querySelector('.despesa-valor')?.textContent || '';
-                    if (parseFloat(porcentagem.replace(',', '.')) > 0) {
-                        despesasHtml += `<div style="font-size: 0.7rem;">${nome}: ${porcentagem}% = ${valor}</div>`;
-                    }
-                });
-            }
-            
-            // Coletar exames
-            let examesHtml = '';
-            const examesMenu = item.querySelector('.exames-menu');
-            if (examesMenu) {
-                const exameItems = examesMenu.querySelectorAll('.exame-checkbox');
-                exameItems.forEach(exItem => {
-                    if (exItem.checked) {
-                        const nome = exItem.dataset.nome || '';
-                        const preco = exItem.dataset.preco || '0';
-                        examesHtml += `<div style="font-size: 0.7rem;">${nome}: ${formatarMoeda(parseFloat(preco))}</div>`;
-                    }
-                });
-            }
-            
-            const treinamentoValor = item.querySelector('.treinamento-valor')?.value || '0';
-            if (parseFloat(treinamentoValor.replace(',', '.')) > 0) {
-                examesHtml += `<div style="font-size: 0.7rem;">Treinamentos: ${formatarMoeda(parseFloat(treinamentoValor.replace(',', '.')))}</div>`;
             }
             
             cargosHTML += `
-                <div style="background: #fff; border: 1px solid #e0e0e0; border-radius: 16px; margin-bottom: 2rem; overflow: hidden; page-break-inside: avoid;">
-                    <div style="background: #c10404; color: #fff; padding: 1rem; display: flex; justify-content: space-between; align-items: center;">
-                        <h3 style="margin: 0; font-size: 1.2rem;">${cargoIndex}. ${escapeHtml(nomeCargo)}</h3>
-                        <span style="background: #fff; color: #c10404; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: bold;">${qtdVagas} vaga${qtdVagas > 1 ? 's' : ''}</span>
+                <div style="background: #fff; border: 1px solid #e0e0e0; border-radius: 12px; margin-bottom: 1rem; overflow: hidden; break-inside: avoid;">
+                    <div style="background: #c10404; color: #fff; padding: 0.5rem 1rem; display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="margin: 0; font-size: 0.9rem;">${cargoIndex}. ${escapeHtml(nomeCargo)}</h3>
+                        <span style="background: #fff; color: #c10404; padding: 0.15rem 0.6rem; border-radius: 20px; font-size: 0.7rem; font-weight: bold;">${qtdVagas} vaga${qtdVagas > 1 ? 's' : ''}</span>
                     </div>
-                    <div style="padding: 1.2rem;">
-                        <div style="background: #f8f8f8; padding: 1rem; border-radius: 12px; margin-bottom: 1rem;">
-                            <h4 style="color: #c10404; margin: 0 0 0.8rem 0; font-size: 1rem;">Informações Básicas</h4>
-                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem;">
-                                <div><strong>Salário:</strong> ${formatarMoeda(salario)}</div>
-                                <div><strong>Encargos:</strong> ${encargosPercentual.toFixed(2)}%</div>
-                                <div><strong>Valor por vaga:</strong> ${formatarMoeda(totalVaga / qtdVagas)}</div>
-                                <div><strong>Total do cargo:</strong> ${formatarMoeda(totalVaga)}</div>
+                    <div style="padding: 0.8rem; display: flex; flex-wrap: wrap; gap: 1rem;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <div style="background: #f8f8f8; padding: 0.5rem; border-radius: 8px; margin-bottom: 0.5rem;">
+                                <h4 style="color: #c10404; margin: 0 0 0.3rem 0; font-size: 0.75rem;">Informações</h4>
+                                <div style="font-size: 0.7rem;"><strong>Salário:</strong> ${formatarMoeda(salario)}</div>
+                                <div style="font-size: 0.7rem;"><strong>Encargos:</strong> ${encargosPercentual.toFixed(2)}%</div>
+                                <div style="font-size: 0.7rem;"><strong>Valor por vaga:</strong> ${formatarMoeda(totalVaga / qtdVagas)}</div>
+                                <div style="font-size: 0.7rem; color: #c10404; font-weight: bold;"><strong>Total:</strong> ${formatarMoeda(totalVaga)}</div>
                             </div>
-                        </div>
-                        
-                        <div style="background: #f8f8f8; padding: 1rem; border-radius: 12px; margin-bottom: 1rem;">
-                            <h4 style="color: #c10404; margin: 0 0 0.8rem 0; font-size: 1rem;">Composição de Valores</h4>
-                            <div style="max-height: 300px; overflow-y: auto;">
-                                ${resultadosDetalhados || '<div style="color: #888;">Nenhum detalhamento disponível</div>'}
+                            ${resumoValores ? `
+                            <div style="background: #f8f8f8; padding: 0.5rem; border-radius: 8px;">
+                                <h4 style="color: #c10404; margin: 0 0 0.3rem 0; font-size: 0.75rem;">Resumo</h4>
+                                ${resumoValores}
                             </div>
+                            ` : ''}
                         </div>
-                        
-                        ${uniformesHtml ? `
-                        <div style="background: #f8f8f8; padding: 1rem; border-radius: 12px; margin-bottom: 1rem;">
-                            <h4 style="color: #c10404; margin: 0 0 0.8rem 0; font-size: 1rem;">Uniformes</h4>
-                            ${uniformesHtml}
+                        <div style="flex: 2; min-width: 300px;">
+                            ${detalhesItens ? `
+                            <div style="background: #f8f8f8; padding: 0.5rem; border-radius: 8px;">
+                                <h4 style="color: #c10404; margin: 0 0 0.3rem 0; font-size: 0.75rem;">Composição</h4>
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.2rem 0.5rem;">
+                                    ${detalhesItens}
+                                </div>
+                            </div>
+                            ` : ''}
                         </div>
-                        ` : ''}
-                        
-                        ${episHtml ? `
-                        <div style="background: #f8f8f8; padding: 1rem; border-radius: 12px; margin-bottom: 1rem;">
-                            <h4 style="color: #c10404; margin: 0 0 0.8rem 0; font-size: 1rem;">EPIs</h4>
-                            ${episHtml}
-                        </div>
-                        ` : ''}
-                        
-                        ${beneficiosHtml ? `
-                        <div style="background: #f8f8f8; padding: 1rem; border-radius: 12px; margin-bottom: 1rem;">
-                            <h4 style="color: #c10404; margin: 0 0 0.8rem 0; font-size: 1rem;">Benefícios</h4>
-                            ${beneficiosHtml}
-                        </div>
-                        ` : ''}
-                        
-                        ${segurancaHtml ? `
-                        <div style="background: #f8f8f8; padding: 1rem; border-radius: 12px; margin-bottom: 1rem;">
-                            <h4 style="color: #c10404; margin: 0 0 0.8rem 0; font-size: 1rem;">Segurança</h4>
-                            ${segurancaHtml}
-                        </div>
-                        ` : ''}
-                        
-                        ${insumosHtml ? `
-                        <div style="background: #f8f8f8; padding: 1rem; border-radius: 12px; margin-bottom: 1rem;">
-                            <h4 style="color: #c10404; margin: 0 0 0.8rem 0; font-size: 1rem;">Insumos</h4>
-                            ${insumosHtml}
-                        </div>
-                        ` : ''}
-                        
-                        ${despesasHtml ? `
-                        <div style="background: #f8f8f8; padding: 1rem; border-radius: 12px; margin-bottom: 1rem;">
-                            <h4 style="color: #c10404; margin: 0 0 0.8rem 0; font-size: 1rem;">Despesas</h4>
-                            ${despesasHtml}
-                        </div>
-                        ` : ''}
-                        
-                        ${examesHtml ? `
-                        <div style="background: #f8f8f8; padding: 1rem; border-radius: 12px; margin-bottom: 1rem;">
-                            <h4 style="color: #c10404; margin: 0 0 0.8rem 0; font-size: 1rem;">Exames e Treinamentos</h4>
-                            ${examesHtml}
-                        </div>
-                        ` : ''}
                     </div>
                 </div>
             `;
         });
         
-        // Construir HTML da visualização detalhada
+        // Construir HTML da visualização horizontal
         elementoVisualizacao.innerHTML = `
-            <div class="visualizacao-detalhada" style="max-width: 1000px; margin: 0 auto;">
-                <div style="text-align: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #c10404;">
-                    <i class="fas fa-chart-line" style="font-size: 2rem; color: #c10404;"></i>
-                    <h2 style="color: #c10404; margin: 0.5rem 0;">Proposta Comercial - Detalhada</h2>
-                    <p style="color: #666; font-size: 0.9rem;">Prompt Serviços - Contrato Terceirizado</p>
-                </div>
-                
-                <div style="background: #f5f5f5; padding: 1rem; border-radius: 12px; margin-bottom: 2rem;">
-                    <div style="display: flex; justify-content: space-between; padding: 0.3rem 0;">
-                        <span style="font-weight: 600; color: #666;">Cliente:</span>
-                        <span style="color: #333;">${escapeHtml(cliente)}</span>
+            <div style="max-width: 1900px; margin: 0 auto;">
+                <!-- Cabeçalho -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 2px solid #c10404;">
+                    <div>
+                        <i class="fas fa-chart-line" style="font-size: 1.8rem; color: #c10404;"></i>
+                        <h1 style="color: #c10404; margin: 0; font-size: 1.5rem;">Prompt Serviços</h1>
+                        <p style="color: #666; margin: 0; font-size: 0.7rem;">Contrato Terceirizado</p>
                     </div>
-                    <div style="display: flex; justify-content: space-between; padding: 0.3rem 0;">
-                        <span style="font-weight: 600; color: #666;">Vendedor:</span>
-                        <span style="color: #333;">${escapeHtml(vendedor)}</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; padding: 0.3rem 0;">
-                        <span style="font-weight: 600; color: #666;">Data:</span>
-                        <span style="color: #333;">${escapeHtml(dataAtual)}</span>
+                    <div style="text-align: right;">
+                        <div style="background: linear-gradient(135deg, #c10404 0%, #a00303 100%); color: #fff; padding: 0.5rem 1rem; border-radius: 12px;">
+                            <div style="font-size: 0.7rem;">TOTAL DA PROPOSTA</div>
+                            <div style="font-size: 1.3rem; font-weight: bold;">${formatarMoeda(totalGeralProposta)}</div>
+                        </div>
                     </div>
                 </div>
                 
-                ${cargosHTML}
-                
-                <div style="background: linear-gradient(135deg, #c10404 0%, #a00303 100%); color: #fff; padding: 1.5rem; border-radius: 16px; text-align: center; margin: 2rem 0; display: flex; justify-content: space-between; align-items: center; font-size: 1.2rem;">
-                    <strong>TOTAL DA PROPOSTA:</strong>
-                    <span style="font-size: 1.8rem; font-weight: bold;">${formatarMoeda(totalGeralProposta)}</span>
+                <!-- Informações do Cliente -->
+                <div style="display: flex; gap: 2rem; background: #f5f5f5; padding: 0.8rem; border-radius: 10px; margin-bottom: 1.5rem;">
+                    <div style="flex: 1;">
+                        <span style="font-weight: 600; color: #666; font-size: 0.7rem;">CLIENTE:</span>
+                        <span style="color: #333; font-size: 0.8rem; font-weight: bold;">${escapeHtml(cliente)}</span>
+                    </div>
+                    <div style="flex: 1;">
+                        <span style="font-weight: 600; color: #666; font-size: 0.7rem;">VENDEDOR:</span>
+                        <span style="color: #333; font-size: 0.8rem;">${escapeHtml(vendedor)}</span>
+                    </div>
+                    <div>
+                        <span style="font-weight: 600; color: #666; font-size: 0.7rem;">DATA:</span>
+                        <span style="color: #333; font-size: 0.8rem;">${escapeHtml(dataAtual)}</span>
+                    </div>
                 </div>
                 
-                <div style="text-align: center; padding: 1rem; color: #888; font-size: 0.8rem; border-top: 1px solid #e0e0e0; margin-top: 1rem;">
-                    <p>Documento gerado em ${escapeHtml(dataAtual)}</p>
-                    <p style="font-size: 0.7rem;">*Este documento contém todos os detalhes da proposta</p>
+                <!-- Cargos -->
+                <div style="display: grid; grid-template-columns: repeat(${Math.min(document.querySelectorAll('.cargo-item').length, 2)}, 1fr); gap: 1rem;">
+                    ${cargosHTML}
+                </div>
+                
+                <!-- Rodapé -->
+                <div style="text-align: center; padding: 1rem; color: #888; font-size: 0.6rem; border-top: 1px solid #e0e0e0; margin-top: 1.5rem;">
+                    <p>Documento gerado em ${escapeHtml(dataAtual)} | Prompt Serviços - Proposta Comercial</p>
                 </div>
             </div>
         `;
         
         document.body.appendChild(elementoVisualizacao);
         
-        // Usar html2canvas para gerar a imagem
+        // Usar html2canvas para gerar a imagem no tamanho 1920x1080
         const canvas = await html2canvas(elementoVisualizacao, {
-            scale: 2,
+            scale: 1.5,
             backgroundColor: '#ffffff',
             logging: false,
             useCORS: true,
-            allowTaint: false
+            allowTaint: false,
+            width: 1920,
+            height: 1080,
+            windowWidth: 1920,
+            windowHeight: 1080
         });
+        
+        // Redimensionar o canvas para 1920x1080 se necessário
+        const finalCanvas = document.createElement('canvas');
+        finalCanvas.width = 1920;
+        finalCanvas.height = 1080;
+        const ctx = finalCanvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, 1920, 1080);
+        
+        // Calcular posição para centralizar
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
+        const x = (1920 - imgWidth) / 2;
+        const y = (1080 - imgHeight) / 2;
+        ctx.drawImage(canvas, Math.max(0, x), Math.max(0, y));
         
         // Remover o elemento temporário
         document.body.removeChild(elementoVisualizacao);
@@ -431,8 +317,8 @@ async function gerarImagemPropostaDetalhada() {
         const link = document.createElement('a');
         const clienteNome = cliente.replace(/[^a-zA-Z0-9]/g, '_');
         const dataAtualFormatada = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-        link.download = `Proposta_Detalhada_${clienteNome}_${dataAtualFormatada}.png`;
-        link.href = canvas.toDataURL('image/png');
+        link.download = `Proposta_${clienteNome}_${dataAtualFormatada}.png`;
+        link.href = finalCanvas.toDataURL('image/png');
         link.click();
         
     } catch (error) {
