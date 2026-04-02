@@ -126,11 +126,19 @@ async function gerarImagemPorCargo() {
         const dataAtual = new Date().toLocaleDateString('pt-BR');
         const cargos = document.querySelectorAll('.cargo-item');
         
+        // Salvar estado original do tema
+        const wasLightMode = document.body.classList.contains('light-mode');
+        
+        // FORÇAR MODO CLARO temporariamente
+        if (!wasLightMode) {
+            document.body.classList.add('light-mode');
+        }
+        
         // Salvar estado original das seções expansíveis
         const todasSecoes = document.querySelectorAll('.expandable-section, .exames-section, .despesas-section');
         const estadosOriginais = [];
         
-        // Expandir todas as seções
+        // Expandir todas as seções (mantendo dropdowns FECHADOS)
         todasSecoes.forEach((secao, index) => {
             const content = secao.querySelector('.section-content, .exames-content, .despesas-content');
             const toggleIcon = secao.querySelector('.section-toggle, .exames-toggle, .despesas-toggle');
@@ -154,16 +162,20 @@ async function gerarImagemPorCargo() {
             }
         });
         
-        // Também expandir dropdowns de uniformes, EPIs e exames
-        const allDropdowns = document.querySelectorAll('.dropdown-menu');
+        // GARANTIR QUE DROPDOWNS FECHEM - remover classe open de todos
+        const allDropdowns = document.querySelectorAll('.dropdown-menu.open');
+        const dropdownsOriginais = [];
         allDropdowns.forEach(dropdown => {
-            dropdown.classList.add('open');
-            const header = dropdown.previousElementSibling;
-            if (header && header.classList.contains('box-header')) {
-                const icon = header.querySelector('i');
-                if (icon) {
-                    icon.classList.remove('fa-chevron-down');
-                    icon.classList.add('fa-chevron-up');
+            if (dropdown.classList.contains('open')) {
+                dropdownsOriginais.push(dropdown);
+                dropdown.classList.remove('open');
+                const header = dropdown.previousElementSibling;
+                if (header && header.classList.contains('box-header')) {
+                    const icon = header.querySelector('i');
+                    if (icon) {
+                        icon.classList.remove('fa-chevron-up');
+                        icon.classList.add('fa-chevron-down');
+                    }
                 }
             }
         });
@@ -197,16 +209,17 @@ async function gerarImagemPorCargo() {
                 }
             });
             
-            // Expandir dropdowns no clone
+            // GARANTIR QUE DROPDOWNS FECHADOS no clone
             const cloneDropdowns = cloneCargo.querySelectorAll('.dropdown-menu');
             cloneDropdowns.forEach(dropdown => {
-                dropdown.classList.add('open');
+                dropdown.classList.remove('open');
+                dropdown.style.display = 'none';
                 const header = dropdown.previousElementSibling;
                 if (header && header.classList.contains('box-header')) {
                     const icon = header.querySelector('i');
                     if (icon) {
-                        icon.classList.remove('fa-chevron-down');
-                        icon.classList.add('fa-chevron-up');
+                        icon.classList.remove('fa-chevron-up');
+                        icon.classList.add('fa-chevron-down');
                     }
                 }
             });
@@ -261,10 +274,46 @@ async function gerarImagemPorCargo() {
                 content.classList.remove('collapsed');
             });
             
-            const allDropdownsClone = elementoImagem.querySelectorAll('.dropdown-menu');
-            allDropdownsClone.forEach(dropdown => {
-                dropdown.style.display = 'block';
-                dropdown.classList.add('open');
+            // FORÇAR DROPDOWNS FECHADOS no elemento da imagem
+            const imagemDropdowns = elementoImagem.querySelectorAll('.dropdown-menu');
+            imagemDropdowns.forEach(dropdown => {
+                dropdown.style.display = 'none';
+                dropdown.classList.remove('open');
+            });
+            
+            // FORÇAR MODO CLARO no elemento da imagem
+            elementoImagem.style.backgroundColor = '#ffffff';
+            elementoImagem.style.color = '#333333';
+            
+            // Ajustar inputs para não ficarem cortados - garantir altura adequada
+            const allInputs = elementoImagem.querySelectorAll('input, select, textarea');
+            allInputs.forEach(input => {
+                input.style.height = 'auto';
+                input.style.minHeight = '32px';
+                input.style.padding = '6px 10px';
+                input.style.boxSizing = 'border-box';
+            });
+            
+            // Ajustar campos de benefícios e valores
+            const allBeneficioCampos = elementoImagem.querySelectorAll('.beneficio-campo input, .seguranca-campo input, .insumo-campo input');
+            allBeneficioCampos.forEach(campo => {
+                campo.style.height = 'auto';
+                campo.style.minHeight = '30px';
+                campo.style.padding = '4px 8px';
+            });
+            
+            // Ajustar cards de benefícios
+            const allCards = elementoImagem.querySelectorAll('.beneficio-card, .seguranca-item, .insumo-card, .despesa-card');
+            allCards.forEach(card => {
+                card.style.overflow = 'visible';
+                card.style.minHeight = 'auto';
+            });
+            
+            // Garantir que os resultados não fiquem cortados
+            const resultadosBlocos = elementoImagem.querySelectorAll('.resultado-bloco');
+            resultadosBlocos.forEach(bloco => {
+                bloco.style.marginBottom = '8px';
+                bloco.style.padding = '6px';
             });
             
             // Aguardar renderização
@@ -302,19 +351,23 @@ async function gerarImagemPorCargo() {
             }
         });
         
-        // Fechar dropdowns
-        const allDropdownsOriginal = document.querySelectorAll('.dropdown-menu.open');
-        allDropdownsOriginal.forEach(dropdown => {
-            dropdown.classList.remove('open');
+        // Restaurar dropdowns que estavam abertos originalmente
+        dropdownsOriginais.forEach(dropdown => {
+            dropdown.classList.add('open');
             const header = dropdown.previousElementSibling;
             if (header && header.classList.contains('box-header')) {
                 const icon = header.querySelector('i');
                 if (icon) {
-                    icon.classList.remove('fa-chevron-up');
-                    icon.classList.add('fa-chevron-down');
+                    icon.classList.remove('fa-chevron-down');
+                    icon.classList.add('fa-chevron-up');
                 }
             }
         });
+        
+        // Restaurar tema original
+        if (!wasLightMode) {
+            document.body.classList.remove('light-mode');
+        }
         
         // Gerar e baixar o arquivo ZIP
         const content = await zip.generateAsync({ type: 'blob' });
