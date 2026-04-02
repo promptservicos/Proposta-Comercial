@@ -124,21 +124,26 @@ async function gerarImagemPropostaDetalhada() {
         const cliente = document.getElementById('cliente-nome').value || 'Não informado';
         const vendedor = document.getElementById('vendedor-nome').textContent || 'Não informado';
         const dataAtual = new Date().toLocaleDateString('pt-BR');
-        const totalCargos = document.querySelectorAll('.cargo-item').length;
         
-        // Criar elemento temporário para calcular altura
-        const elementoTeste = document.createElement('div');
-        elementoTeste.style.position = 'fixed';
-        elementoTeste.style.left = '-9999px';
-        elementoTeste.style.top = '-9999px';
-        elementoTeste.style.width = '1920px';
-        elementoTeste.style.padding = '20px';
-        elementoTeste.style.fontFamily = "'Inter', 'Segoe UI', sans-serif";
+        // Criar elemento principal
+        const elementoVisualizacao = document.createElement('div');
+        elementoVisualizacao.style.position = 'fixed';
+        elementoVisualizacao.style.left = '-9999px';
+        elementoVisualizacao.style.top = '-9999px';
+        elementoVisualizacao.style.width = '1920px';
+        elementoVisualizacao.style.height = '1080px';
+        elementoVisualizacao.style.backgroundColor = '#ffffff';
+        elementoVisualizacao.style.fontFamily = "'Inter', 'Segoe UI', sans-serif";
+        elementoVisualizacao.style.display = 'flex';
+        elementoVisualizacao.style.flexDirection = 'column';
+        elementoVisualizacao.style.padding = '25px 30px';
+        elementoVisualizacao.style.boxSizing = 'border-box';
         
-        // Construir HTML compacto
+        // Coletar dados dos cargos
         let cargosHTML = '';
         let cargoIndex = 0;
         let totalGeralProposta = 0;
+        const cargosData = [];
         
         document.querySelectorAll('.cargo-item').forEach(item => {
             cargoIndex++;
@@ -157,10 +162,10 @@ async function gerarImagemPropostaDetalhada() {
             }
             totalGeralProposta += totalVaga;
             
-            // Coletar valores principais de forma compacta
+            // Coletar valores principais
             const resultadosDiv = item.querySelector('.cargo-resultados');
-            let principaisValores = [];
-            let detalhesValores = [];
+            let valoresPrincipais = [];
+            let valoresDetalhes = [];
             
             if (resultadosDiv) {
                 const blocos = resultadosDiv.querySelectorAll('.resultado-bloco');
@@ -172,100 +177,148 @@ async function gerarImagemPropostaDetalhada() {
                     if (rotuloLimpo && valor && !rotuloLimpo.includes('TOTAL FINAL')) {
                         if (rotuloLimpo.includes('SUB TOTAL') || rotuloLimpo.includes('Encargos') || 
                             rotuloLimpo.includes('Valor por vaga') || rotuloLimpo.includes('Adicionais')) {
-                            principaisValores.push({ label: rotuloLimpo, value: valor });
+                            valoresPrincipais.push({ label: rotuloLimpo, value: valor });
                         } else if (!rotuloLimpo.includes('Acúmulo') && !rotuloLimpo.includes('SUBTOTAL')) {
-                            detalhesValores.push({ label: rotuloLimpo, value: valor });
+                            valoresDetalhes.push({ label: rotuloLimpo, value: valor });
                         }
                     }
                 });
             }
             
-            // Determinar altura do cargo baseado na quantidade de detalhes
-            const alturaCargo = Math.min(180, 120 + Math.floor(detalhesValores.length / 2) * 20);
-            
-            cargosHTML += `
-                <div style="border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 8px; overflow: hidden;">
-                    <div style="background: #c10404; color: #fff; padding: 4px 10px; display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 11px; font-weight: bold;">${cargoIndex}. ${escapeHtml(nomeCargo.substring(0, 30))}</span>
-                        <span style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 12px; font-size: 9px;">${qtdVagas} vaga${qtdVagas > 1 ? 's' : ''}</span>
-                    </div>
-                    <div style="display: flex; padding: 6px 8px; gap: 10px;">
-                        <div style="width: 35%;">
-                            <table style="width: 100%; font-size: 9px; border-collapse: collapse;">
-                                <tr><td style="color: #666;">Salário:</td><td style="font-weight: bold;">${formatarMoeda(salario)}</td></tr>
-                                <tr><td style="color: #666;">Encargos:</td><td>${encargosPercentual.toFixed(1)}%</td></tr>
-                                <tr><td style="color: #666;">Valor/vaga:</td><td>${formatarMoeda(totalVaga / qtdVagas)}</td></tr>
-                                <tr><td style="color: #666; font-weight: bold;">Total cargo:</td><td style="color: #c10404; font-weight: bold;">${formatarMoeda(totalVaga)}</td></tr>
-                            </table>
-                        </div>
-                        <div style="width: 30%;">
-                            <table style="width: 100%; font-size: 9px; border-collapse: collapse;">
-                                ${principaisValores.slice(0, 4).map(v => `
-                                    <tr><td style="color: #666;">${v.label}:</td><td style="font-weight: 500;">${v.value}</td></tr>
-                                `).join('')}
-                            </table>
-                        </div>
-                        <div style="width: 35%;">
-                            <table style="width: 100%; font-size: 8px; border-collapse: collapse;">
-                                ${detalhesValores.slice(0, 6).map(v => `
-                                    <tr><td style="color: #888;">${v.label}:</td><td>${v.value}</td></tr>
-                                `).join('')}
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            `;
+            cargosData.push({
+                index: cargoIndex,
+                nome: nomeCargo,
+                qtdVagas,
+                salario,
+                encargosPercentual,
+                totalVaga,
+                valoresPrincipais: valoresPrincipais.slice(0, 4),
+                valoresDetalhes: valoresDetalhes.slice(0, 6)
+            });
         });
         
-        // Calcular altura total necessária
-        const alturaCargos = totalCargos * 95; // ~95px por cargo
-        const alturaCabecalho = 130;
-        const alturaRodape = 50;
-        const alturaTotal = Math.min(980, alturaCabecalho + alturaCargos + alturaRodape);
+        // Determinar quantas linhas de cargos (máximo 3 por linha)
+        const cargosPorLinha = Math.min(3, cargosData.length);
+        const linhas = Math.ceil(cargosData.length / cargosPorLinha);
         
-        // Construir HTML final compacto
-        elementoTeste.innerHTML = `
-            <div style="width: 1920px; height: 1080px; background: #fff; display: flex; flex-direction: column; padding: 15px 25px; box-sizing: border-box;">
-                <!-- Cabeçalho compacto -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #c10404;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <div style="background: #c10404; width: 35px; height: 35px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-chart-line" style="font-size: 18px; color: #fff;"></i>
+        // Layout em grid para os cargos
+        let gridHTML = '';
+        for (let i = 0; i < linhas; i++) {
+            const cargosLinha = cargosData.slice(i * cargosPorLinha, (i + 1) * cargosPorLinha);
+            const linhaHTML = `
+                <div style="display: flex; gap: 20px; margin-bottom: 20px; flex: 1;">
+                    ${cargosLinha.map(cargo => `
+                        <div style="flex: 1; background: #fff; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; height: 100%;">
+                            <!-- Cabeçalho do cargo -->
+                            <div style="background: linear-gradient(135deg, #c10404 0%, #a00303 100%); color: #fff; padding: 12px 15px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <h3 style="margin: 0; font-size: 16px; font-weight: 600;">${cargo.index}. ${escapeHtml(cargo.nome.substring(0, 35))}</h3>
+                                    <span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">${cargo.qtdVagas} vaga${cargo.qtdVagas > 1 ? 's' : ''}</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Conteúdo do cargo -->
+                            <div style="padding: 15px; flex: 1;">
+                                <!-- Informações Básicas -->
+                                <div style="background: #f8f8f8; padding: 10px; border-radius: 8px; margin-bottom: 12px;">
+                                    <h4 style="color: #c10404; margin: 0 0 8px 0; font-size: 12px; font-weight: 600;">📊 INFORMAÇÕES BÁSICAS</h4>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; font-size: 12px;">
+                                        <div><span style="color: #666;">Salário:</span></div>
+                                        <div><strong>${formatarMoeda(cargo.salario)}</strong></div>
+                                        <div><span style="color: #666;">Encargos:</span></div>
+                                        <div>${cargo.encargosPercentual.toFixed(1)}%</div>
+                                        <div><span style="color: #666;">Valor por vaga:</span></div>
+                                        <div>${formatarMoeda(cargo.totalVaga / cargo.qtdVagas)}</div>
+                                        <div><span style="color: #666; font-weight: bold;">Total do cargo:</span></div>
+                                        <div><strong style="color: #c10404;">${formatarMoeda(cargo.totalVaga)}</strong></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Valores Principais -->
+                                ${cargo.valoresPrincipais.length > 0 ? `
+                                <div style="background: #f8f8f8; padding: 10px; border-radius: 8px; margin-bottom: 12px;">
+                                    <h4 style="color: #c10404; margin: 0 0 8px 0; font-size: 12px; font-weight: 600;">💰 COMPOSIÇÃO PRINCIPAL</h4>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px 10px; font-size: 11px;">
+                                        ${cargo.valoresPrincipais.map(v => `
+                                            <div><span style="color: #666;">${v.label}:</span></div>
+                                            <div style="font-weight: 500;">${v.value}</div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                                ` : ''}
+                                
+                                <!-- Detalhes Adicionais -->
+                                ${cargo.valoresDetalhes.length > 0 ? `
+                                <div style="background: #f8f8f8; padding: 10px; border-radius: 8px;">
+                                    <h4 style="color: #c10404; margin: 0 0 8px 0; font-size: 12px; font-weight: 600;">📋 DETALHES</h4>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; font-size: 10px;">
+                                        ${cargo.valoresDetalhes.map(v => `
+                                            <div><span style="color: #888;">${v.label}:</span></div>
+                                            <div>${v.value}</div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                                ` : ''}
+                            </div>
                         </div>
-                        <div>
-                            <h1 style="color: #c10404; margin: 0; font-size: 18px;">Prompt Serviços</h1>
-                            <p style="color: #888; margin: 0; font-size: 9px;">Contrato Terceirizado</p>
-                        </div>
+                    `).join('')}
+                    ${cargosLinha.length < cargosPorLinha ? `<div style="flex: ${cargosPorLinha - cargosLinha.length};"></div>`.repeat(cargosPorLinha - cargosLinha.length) : ''}
+                </div>
+            `;
+            gridHTML += linhaHTML;
+        }
+        
+        // Montar HTML completo
+        elementoVisualizacao.innerHTML = `
+            <!-- Cabeçalho -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 3px solid #c10404;">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="background: #c10404; width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-chart-line" style="font-size: 24px; color: #fff;"></i>
                     </div>
-                    <div style="background: linear-gradient(135deg, #c10404 0%, #8b0303 100%); color: #fff; padding: 5px 15px; border-radius: 8px; text-align: center;">
-                        <div style="font-size: 9px;">TOTAL</div>
-                        <div style="font-size: 20px; font-weight: bold; line-height: 1;">${formatarMoeda(totalGeralProposta)}</div>
+                    <div>
+                        <h1 style="color: #c10404; margin: 0; font-size: 24px;">Prompt Serviços</h1>
+                        <p style="color: #888; margin: 0; font-size: 11px;">Proposta de Contrato Terceirizado</p>
                     </div>
                 </div>
-                
-                <!-- Informações do cliente em linha -->
-                <div style="display: flex; gap: 20px; background: #f5f5f5; padding: 6px 12px; border-radius: 6px; margin-bottom: 12px; font-size: 10px;">
-                    <div><strong>Cliente:</strong> ${escapeHtml(cliente)}</div>
-                    <div><strong>Vendedor:</strong> ${escapeHtml(vendedor)}</div>
-                    <div><strong>Data:</strong> ${escapeHtml(dataAtual)}</div>
+                <div style="background: linear-gradient(135deg, #c10404 0%, #8b0303 100%); color: #fff; padding: 10px 25px; border-radius: 12px; text-align: center;">
+                    <div style="font-size: 11px; opacity: 0.9;">TOTAL DA PROPOSTA</div>
+                    <div style="font-size: 28px; font-weight: bold; line-height: 1;">${formatarMoeda(totalGeralProposta)}</div>
                 </div>
-                
-                <!-- Cargos - área com scroll se necessário, mas compacta -->
-                <div style="flex: 1; overflow-y: auto; min-height: 0;">
-                    ${cargosHTML}
+            </div>
+            
+            <!-- Informações do Cliente -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; background: #f8f8f8; padding: 12px 20px; border-radius: 10px; margin-bottom: 25px;">
+                <div>
+                    <div style="font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px;">Cliente</div>
+                    <div style="font-size: 14px; font-weight: 600; color: #333;">${escapeHtml(cliente)}</div>
                 </div>
-                
-                <!-- Rodapé compacto -->
-                <div style="text-align: center; padding: 8px; margin-top: 8px; color: #aaa; font-size: 8px; border-top: 1px solid #e0e0e0;">
-                    Documento gerado em ${escapeHtml(dataAtual)} - Proposta válida por 30 dias
+                <div>
+                    <div style="font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px;">Vendedor</div>
+                    <div style="font-size: 14px; color: #333;">${escapeHtml(vendedor)}</div>
                 </div>
+                <div>
+                    <div style="font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px;">Data de Emissão</div>
+                    <div style="font-size: 14px; color: #333;">${escapeHtml(dataAtual)}</div>
+                </div>
+            </div>
+            
+            <!-- Grid de Cargos -->
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+                ${gridHTML}
+            </div>
+            
+            <!-- Rodapé -->
+            <div style="text-align: center; padding: 15px; margin-top: 20px; color: #aaa; font-size: 10px; border-top: 1px solid #e0e0e0;">
+                <p>Documento gerado automaticamente em ${escapeHtml(dataAtual)} - Prompt Serviços</p>
+                <p style="font-size: 9px; margin-top: 5px;">*Proposta comercial com validade de 30 dias</p>
             </div>
         `;
         
-        document.body.appendChild(elementoTeste);
+        document.body.appendChild(elementoVisualizacao);
         
         // Gerar imagem
-        const canvas = await html2canvas(elementoTeste, {
+        const canvas = await html2canvas(elementoVisualizacao, {
             scale: 1.5,
             backgroundColor: '#ffffff',
             logging: false,
@@ -277,35 +330,14 @@ async function gerarImagemPropostaDetalhada() {
             windowHeight: 1080
         });
         
-        document.body.removeChild(elementoTeste);
-        
-        // Criar canvas final
-        const finalCanvas = document.createElement('canvas');
-        finalCanvas.width = 1920;
-        finalCanvas.height = 1080;
-        const ctx = finalCanvas.getContext('2d');
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, 1920, 1080);
-        
-        // Calcular posição para centralizar
-        const imgWidth = canvas.width;
-        const imgHeight = canvas.height;
-        const scaleX = 1920 / imgWidth;
-        const scaleY = 1080 / imgHeight;
-        const scale = Math.min(scaleX, scaleY);
-        const newWidth = imgWidth * scale;
-        const newHeight = imgHeight * scale;
-        const x = (1920 - newWidth) / 2;
-        const y = (1080 - newHeight) / 2;
-        
-        ctx.drawImage(canvas, x, y, newWidth, newHeight);
+        document.body.removeChild(elementoVisualizacao);
         
         // Download
         const link = document.createElement('a');
         const clienteNome = cliente.replace(/[^a-zA-Z0-9]/g, '_');
         const dataAtualFormatada = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
         link.download = `Proposta_${clienteNome}_${dataAtualFormatada}.png`;
-        link.href = finalCanvas.toDataURL('image/png');
+        link.href = canvas.toDataURL('image/png');
         link.click();
         
     } catch (error) {
