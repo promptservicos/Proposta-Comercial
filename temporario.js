@@ -97,6 +97,10 @@ const EXAMES_COMPLEMENTARES = [
 const TAXA_EXAMES = 0.1375;
 const DRAFT_KEY = 'proposta_temporario_draft';
 
+function formatarMoeda(valor) {
+    return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
 // ========== FUNÇÃO AUXILIAR ESCAPE HTML ==========
 function escapeHtml(text) {
     if (!text) return '';
@@ -179,7 +183,7 @@ async function gerarImagemPropostaDetalhada() {
                 });
             }
             
-            // Coletar uniformes e EPIs
+            // Coletar uniformes
             let uniformesHtml = '';
             const uniformesBox = item.querySelector('.uniformes-box');
             if (uniformesBox) {
@@ -195,6 +199,7 @@ async function gerarImagemPropostaDetalhada() {
                 });
             }
             
+            // Coletar EPIs
             let episHtml = '';
             const episBox = item.querySelector('.epis-box');
             if (episBox) {
@@ -390,7 +395,7 @@ async function gerarImagemPropostaDetalhada() {
                     </div>
                     <div style="display: flex; justify-content: space-between; padding: 0.3rem 0;">
                         <span style="font-weight: 600; color: #666;">Data:</span>
-                        <span style="color: #333;">${dataAtual}</span>
+                        <span style="color: #333;">${escapeHtml(dataAtual)}</span>
                     </div>
                 </div>
                 
@@ -402,7 +407,7 @@ async function gerarImagemPropostaDetalhada() {
                 </div>
                 
                 <div style="text-align: center; padding: 1rem; color: #888; font-size: 0.8rem; border-top: 1px solid #e0e0e0; margin-top: 1rem;">
-                    <p>Documento gerado em ${dataAtual}</p>
+                    <p>Documento gerado em ${escapeHtml(dataAtual)}</p>
                     <p style="font-size: 0.7rem;">*Este documento contém todos os detalhes da proposta</p>
                 </div>
             </div>
@@ -472,10 +477,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         this.value = this.value.toUpperCase();
         salvarRascunho();
     });
-
-    function formatarMoeda(valor) {
-        return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    }
 
     function calcularTotalGeral() {
         let total = 0;
