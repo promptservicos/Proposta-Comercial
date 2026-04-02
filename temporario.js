@@ -110,7 +110,7 @@ function escapeHtml(text) {
 }
 
 // ========== FUNÇÃO PARA GERAR IMAGEM DA PROPOSTA NO FORMATO HORIZONTAL ==========
-// ========== FUNÇÃO PARA GERAR IMAGEM POR CARGO COM TODAS AS ABAS ABERTAS ==========
+// ========== FUNÇÃO PARA GERAR IMAGEM POR CARGO E IMAGEM DO TOTAL ==========
 async function gerarImagemPorCargo() {
     // Mostrar indicador de carregamento
     const btnCompartilhar = document.getElementById('btn-compartilhar');
@@ -125,6 +125,17 @@ async function gerarImagemPorCargo() {
         const vendedor = document.getElementById('vendedor-nome').textContent || 'Não informado';
         const dataAtual = new Date().toLocaleDateString('pt-BR');
         const cargos = document.querySelectorAll('.cargo-item');
+        
+        // Calcular total geral da proposta
+        let totalGeralProposta = 0;
+        cargos.forEach(cargo => {
+            const totalVagaElem = cargo.querySelector('.total-prestacao .valor');
+            if (totalVagaElem) {
+                const totalText = totalVagaElem.textContent;
+                const totalValor = parseFloat(totalText.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
+                totalGeralProposta += totalValor;
+            }
+        });
         
         // Salvar estado original do tema
         const wasLightMode = document.body.classList.contains('light-mode');
@@ -186,7 +197,85 @@ async function gerarImagemPorCargo() {
         const zip = new JSZip();
         const clienteNome = cliente.replace(/[^a-zA-Z0-9]/g, '_');
         
-        // Para cada cargo, gerar uma imagem
+        // ========== 1. GERAR IMAGEM DO TOTAL DA PROPOSTA ==========
+        const totalElemento = document.createElement('div');
+        totalElemento.style.position = 'fixed';
+        totalElemento.style.left = '-9999px';
+        totalElemento.style.top = '-9999px';
+        totalElemento.style.backgroundColor = '#ffffff';
+        totalElemento.style.padding = '30px';
+        totalElemento.style.borderRadius = '16px';
+        totalElemento.style.width = '600px';
+        totalElemento.style.fontFamily = "'Inter', 'Segoe UI', sans-serif";
+        
+        totalElemento.innerHTML = `
+            <div style="text-align: center;">
+                <div style="margin-bottom: 30px;">
+                    <div style="background: #c10404; width: 60px; height: 60px; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto;">
+                        <i class="fas fa-chart-line" style="font-size: 30px; color: #fff;"></i>
+                    </div>
+                    <h1 style="color: #c10404; margin: 0; font-size: 28px;">Prompt Serviços</h1>
+                    <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">Proposta de Contrato Terceirizado</p>
+                </div>
+                
+                <div style="background: #f5f5f5; padding: 15px; border-radius: 12px; margin-bottom: 30px; text-align: left;">
+                    <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e0e0e0;">
+                        <span style="font-weight: 600; color: #666;">Cliente:</span>
+                        <span style="color: #333; font-weight: 500;">${escapeHtml(cliente)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e0e0e0;">
+                        <span style="font-weight: 600; color: #666;">Vendedor:</span>
+                        <span style="color: #333;">${escapeHtml(vendedor)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+                        <span style="font-weight: 600; color: #666;">Data de Emissão:</span>
+                        <span style="color: #333;">${escapeHtml(dataAtual)}</span>
+                    </div>
+                </div>
+                
+                <div style="background: linear-gradient(135deg, #c10404 0%, #8b0303 100%); color: #fff; padding: 25px; border-radius: 16px; margin-bottom: 30px;">
+                    <div style="font-size: 16px; opacity: 0.9; margin-bottom: 10px;">TOTAL DA PROPOSTA</div>
+                    <div style="font-size: 48px; font-weight: bold;">${formatarMoeda(totalGeralProposta)}</div>
+                </div>
+                
+                <div style="border-top: 1px solid #e0e0e0; padding-top: 20px; margin-top: 20px;">
+                    <div style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: #c10404;">${cargos.length}</div>
+                            <div style="font-size: 11px; color: #888;">Cargo(s)</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: #c10404;">${Array.from(cargos).reduce((total, cargo) => {
+                                const qtd = parseInt(cargo.querySelector('.cargo-quantidade')?.value) || 1;
+                                return total + qtd;
+                            }, 0)}</div>
+                            <div style="font-size: 11px; color: #888;">Vaga(s)</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 30px; text-align: center; padding-top: 15px; border-top: 1px solid #e0e0e0; font-size: 9px; color: #888;">
+                    Documento gerado em ${dataAtual} - Proposta válida por 30 dias
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(totalElemento);
+        
+        const totalCanvas = await html2canvas(totalElemento, {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            logging: false,
+            useCORS: true,
+            allowTaint: false
+        });
+        
+        document.body.removeChild(totalElemento);
+        
+        const totalBlob = await new Promise(resolve => totalCanvas.toBlob(resolve, 'image/png'));
+        zip.file(`${clienteNome}_TOTAL_DA_PROPOSTA.png`, totalBlob);
+        
+        // ========== 2. GERAR IMAGEM PARA CADA CARGO ==========
         for (let i = 0; i < cargos.length; i++) {
             const cargo = cargos[i];
             const cargoNome = cargo.querySelector('.cargo-nome').value.trim() || `Cargo_${i + 1}`;
@@ -260,32 +349,28 @@ async function gerarImagemPorCargo() {
             
             document.body.appendChild(elementoImagem);
             
-            // Ajustar estilos para garantir que tudo fique visível
+            // Ajustar estilos
             const cargoCloneElem = elementoImagem.querySelector('.cargo-item');
             if (cargoCloneElem) {
                 cargoCloneElem.style.margin = '0';
                 cargoCloneElem.style.boxShadow = 'none';
             }
             
-            // Garantir que todos os conteúdos estão visíveis
             const allContents = elementoImagem.querySelectorAll('.section-content, .exames-content, .despesas-content');
             allContents.forEach(content => {
                 content.style.display = 'block';
                 content.classList.remove('collapsed');
             });
             
-            // FORÇAR DROPDOWNS FECHADOS no elemento da imagem
             const imagemDropdowns = elementoImagem.querySelectorAll('.dropdown-menu');
             imagemDropdowns.forEach(dropdown => {
                 dropdown.style.display = 'none';
                 dropdown.classList.remove('open');
             });
             
-            // FORÇAR MODO CLARO no elemento da imagem
             elementoImagem.style.backgroundColor = '#ffffff';
             elementoImagem.style.color = '#333333';
             
-            // Ajustar inputs para não ficarem cortados - garantir altura adequada
             const allInputs = elementoImagem.querySelectorAll('input, select, textarea');
             allInputs.forEach(input => {
                 input.style.height = 'auto';
@@ -294,7 +379,6 @@ async function gerarImagemPorCargo() {
                 input.style.boxSizing = 'border-box';
             });
             
-            // Ajustar campos de benefícios e valores
             const allBeneficioCampos = elementoImagem.querySelectorAll('.beneficio-campo input, .seguranca-campo input, .insumo-campo input');
             allBeneficioCampos.forEach(campo => {
                 campo.style.height = 'auto';
@@ -302,27 +386,22 @@ async function gerarImagemPorCargo() {
                 campo.style.padding = '4px 8px';
             });
             
-            // Ajustar cards de benefícios
             const allCards = elementoImagem.querySelectorAll('.beneficio-card, .seguranca-item, .insumo-card, .despesa-card');
             allCards.forEach(card => {
                 card.style.overflow = 'visible';
                 card.style.minHeight = 'auto';
             });
             
-            // Garantir que os resultados não fiquem cortados
             const resultadosBlocos = elementoImagem.querySelectorAll('.resultado-bloco');
             resultadosBlocos.forEach(bloco => {
                 bloco.style.marginBottom = '8px';
                 bloco.style.padding = '6px';
             });
             
-            // Aguardar renderização
             await new Promise(resolve => setTimeout(resolve, 200));
             
-            // Calcular altura necessária
             const alturaReal = elementoImagem.scrollHeight;
             
-            // Gerar imagem
             const canvas = await html2canvas(elementoImagem, {
                 scale: 2,
                 backgroundColor: '#ffffff',
@@ -335,7 +414,6 @@ async function gerarImagemPorCargo() {
             
             document.body.removeChild(elementoImagem);
             
-            // Converter para blob e adicionar ao ZIP
             const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
             zip.file(nomeArquivo, blob);
         }
@@ -377,7 +455,7 @@ async function gerarImagemPorCargo() {
         link.click();
         URL.revokeObjectURL(link.href);
         
-        alert(`✅ ${cargos.length} imagem(ns) gerada(s) com sucesso!`);
+        alert(`✅ ${cargos.length + 1} imagem(ns) gerada(s) com sucesso!\n- 1 imagem com o TOTAL da proposta\n- ${cargos.length} imagem(ns) com detalhes dos cargos`);
         
     } catch (error) {
         console.error('Erro ao gerar imagens:', error);
