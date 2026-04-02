@@ -260,53 +260,132 @@ async function gerarImagemPorCargo() {
             
             document.body.appendChild(elementoImagem);
             
-            // Ajustar estilos para garantir que tudo fique visível
-            const cargoCloneElem = elementoImagem.querySelector('.cargo-item');
-            if (cargoCloneElem) {
-                cargoCloneElem.style.margin = '0';
-                cargoCloneElem.style.boxShadow = 'none';
-            }
+            // ========== FORÇAR MODO CLARO EM TODOS OS CAMPOS DE PREENCHIMENTO ==========
             
-            // Garantir que todos os conteúdos estão visíveis
-            const allContents = elementoImagem.querySelectorAll('.section-content, .exames-content, .despesas-content');
-            allContents.forEach(content => {
-                content.style.display = 'block';
-                content.classList.remove('collapsed');
-            });
-            
-            // FORÇAR DROPDOWNS FECHADOS no elemento da imagem
-            const imagemDropdowns = elementoImagem.querySelectorAll('.dropdown-menu');
-            imagemDropdowns.forEach(dropdown => {
-                dropdown.style.display = 'none';
-                dropdown.classList.remove('open');
-            });
-            
-            // FORÇAR MODO CLARO no elemento da imagem
-            elementoImagem.style.backgroundColor = '#ffffff';
-            elementoImagem.style.color = '#333333';
-            
-            // Ajustar inputs para não ficarem cortados - garantir altura adequada
+            // Forçar fundo branco e texto escuro em todos os inputs
             const allInputs = elementoImagem.querySelectorAll('input, select, textarea');
             allInputs.forEach(input => {
+                input.style.backgroundColor = '#ffffff !important';
+                input.style.backgroundColor = '#ffffff';
+                input.style.color = '#333333';
+                input.style.border = '1px solid #cccccc';
+                input.style.borderRadius = '8px';
+                input.style.padding = '8px 12px';
                 input.style.height = 'auto';
-                input.style.minHeight = '32px';
-                input.style.padding = '6px 10px';
+                input.style.minHeight = '36px';
                 input.style.boxSizing = 'border-box';
+                input.style.fontSize = '12px';
             });
             
-            // Ajustar campos de benefícios e valores
-            const allBeneficioCampos = elementoImagem.querySelectorAll('.beneficio-campo input, .seguranca-campo input, .insumo-campo input');
-            allBeneficioCampos.forEach(campo => {
-                campo.style.height = 'auto';
-                campo.style.minHeight = '30px';
+            // Forçar modo claro em campos de benefícios (valor e dias)
+            const beneficioCampos = elementoImagem.querySelectorAll('.beneficio-campo input, .beneficio-valor, .beneficio-dias');
+            beneficioCampos.forEach(campo => {
+                campo.style.backgroundColor = '#ffffff';
+                campo.style.color = '#333333';
+                campo.style.border = '1px solid #cccccc';
+                campo.style.borderRadius = '8px';
+                campo.style.padding = '6px 10px';
+            });
+            
+            // Forçar modo claro em campos de segurança (SST e Seguro)
+            const segurancaCampos = elementoImagem.querySelectorAll('.seguranca-campo input, .seguranca-valor, .seguranca-depreciacao');
+            segurancaCampos.forEach(campo => {
+                campo.style.backgroundColor = '#ffffff';
+                campo.style.color = '#333333';
+                campo.style.border = '1px solid #cccccc';
+                campo.style.borderRadius = '8px';
+                campo.style.padding = '6px 10px';
+            });
+            
+            // Forçar modo claro em campos de insumos
+            const insumoCampos = elementoImagem.querySelectorAll('.insumo-campo input, .insumo-valor');
+            insumoCampos.forEach(campo => {
+                campo.style.backgroundColor = '#ffffff';
+                campo.style.color = '#333333';
+                campo.style.border = '1px solid #cccccc';
+                campo.style.borderRadius = '8px';
+                campo.style.padding = '6px 10px';
+            });
+            
+            // Forçar modo claro em campos de despesas
+            const despesaCampos = elementoImagem.querySelectorAll('.despesa-campo input, .despesa-porcentagem');
+            despesaCampos.forEach(campo => {
+                campo.style.backgroundColor = '#ffffff';
+                campo.style.color = '#333333';
+                campo.style.border = '1px solid #cccccc';
+                campo.style.borderRadius = '8px';
+                campo.style.padding = '6px 10px';
+            });
+            
+            // Forçar modo claro em campos de adicionais (horas extras, noturno)
+            const adicionalCampos = elementoImagem.querySelectorAll('.adicional-campo input');
+            adicionalCampos.forEach(campo => {
+                campo.style.backgroundColor = '#ffffff';
+                campo.style.color = '#333333';
+                campo.style.border = '1px solid #cccccc';
+                campo.style.borderRadius = '8px';
+                campo.style.padding = '6px 10px';
+            });
+            
+            // Forçar modo claro em campos de treinamento
+            const treinamentoCampo = elementoImagem.querySelectorAll('.treinamento-input input');
+            treinamentoCampo.forEach(campo => {
+                campo.style.backgroundColor = '#ffffff';
+                campo.style.color = '#333333';
+                campo.style.border = '1px solid #cccccc';
+                campo.style.borderRadius = '8px';
+                campo.style.padding = '6px 10px';
+            });
+            
+            // Forçar modo claro em campos de quantidade e depreciação de uniformes/EPIs
+            const qtdDepCampos = elementoImagem.querySelectorAll('.item-input input');
+            qtdDepCampos.forEach(campo => {
+                campo.style.backgroundColor = '#ffffff';
+                campo.style.color = '#333333';
+                campo.style.border = '1px solid #cccccc';
+                campo.style.borderRadius = '8px';
                 campo.style.padding = '4px 8px';
             });
             
-            // Ajustar cards de benefícios
-            const allCards = elementoImagem.querySelectorAll('.beneficio-card, .seguranca-item, .insumo-card, .despesa-card');
-            allCards.forEach(card => {
-                card.style.overflow = 'visible';
-                card.style.minHeight = 'auto';
+            // Forçar modo claro em campos personalizados
+            const customCampos = elementoImagem.querySelectorAll('.item-custom input, .exame-custom-item input');
+            customCampos.forEach(campo => {
+                campo.style.backgroundColor = '#ffffff';
+                campo.style.color = '#333333';
+                campo.style.border = '1px solid #cccccc';
+                campo.style.borderRadius = '8px';
+                campo.style.padding = '6px 10px';
+            });
+            
+            // Forçar modo claro nos cards de benefícios, segurança, insumos
+            const cards = elementoImagem.querySelectorAll('.beneficio-card, .seguranca-item, .insumo-card, .despesa-card, .adicional-card');
+            cards.forEach(card => {
+                card.style.backgroundColor = '#ffffff';
+                card.style.border = '1px solid #e0e0e0';
+            });
+            
+            // Forçar modo claro nos conteúdos das seções
+            const sectionsContent = elementoImagem.querySelectorAll('.section-content, .exames-content, .despesas-content');
+            sectionsContent.forEach(content => {
+                content.style.backgroundColor = '#ffffff';
+            });
+            
+            // Ajustar labels para ficarem visíveis no modo claro
+            const labels = elementoImagem.querySelectorAll('label, .rotulo, .valor-label');
+            labels.forEach(label => {
+                label.style.color = '#666666';
+            });
+            
+            // Ajustar textos dos resultados
+            const valores = elementoImagem.querySelectorAll('.valor, .valor-number');
+            valores.forEach(valor => {
+                valor.style.color = '#c10404';
+            });
+            
+            // Ajustar textos normais
+            const textos = elementoImagem.querySelectorAll('.item-nome, .exames-item-nome, .beneficio-nome, .seguranca-nome, .insumo-nome, .despesa-nome');
+            textos.forEach(texto => {
+                texto.style.color = '#333333';
             });
             
             // Garantir que os resultados não fiquem cortados
@@ -314,6 +393,14 @@ async function gerarImagemPorCargo() {
             resultadosBlocos.forEach(bloco => {
                 bloco.style.marginBottom = '8px';
                 bloco.style.padding = '6px';
+                bloco.style.backgroundColor = '#f8f8f8';
+            });
+            
+            // Ajustar altura dos campos
+            const allInputsHeight = elementoImagem.querySelectorAll('input');
+            allInputsHeight.forEach(input => {
+                input.style.height = 'auto';
+                input.style.minHeight = '34px';
             });
             
             // Aguardar renderização
