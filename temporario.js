@@ -110,13 +110,13 @@ function escapeHtml(text) {
 }
 
 // ========== FUNÇÃO PARA GERAR IMAGEM DA PROPOSTA NO FORMATO HORIZONTAL ==========
-// ========== FUNÇÃO PARA GERAR IMAGEM DA PROPOSTA NO FORMATO HORIZONTAL ==========
-async function gerarImagemPropostaDetalhada() {
+// ========== FUNÇÃO PARA GERAR IMAGEM POR CARGO COM TODAS AS ABAS ABERTAS ==========
+async function gerarImagemPorCargo() {
     // Mostrar indicador de carregamento
     const btnCompartilhar = document.getElementById('btn-compartilhar');
     const textoOriginal = btnCompartilhar ? btnCompartilhar.innerHTML : '';
     if (btnCompartilhar) {
-        btnCompartilhar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando imagem...';
+        btnCompartilhar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando imagens...';
         btnCompartilhar.disabled = true;
     }
     
@@ -124,229 +124,215 @@ async function gerarImagemPropostaDetalhada() {
         const cliente = document.getElementById('cliente-nome').value || 'Não informado';
         const vendedor = document.getElementById('vendedor-nome').textContent || 'Não informado';
         const dataAtual = new Date().toLocaleDateString('pt-BR');
+        const cargos = document.querySelectorAll('.cargo-item');
         
-        // Criar elemento principal
-        const elementoVisualizacao = document.createElement('div');
-        elementoVisualizacao.style.position = 'fixed';
-        elementoVisualizacao.style.left = '-9999px';
-        elementoVisualizacao.style.top = '-9999px';
-        elementoVisualizacao.style.width = '1920px';
-        elementoVisualizacao.style.height = '1080px';
-        elementoVisualizacao.style.backgroundColor = '#ffffff';
-        elementoVisualizacao.style.fontFamily = "'Inter', 'Segoe UI', sans-serif";
-        elementoVisualizacao.style.display = 'flex';
-        elementoVisualizacao.style.flexDirection = 'column';
-        elementoVisualizacao.style.padding = '25px 30px';
-        elementoVisualizacao.style.boxSizing = 'border-box';
+        // Salvar estado original das seções expansíveis
+        const todasSecoes = document.querySelectorAll('.expandable-section, .exames-section, .despesas-section');
+        const estadosOriginais = [];
         
-        // Coletar dados dos cargos
-        let cargosHTML = '';
-        let cargoIndex = 0;
-        let totalGeralProposta = 0;
-        const cargosData = [];
-        
-        document.querySelectorAll('.cargo-item').forEach(item => {
-            cargoIndex++;
-            const nomeCargo = item.querySelector('.cargo-nome').value.trim() || 'Cargo sem nome';
-            const qtdVagas = parseInt(item.querySelector('.cargo-quantidade').value) || 1;
-            const salarioInput = item.querySelector('.cargo-salario').value;
-            const salario = parseFloat(salarioInput.replace(/\./g, '').replace(',', '.')) || 0;
-            const encargosPercentualInput = item.querySelector('.encargos-percentual');
-            const encargosPercentual = parseFloat(encargosPercentualInput?.value.replace(/\./g, '').replace(',', '.')) || 55.83;
+        // Expandir todas as seções
+        todasSecoes.forEach((secao, index) => {
+            const content = secao.querySelector('.section-content, .exames-content, .despesas-content');
+            const toggleIcon = secao.querySelector('.section-toggle, .exames-toggle, .despesas-toggle');
+            const isCollapsed = content?.classList.contains('collapsed');
             
-            const totalVagaElem = item.querySelector('.total-prestacao .valor');
-            let totalVaga = 0;
-            if (totalVagaElem) {
-                const totalText = totalVagaElem.textContent;
-                totalVaga = parseFloat(totalText.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
-            }
-            totalGeralProposta += totalVaga;
-            
-            // Coletar valores principais
-            const resultadosDiv = item.querySelector('.cargo-resultados');
-            let valoresPrincipais = [];
-            let valoresDetalhes = [];
-            
-            if (resultadosDiv) {
-                const blocos = resultadosDiv.querySelectorAll('.resultado-bloco');
-                blocos.forEach(bloco => {
-                    const rotulo = bloco.querySelector('.rotulo')?.innerHTML || '';
-                    const valor = bloco.querySelector('.valor')?.textContent || '';
-                    const rotuloLimpo = rotulo.replace(/<[^>]*>/g, '').trim();
-                    
-                    if (rotuloLimpo && valor && !rotuloLimpo.includes('TOTAL FINAL')) {
-                        if (rotuloLimpo.includes('SUB TOTAL') || rotuloLimpo.includes('Encargos') || 
-                            rotuloLimpo.includes('Valor por vaga') || rotuloLimpo.includes('Adicionais')) {
-                            valoresPrincipais.push({ label: rotuloLimpo, value: valor });
-                        } else if (!rotuloLimpo.includes('Acúmulo') && !rotuloLimpo.includes('SUBTOTAL')) {
-                            valoresDetalhes.push({ label: rotuloLimpo, value: valor });
-                        }
-                    }
-                });
-            }
-            
-            cargosData.push({
-                index: cargoIndex,
-                nome: nomeCargo,
-                qtdVagas,
-                salario,
-                encargosPercentual,
-                totalVaga,
-                valoresPrincipais: valoresPrincipais.slice(0, 4),
-                valoresDetalhes: valoresDetalhes.slice(0, 6)
+            estadosOriginais.push({
+                index,
+                secao,
+                content,
+                toggleIcon,
+                wasCollapsed: isCollapsed
             });
+            
+            // Expandir se estiver colapsado
+            if (isCollapsed && content) {
+                content.classList.remove('collapsed');
+                if (toggleIcon) {
+                    toggleIcon.classList.remove('fa-chevron-down');
+                    toggleIcon.classList.add('fa-chevron-up');
+                }
+            }
         });
         
-        // Determinar quantas linhas de cargos (máximo 3 por linha)
-        const cargosPorLinha = Math.min(3, cargosData.length);
-        const linhas = Math.ceil(cargosData.length / cargosPorLinha);
+        // Também expandir dropdowns de uniformes, EPIs e exames
+        const allDropdowns = document.querySelectorAll('.dropdown-menu');
+        allDropdowns.forEach(dropdown => {
+            dropdown.classList.add('open');
+            const header = dropdown.previousElementSibling;
+            if (header && header.classList.contains('box-header')) {
+                const icon = header.querySelector('i');
+                if (icon) {
+                    icon.classList.remove('fa-chevron-down');
+                    icon.classList.add('fa-chevron-up');
+                }
+            }
+        });
         
-        // Layout em grid para os cargos
-        let gridHTML = '';
-        for (let i = 0; i < linhas; i++) {
-            const cargosLinha = cargosData.slice(i * cargosPorLinha, (i + 1) * cargosPorLinha);
-            const linhaHTML = `
-                <div style="display: flex; gap: 20px; margin-bottom: 20px; flex: 1;">
-                    ${cargosLinha.map(cargo => `
-                        <div style="flex: 1; background: #fff; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; height: 100%;">
-                            <!-- Cabeçalho do cargo -->
-                            <div style="background: linear-gradient(135deg, #c10404 0%, #a00303 100%); color: #fff; padding: 12px 15px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <h3 style="margin: 0; font-size: 16px; font-weight: 600;">${cargo.index}. ${escapeHtml(cargo.nome.substring(0, 35))}</h3>
-                                    <span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">${cargo.qtdVagas} vaga${cargo.qtdVagas > 1 ? 's' : ''}</span>
-                                </div>
-                            </div>
-                            
-                            <!-- Conteúdo do cargo -->
-                            <div style="padding: 15px; flex: 1;">
-                                <!-- Informações Básicas -->
-                                <div style="background: #f8f8f8; padding: 10px; border-radius: 8px; margin-bottom: 12px;">
-                                    <h4 style="color: #c10404; margin: 0 0 8px 0; font-size: 12px; font-weight: 600;">📊 INFORMAÇÕES BÁSICAS</h4>
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; font-size: 12px;">
-                                        <div><span style="color: #666;">Salário:</span></div>
-                                        <div><strong>${formatarMoeda(cargo.salario)}</strong></div>
-                                        <div><span style="color: #666;">Encargos:</span></div>
-                                        <div>${cargo.encargosPercentual.toFixed(1)}%</div>
-                                        <div><span style="color: #666;">Valor por vaga:</span></div>
-                                        <div>${formatarMoeda(cargo.totalVaga / cargo.qtdVagas)}</div>
-                                        <div><span style="color: #666; font-weight: bold;">Total do cargo:</span></div>
-                                        <div><strong style="color: #c10404;">${formatarMoeda(cargo.totalVaga)}</strong></div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Valores Principais -->
-                                ${cargo.valoresPrincipais.length > 0 ? `
-                                <div style="background: #f8f8f8; padding: 10px; border-radius: 8px; margin-bottom: 12px;">
-                                    <h4 style="color: #c10404; margin: 0 0 8px 0; font-size: 12px; font-weight: 600;">💰 COMPOSIÇÃO PRINCIPAL</h4>
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px 10px; font-size: 11px;">
-                                        ${cargo.valoresPrincipais.map(v => `
-                                            <div><span style="color: #666;">${v.label}:</span></div>
-                                            <div style="font-weight: 500;">${v.value}</div>
-                                        `).join('')}
-                                    </div>
-                                </div>
-                                ` : ''}
-                                
-                                <!-- Detalhes Adicionais -->
-                                ${cargo.valoresDetalhes.length > 0 ? `
-                                <div style="background: #f8f8f8; padding: 10px; border-radius: 8px;">
-                                    <h4 style="color: #c10404; margin: 0 0 8px 0; font-size: 12px; font-weight: 600;">📋 DETALHES</h4>
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; font-size: 10px;">
-                                        ${cargo.valoresDetalhes.map(v => `
-                                            <div><span style="color: #888;">${v.label}:</span></div>
-                                            <div>${v.value}</div>
-                                        `).join('')}
-                                    </div>
-                                </div>
-                                ` : ''}
-                            </div>
+        // Pequeno delay para garantir que as animações terminaram
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        const zip = new JSZip();
+        const clienteNome = cliente.replace(/[^a-zA-Z0-9]/g, '_');
+        
+        // Para cada cargo, gerar uma imagem
+        for (let i = 0; i < cargos.length; i++) {
+            const cargo = cargos[i];
+            const cargoNome = cargo.querySelector('.cargo-nome').value.trim() || `Cargo_${i + 1}`;
+            const nomeArquivo = `${clienteNome}_${cargoNome.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
+            
+            // Clonar o cargo para não afetar a tela original
+            const cloneCargo = cargo.cloneNode(true);
+            
+            // Garantir que todas as seções do clone estão expandidas
+            const cloneSecoes = cloneCargo.querySelectorAll('.expandable-section, .exames-section, .despesas-section');
+            cloneSecoes.forEach(secao => {
+                const content = secao.querySelector('.section-content, .exames-content, .despesas-content');
+                const toggleIcon = secao.querySelector('.section-toggle, .exames-toggle, .despesas-toggle');
+                if (content && content.classList.contains('collapsed')) {
+                    content.classList.remove('collapsed');
+                }
+                if (toggleIcon) {
+                    toggleIcon.classList.remove('fa-chevron-down');
+                    toggleIcon.classList.add('fa-chevron-up');
+                }
+            });
+            
+            // Expandir dropdowns no clone
+            const cloneDropdowns = cloneCargo.querySelectorAll('.dropdown-menu');
+            cloneDropdowns.forEach(dropdown => {
+                dropdown.classList.add('open');
+                const header = dropdown.previousElementSibling;
+                if (header && header.classList.contains('box-header')) {
+                    const icon = header.querySelector('i');
+                    if (icon) {
+                        icon.classList.remove('fa-chevron-down');
+                        icon.classList.add('fa-chevron-up');
+                    }
+                }
+            });
+            
+            // Criar elemento para a imagem do cargo
+            const elementoImagem = document.createElement('div');
+            elementoImagem.style.position = 'fixed';
+            elementoImagem.style.left = '-9999px';
+            elementoImagem.style.top = '-9999px';
+            elementoImagem.style.backgroundColor = '#ffffff';
+            elementoImagem.style.padding = '20px';
+            elementoImagem.style.borderRadius = '16px';
+            elementoImagem.style.width = '1000px';
+            elementoImagem.style.fontFamily = "'Inter', 'Segoe UI', sans-serif";
+            
+            // Adicionar cabeçalho da proposta
+            elementoImagem.innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #c10404;">
+                        <div>
+                            <h1 style="color: #c10404; margin: 0; font-size: 20px;">Prompt Serviços</h1>
+                            <p style="color: #666; margin: 0; font-size: 11px;">Proposta de Contrato Terceirizado</p>
                         </div>
-                    `).join('')}
-                    ${cargosLinha.length < cargosPorLinha ? `<div style="flex: ${cargosPorLinha - cargosLinha.length};"></div>`.repeat(cargosPorLinha - cargosLinha.length) : ''}
+                        <div style="text-align: right;">
+                            <div style="font-size: 10px; color: #888;">Data: ${dataAtual}</div>
+                            <div style="font-size: 10px; color: #888;">Vendedor: ${vendedor}</div>
+                        </div>
+                    </div>
+                    <div style="background: #f5f5f5; padding: 8px 12px; border-radius: 8px;">
+                        <strong>Cliente:</strong> ${cliente}
+                    </div>
+                </div>
+                ${cloneCargo.outerHTML}
+                <div style="margin-top: 20px; text-align: center; padding-top: 10px; border-top: 1px solid #e0e0e0; font-size: 9px; color: #888;">
+                    Documento gerado em ${dataAtual} - Proposta válida por 30 dias
                 </div>
             `;
-            gridHTML += linhaHTML;
+            
+            document.body.appendChild(elementoImagem);
+            
+            // Ajustar estilos para garantir que tudo fique visível
+            const cargoCloneElem = elementoImagem.querySelector('.cargo-item');
+            if (cargoCloneElem) {
+                cargoCloneElem.style.margin = '0';
+                cargoCloneElem.style.boxShadow = 'none';
+            }
+            
+            // Garantir que todos os conteúdos estão visíveis
+            const allContents = elementoImagem.querySelectorAll('.section-content, .exames-content, .despesas-content');
+            allContents.forEach(content => {
+                content.style.display = 'block';
+                content.classList.remove('collapsed');
+            });
+            
+            const allDropdownsClone = elementoImagem.querySelectorAll('.dropdown-menu');
+            allDropdownsClone.forEach(dropdown => {
+                dropdown.style.display = 'block';
+                dropdown.classList.add('open');
+            });
+            
+            // Aguardar renderização
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            // Calcular altura necessária
+            const alturaReal = elementoImagem.scrollHeight;
+            
+            // Gerar imagem
+            const canvas = await html2canvas(elementoImagem, {
+                scale: 2,
+                backgroundColor: '#ffffff',
+                logging: false,
+                useCORS: true,
+                allowTaint: false,
+                height: alturaReal,
+                windowHeight: alturaReal
+            });
+            
+            document.body.removeChild(elementoImagem);
+            
+            // Converter para blob e adicionar ao ZIP
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+            zip.file(nomeArquivo, blob);
         }
         
-        // Montar HTML completo
-        elementoVisualizacao.innerHTML = `
-            <!-- Cabeçalho -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 3px solid #c10404;">
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <div style="background: #c10404; width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-chart-line" style="font-size: 24px; color: #fff;"></i>
-                    </div>
-                    <div>
-                        <h1 style="color: #c10404; margin: 0; font-size: 24px;">Prompt Serviços</h1>
-                        <p style="color: #888; margin: 0; font-size: 11px;">Proposta de Contrato Terceirizado</p>
-                    </div>
-                </div>
-                <div style="background: linear-gradient(135deg, #c10404 0%, #8b0303 100%); color: #fff; padding: 10px 25px; border-radius: 12px; text-align: center;">
-                    <div style="font-size: 11px; opacity: 0.9;">TOTAL DA PROPOSTA</div>
-                    <div style="font-size: 28px; font-weight: bold; line-height: 1;">${formatarMoeda(totalGeralProposta)}</div>
-                </div>
-            </div>
-            
-            <!-- Informações do Cliente -->
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; background: #f8f8f8; padding: 12px 20px; border-radius: 10px; margin-bottom: 25px;">
-                <div>
-                    <div style="font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px;">Cliente</div>
-                    <div style="font-size: 14px; font-weight: 600; color: #333;">${escapeHtml(cliente)}</div>
-                </div>
-                <div>
-                    <div style="font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px;">Vendedor</div>
-                    <div style="font-size: 14px; color: #333;">${escapeHtml(vendedor)}</div>
-                </div>
-                <div>
-                    <div style="font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px;">Data de Emissão</div>
-                    <div style="font-size: 14px; color: #333;">${escapeHtml(dataAtual)}</div>
-                </div>
-            </div>
-            
-            <!-- Grid de Cargos -->
-            <div style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
-                ${gridHTML}
-            </div>
-            
-            <!-- Rodapé -->
-            <div style="text-align: center; padding: 15px; margin-top: 20px; color: #aaa; font-size: 10px; border-top: 1px solid #e0e0e0;">
-                <p>Documento gerado automaticamente em ${escapeHtml(dataAtual)} - Prompt Serviços</p>
-                <p style="font-size: 9px; margin-top: 5px;">*Proposta comercial com validade de 30 dias</p>
-            </div>
-        `;
-        
-        document.body.appendChild(elementoVisualizacao);
-        
-        // Gerar imagem
-        const canvas = await html2canvas(elementoVisualizacao, {
-            scale: 1.5,
-            backgroundColor: '#ffffff',
-            logging: false,
-            useCORS: true,
-            allowTaint: false,
-            width: 1920,
-            height: 1080,
-            windowWidth: 1920,
-            windowHeight: 1080
+        // Restaurar estado original das seções
+        estadosOriginais.forEach(({ content, toggleIcon, wasCollapsed }) => {
+            if (wasCollapsed && content) {
+                content.classList.add('collapsed');
+                if (toggleIcon) {
+                    toggleIcon.classList.remove('fa-chevron-up');
+                    toggleIcon.classList.add('fa-chevron-down');
+                }
+            }
         });
         
-        document.body.removeChild(elementoVisualizacao);
+        // Fechar dropdowns
+        const allDropdownsOriginal = document.querySelectorAll('.dropdown-menu.open');
+        allDropdownsOriginal.forEach(dropdown => {
+            dropdown.classList.remove('open');
+            const header = dropdown.previousElementSibling;
+            if (header && header.classList.contains('box-header')) {
+                const icon = header.querySelector('i');
+                if (icon) {
+                    icon.classList.remove('fa-chevron-up');
+                    icon.classList.add('fa-chevron-down');
+                }
+            }
+        });
         
-        // Download
+        // Gerar e baixar o arquivo ZIP
+        const content = await zip.generateAsync({ type: 'blob' });
         const link = document.createElement('a');
-        const clienteNome = cliente.replace(/[^a-zA-Z0-9]/g, '_');
-        const dataAtualFormatada = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-        link.download = `Proposta_${clienteNome}_${dataAtualFormatada}.png`;
-        link.href = canvas.toDataURL('image/png');
+        link.download = `Propostas_${clienteNome}_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.zip`;
+        link.href = URL.createObjectURL(content);
         link.click();
+        URL.revokeObjectURL(link.href);
+        
+        alert(`✅ ${cargos.length} imagem(ns) gerada(s) com sucesso!`);
         
     } catch (error) {
-        console.error('Erro ao gerar imagem:', error);
-        alert('Erro ao gerar imagem. Tente novamente.');
+        console.error('Erro ao gerar imagens:', error);
+        alert('Erro ao gerar imagens. Tente novamente.');
     } finally {
         const btnCompartilhar = document.getElementById('btn-compartilhar');
         if (btnCompartilhar) {
-            btnCompartilhar.innerHTML = '<i class="fas fa-share-alt"></i> Compartilhar';
+            btnCompartilhar.innerHTML = textoOriginal;
             btnCompartilhar.disabled = false;
         }
     }
@@ -2016,20 +2002,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (!btnCompartilhar) return;
         
         btnCompartilhar.addEventListener('click', async () => {
-            // Verificar se há dados para gerar imagem
             const cargos = document.querySelectorAll('.cargo-item');
             if (cargos.length === 0) {
-                mostrarModal('Adicione pelo menos um cargo antes de gerar a imagem.');
+                mostrarModal('Adicione pelo menos um cargo antes de gerar as imagens.');
                 return;
             }
             
             const cliente = document.getElementById('cliente-nome').value;
             if (!cliente) {
-                mostrarModal('Informe o nome do cliente antes de gerar a imagem.');
+                mostrarModal('Informe o nome do cliente antes de gerar as imagens.');
                 return;
             }
             
-            await gerarImagemPropostaDetalhada();
+            await gerarImagemPorCargo();
         });
     }
     
