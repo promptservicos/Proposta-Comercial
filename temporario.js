@@ -110,6 +110,7 @@ function escapeHtml(text) {
 }
 
 // ========== FUNÇÃO PARA GERAR IMAGEM DA PROPOSTA NO FORMATO HORIZONTAL ==========
+// ========== FUNÇÃO PARA GERAR IMAGEM DA PROPOSTA NO FORMATO HORIZONTAL ==========
 async function gerarImagemPropostaDetalhada() {
     // Mostrar indicador de carregamento
     const btnCompartilhar = document.getElementById('btn-compartilhar');
@@ -120,26 +121,21 @@ async function gerarImagemPropostaDetalhada() {
     }
     
     try {
-        // Criar um elemento temporário para a visualização em formato horizontal
-        const elementoVisualizacao = document.createElement('div');
-        elementoVisualizacao.className = 'visualizacao-detalhada-horizontal';
-        elementoVisualizacao.style.position = 'fixed';
-        elementoVisualizacao.style.left = '-9999px';
-        elementoVisualizacao.style.top = '-9999px';
-        elementoVisualizacao.style.backgroundColor = '#ffffff';
-        elementoVisualizacao.style.padding = '2rem';
-        elementoVisualizacao.style.borderRadius = '16px';
-        elementoVisualizacao.style.width = 'auto';
-        elementoVisualizacao.style.minWidth = '1200px';
-        elementoVisualizacao.style.maxWidth = '1400px';
-        elementoVisualizacao.style.fontFamily = "'Inter', 'Segoe UI', sans-serif";
-        
-        // Coletar dados da proposta atual
         const cliente = document.getElementById('cliente-nome').value || 'Não informado';
         const vendedor = document.getElementById('vendedor-nome').textContent || 'Não informado';
         const dataAtual = new Date().toLocaleDateString('pt-BR');
+        const totalCargos = document.querySelectorAll('.cargo-item').length;
         
-        // Coletar dados detalhados de todos os cargos
+        // Criar elemento temporário para calcular altura
+        const elementoTeste = document.createElement('div');
+        elementoTeste.style.position = 'fixed';
+        elementoTeste.style.left = '-9999px';
+        elementoTeste.style.top = '-9999px';
+        elementoTeste.style.width = '1920px';
+        elementoTeste.style.padding = '20px';
+        elementoTeste.style.fontFamily = "'Inter', 'Segoe UI', sans-serif";
+        
+        // Construir HTML compacto
         let cargosHTML = '';
         let cargoIndex = 0;
         let totalGeralProposta = 0;
@@ -150,25 +146,21 @@ async function gerarImagemPropostaDetalhada() {
             const qtdVagas = parseInt(item.querySelector('.cargo-quantidade').value) || 1;
             const salarioInput = item.querySelector('.cargo-salario').value;
             const salario = parseFloat(salarioInput.replace(/\./g, '').replace(',', '.')) || 0;
-            
-            // Obter encargos percentual
             const encargosPercentualInput = item.querySelector('.encargos-percentual');
             const encargosPercentual = parseFloat(encargosPercentualInput?.value.replace(/\./g, '').replace(',', '.')) || 55.83;
             
-            // Pegar o TOTAL FINAL DA VAGA
             const totalVagaElem = item.querySelector('.total-prestacao .valor');
             let totalVaga = 0;
             if (totalVagaElem) {
                 const totalText = totalVagaElem.textContent;
                 totalVaga = parseFloat(totalText.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
             }
-            
             totalGeralProposta += totalVaga;
             
-            // Coletar resultados detalhados
+            // Coletar valores principais de forma compacta
             const resultadosDiv = item.querySelector('.cargo-resultados');
-            let resumoValores = '';
-            let detalhesItens = '';
+            let principaisValores = [];
+            let detalhesValores = [];
             
             if (resultadosDiv) {
                 const blocos = resultadosDiv.querySelectorAll('.resultado-bloco');
@@ -178,186 +170,137 @@ async function gerarImagemPropostaDetalhada() {
                     const rotuloLimpo = rotulo.replace(/<[^>]*>/g, '').trim();
                     
                     if (rotuloLimpo && valor && !rotuloLimpo.includes('TOTAL FINAL')) {
-                        if (rotuloLimpo.includes('SUB TOTAL') || rotuloLimpo.includes('Encargos') || rotuloLimpo.includes('Valor por vaga')) {
-                            resumoValores += `
-                                <div style="display: flex; justify-content: space-between; padding: 0.3rem 0; border-bottom: 1px solid #eee;">
-                                    <span style="font-size: 0.75rem; color: #555;">${rotuloLimpo}:</span>
-                                    <span style="font-weight: bold; color: #c10404; font-size: 0.75rem;">${valor}</span>
-                                </div>
-                            `;
-                        } else if (!rotuloLimpo.includes('Acúmulo')) {
-                            detalhesItens += `
-                                <div style="display: flex; justify-content: space-between; padding: 0.25rem 0;">
-                                    <span style="font-size: 0.7rem; color: #666;">${rotuloLimpo}:</span>
-                                    <span style="font-size: 0.7rem; font-weight: 500;">${valor}</span>
-                                </div>
-                            `;
+                        if (rotuloLimpo.includes('SUB TOTAL') || rotuloLimpo.includes('Encargos') || 
+                            rotuloLimpo.includes('Valor por vaga') || rotuloLimpo.includes('Adicionais')) {
+                            principaisValores.push({ label: rotuloLimpo, value: valor });
+                        } else if (!rotuloLimpo.includes('Acúmulo') && !rotuloLimpo.includes('SUBTOTAL')) {
+                            detalhesValores.push({ label: rotuloLimpo, value: valor });
                         }
                     }
                 });
             }
             
+            // Determinar altura do cargo baseado na quantidade de detalhes
+            const alturaCargo = Math.min(180, 120 + Math.floor(detalhesValores.length / 2) * 20);
+            
             cargosHTML += `
-                <div style="background: #fff; border: 1px solid #e0e0e0; border-radius: 12px; margin-bottom: 1rem; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                    <div style="background: linear-gradient(135deg, #c10404 0%, #a00303 100%); color: #fff; padding: 0.6rem 1rem; display: flex; justify-content: space-between; align-items: center;">
-                        <h3 style="margin: 0; font-size: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                            <i class="fas fa-briefcase" style="font-size: 0.9rem;"></i>
-                            ${cargoIndex}. ${escapeHtml(nomeCargo)}
-                        </h3>
-                        <span style="background: rgba(255,255,255,0.2); padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.75rem; font-weight: bold;">${qtdVagas} vaga${qtdVagas > 1 ? 's' : ''}</span>
+                <div style="border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 8px; overflow: hidden;">
+                    <div style="background: #c10404; color: #fff; padding: 4px 10px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 11px; font-weight: bold;">${cargoIndex}. ${escapeHtml(nomeCargo.substring(0, 30))}</span>
+                        <span style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 12px; font-size: 9px;">${qtdVagas} vaga${qtdVagas > 1 ? 's' : ''}</span>
                     </div>
-                    <div style="padding: 1rem;">
-                        <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 1rem;">
-                            <!-- Coluna da Esquerda - Informações Básicas e Resumo -->
-                            <div>
-                                <div style="background: #f8f8f8; padding: 0.8rem; border-radius: 10px; margin-bottom: 0.8rem;">
-                                    <h4 style="color: #c10404; margin: 0 0 0.5rem 0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">
-                                        <i class="fas fa-info-circle"></i> Informações
-                                    </h4>
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem 0.5rem;">
-                                        <div><span style="font-size: 0.7rem; color: #666;">Salário:</span></div>
-                                        <div><span style="font-size: 0.75rem; font-weight: bold;">${formatarMoeda(salario)}</span></div>
-                                        <div><span style="font-size: 0.7rem; color: #666;">Encargos:</span></div>
-                                        <div><span style="font-size: 0.75rem;">${encargosPercentual.toFixed(2)}%</span></div>
-                                        <div><span style="font-size: 0.7rem; color: #666;">Valor/vaga:</span></div>
-                                        <div><span style="font-size: 0.75rem;">${formatarMoeda(totalVaga / qtdVagas)}</span></div>
-                                        <div><span style="font-size: 0.7rem; color: #666;">Total cargo:</span></div>
-                                        <div><span style="font-size: 0.85rem; font-weight: bold; color: #c10404;">${formatarMoeda(totalVaga)}</span></div>
-                                    </div>
-                                </div>
-                                ${resumoValores ? `
-                                <div style="background: #f8f8f8; padding: 0.8rem; border-radius: 10px;">
-                                    <h4 style="color: #c10404; margin: 0 0 0.5rem 0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">
-                                        <i class="fas fa-chart-line"></i> Resumo
-                                    </h4>
-                                    ${resumoValores}
-                                </div>
-                                ` : ''}
-                            </div>
-                            
-                            <!-- Coluna da Direita - Composição Detalhada -->
-                            <div>
-                                ${detalhesItens ? `
-                                <div style="background: #f8f8f8; padding: 0.8rem; border-radius: 10px; height: 100%;">
-                                    <h4 style="color: #c10404; margin: 0 0 0.5rem 0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">
-                                        <i class="fas fa-calculator"></i> Composição de Valores
-                                    </h4>
-                                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.2rem 0.8rem;">
-                                        ${detalhesItens}
-                                    </div>
-                                </div>
-                                ` : '<div style="height: 100%;"></div>'}
-                            </div>
+                    <div style="display: flex; padding: 6px 8px; gap: 10px;">
+                        <div style="width: 35%;">
+                            <table style="width: 100%; font-size: 9px; border-collapse: collapse;">
+                                <tr><td style="color: #666;">Salário:</td><td style="font-weight: bold;">${formatarMoeda(salario)}</td></tr>
+                                <tr><td style="color: #666;">Encargos:</td><td>${encargosPercentual.toFixed(1)}%</td></tr>
+                                <tr><td style="color: #666;">Valor/vaga:</td><td>${formatarMoeda(totalVaga / qtdVagas)}</td></tr>
+                                <tr><td style="color: #666; font-weight: bold;">Total cargo:</td><td style="color: #c10404; font-weight: bold;">${formatarMoeda(totalVaga)}</td></tr>
+                            </table>
+                        </div>
+                        <div style="width: 30%;">
+                            <table style="width: 100%; font-size: 9px; border-collapse: collapse;">
+                                ${principaisValores.slice(0, 4).map(v => `
+                                    <tr><td style="color: #666;">${v.label}:</td><td style="font-weight: 500;">${v.value}</td></tr>
+                                `).join('')}
+                            </table>
+                        </div>
+                        <div style="width: 35%;">
+                            <table style="width: 100%; font-size: 8px; border-collapse: collapse;">
+                                ${detalhesValores.slice(0, 6).map(v => `
+                                    <tr><td style="color: #888;">${v.label}:</td><td>${v.value}</td></tr>
+                                `).join('')}
+                            </table>
                         </div>
                     </div>
                 </div>
             `;
         });
         
-        // Contar quantos cargos para determinar layout
-        const totalCargos = document.querySelectorAll('.cargo-item').length;
-        const alturaPorCargo = totalCargos * 180; // ~180px por cargo
-        const alturaTotal = Math.max(800, alturaPorCargo + 300);
+        // Calcular altura total necessária
+        const alturaCargos = totalCargos * 95; // ~95px por cargo
+        const alturaCabecalho = 130;
+        const alturaRodape = 50;
+        const alturaTotal = Math.min(980, alturaCabecalho + alturaCargos + alturaRodape);
         
-        // Construir HTML da visualização horizontal
-        elementoVisualizacao.innerHTML = `
-            <div style="width: 1200px; margin: 0 auto;">
-                <!-- Cabeçalho -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 3px solid #c10404;">
-                    <div>
-                        <div style="display: flex; align-items: center; gap: 0.8rem;">
-                            <div style="background: #c10404; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                                <i class="fas fa-chart-line" style="font-size: 1.5rem; color: #fff;"></i>
-                            </div>
-                            <div>
-                                <h1 style="color: #c10404; margin: 0; font-size: 1.5rem;">Prompt Serviços</h1>
-                                <p style="color: #888; margin: 0; font-size: 0.7rem;">Proposta de Contrato Terceirizado</p>
-                            </div>
+        // Construir HTML final compacto
+        elementoTeste.innerHTML = `
+            <div style="width: 1920px; height: 1080px; background: #fff; display: flex; flex-direction: column; padding: 15px 25px; box-sizing: border-box;">
+                <!-- Cabeçalho compacto -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #c10404;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="background: #c10404; width: 35px; height: 35px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-chart-line" style="font-size: 18px; color: #fff;"></i>
+                        </div>
+                        <div>
+                            <h1 style="color: #c10404; margin: 0; font-size: 18px;">Prompt Serviços</h1>
+                            <p style="color: #888; margin: 0; font-size: 9px;">Contrato Terceirizado</p>
                         </div>
                     </div>
-                    <div style="background: linear-gradient(135deg, #c10404 0%, #8b0303 100%); color: #fff; padding: 0.8rem 1.5rem; border-radius: 12px; text-align: center;">
-                        <div style="font-size: 0.7rem; opacity: 0.9;">TOTAL DA PROPOSTA</div>
-                        <div style="font-size: 1.4rem; font-weight: bold;">${formatarMoeda(totalGeralProposta)}</div>
+                    <div style="background: linear-gradient(135deg, #c10404 0%, #8b0303 100%); color: #fff; padding: 5px 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 9px;">TOTAL</div>
+                        <div style="font-size: 20px; font-weight: bold; line-height: 1;">${formatarMoeda(totalGeralProposta)}</div>
                     </div>
                 </div>
                 
-                <!-- Informações do Cliente - Layout horizontal -->
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; background: #f5f5f5; padding: 0.8rem 1rem; border-radius: 10px; margin-bottom: 1.5rem;">
-                    <div>
-                        <span style="font-size: 0.65rem; color: #888; text-transform: uppercase;">Cliente</span>
-                        <div style="font-size: 0.85rem; font-weight: 600; color: #333;">${escapeHtml(cliente)}</div>
-                    </div>
-                    <div>
-                        <span style="font-size: 0.65rem; color: #888; text-transform: uppercase;">Vendedor</span>
-                        <div style="font-size: 0.85rem; color: #333;">${escapeHtml(vendedor)}</div>
-                    </div>
-                    <div>
-                        <span style="font-size: 0.65rem; color: #888; text-transform: uppercase;">Data de Emissão</span>
-                        <div style="font-size: 0.85rem; color: #333;">${escapeHtml(dataAtual)}</div>
-                    </div>
+                <!-- Informações do cliente em linha -->
+                <div style="display: flex; gap: 20px; background: #f5f5f5; padding: 6px 12px; border-radius: 6px; margin-bottom: 12px; font-size: 10px;">
+                    <div><strong>Cliente:</strong> ${escapeHtml(cliente)}</div>
+                    <div><strong>Vendedor:</strong> ${escapeHtml(vendedor)}</div>
+                    <div><strong>Data:</strong> ${escapeHtml(dataAtual)}</div>
                 </div>
                 
-                <!-- Cargos - Layout em coluna única para não cortar -->
-                <div style="max-height: ${alturaTotal - 250}px; overflow-y: auto; padding-right: 0.5rem;">
+                <!-- Cargos - área com scroll se necessário, mas compacta -->
+                <div style="flex: 1; overflow-y: auto; min-height: 0;">
                     ${cargosHTML}
                 </div>
                 
-                <!-- Rodapé -->
-                <div style="text-align: center; padding: 1rem; margin-top: 1rem; color: #aaa; font-size: 0.65rem; border-top: 1px solid #e0e0e0;">
-                    <p>Documento gerado automaticamente em ${escapeHtml(dataAtual)} - Prompt Serviços</p>
-                    <p style="font-size: 0.6rem;">*Proposta comercial com validade de 30 dias</p>
+                <!-- Rodapé compacto -->
+                <div style="text-align: center; padding: 8px; margin-top: 8px; color: #aaa; font-size: 8px; border-top: 1px solid #e0e0e0;">
+                    Documento gerado em ${escapeHtml(dataAtual)} - Proposta válida por 30 dias
                 </div>
             </div>
         `;
         
-        document.body.appendChild(elementoVisualizacao);
+        document.body.appendChild(elementoTeste);
         
-        // Medir a altura real do conteúdo
-        const alturaReal = elementoVisualizacao.scrollHeight;
-        const larguraReal = elementoVisualizacao.scrollWidth;
-        
-        // Usar html2canvas para gerar a imagem
-        const canvas = await html2canvas(elementoVisualizacao, {
-            scale: 2,
+        // Gerar imagem
+        const canvas = await html2canvas(elementoTeste, {
+            scale: 1.5,
             backgroundColor: '#ffffff',
             logging: false,
             useCORS: true,
             allowTaint: false,
-            width: larguraReal,
-            height: alturaReal,
-            windowWidth: larguraReal,
-            windowHeight: alturaReal
+            width: 1920,
+            height: 1080,
+            windowWidth: 1920,
+            windowHeight: 1080
         });
         
-        // Remover o elemento temporário
-        document.body.removeChild(elementoVisualizacao);
+        document.body.removeChild(elementoTeste);
         
-        // Criar canvas final no tamanho 1920x1080 com a imagem centralizada
+        // Criar canvas final
         const finalCanvas = document.createElement('canvas');
         finalCanvas.width = 1920;
         finalCanvas.height = 1080;
         const ctx = finalCanvas.getContext('2d');
-        
-        // Fundo branco
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, 1920, 1080);
         
-        // Calcular escala para caber na tela mantendo proporção
-        let imgWidth = canvas.width;
-        let imgHeight = canvas.height;
-        let scaleX = 1920 / imgWidth;
-        let scaleY = 1080 / imgHeight;
-        let scale = Math.min(scaleX, scaleY) * 0.95; // 95% para margem
+        // Calcular posição para centralizar
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
+        const scaleX = 1920 / imgWidth;
+        const scaleY = 1080 / imgHeight;
+        const scale = Math.min(scaleX, scaleY);
+        const newWidth = imgWidth * scale;
+        const newHeight = imgHeight * scale;
+        const x = (1920 - newWidth) / 2;
+        const y = (1080 - newHeight) / 2;
         
-        let newWidth = imgWidth * scale;
-        let newHeight = imgHeight * scale;
-        let x = (1920 - newWidth) / 2;
-        let y = (1080 - newHeight) / 2;
-        
-        // Desenhar a imagem centralizada
         ctx.drawImage(canvas, x, y, newWidth, newHeight);
         
-        // Criar link para download
+        // Download
         const link = document.createElement('a');
         const clienteNome = cliente.replace(/[^a-zA-Z0-9]/g, '_');
         const dataAtualFormatada = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
@@ -369,9 +312,9 @@ async function gerarImagemPropostaDetalhada() {
         console.error('Erro ao gerar imagem:', error);
         alert('Erro ao gerar imagem. Tente novamente.');
     } finally {
-        // Restaurar botão
+        const btnCompartilhar = document.getElementById('btn-compartilhar');
         if (btnCompartilhar) {
-            btnCompartilhar.innerHTML = textoOriginal;
+            btnCompartilhar.innerHTML = '<i class="fas fa-share-alt"></i> Compartilhar';
             btnCompartilhar.disabled = false;
         }
     }
