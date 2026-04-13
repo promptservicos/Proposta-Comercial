@@ -2046,7 +2046,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         let isExpanded = false;
         content.classList.add('collapsed');
-        // Quando fechado, seta pra BAIXO
         header.querySelector('.despesas-toggle').classList.remove('fa-chevron-up');
         header.querySelector('.despesas-toggle').classList.add('fa-chevron-down');
         
@@ -2055,12 +2054,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             isExpanded = !isExpanded;
             if (isExpanded) {
                 content.classList.remove('collapsed');
-                // ABERTO: seta pra CIMA
                 header.querySelector('.despesas-toggle').classList.remove('fa-chevron-down');
                 header.querySelector('.despesas-toggle').classList.add('fa-chevron-up');
             } else {
                 content.classList.add('collapsed');
-                // FECHADO: seta pra BAIXO
                 header.querySelector('.despesas-toggle').classList.remove('fa-chevron-up');
                 header.querySelector('.despesas-toggle').classList.add('fa-chevron-down');
             }
@@ -2096,7 +2093,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
         
-        function calcularDespesas(subtotalCargo, salario, encargosValor) {
+        function calcularDespesas(subtotalSalarioEncargosAdicionais, subtotalInsumosBeneficios) {
+            // subtotalSalarioEncargosAdicionais = Salário + Encargos + Adicionais
+            // subtotalInsumosBeneficios = Uniformes/EPIs + Benefícios + SST + Insumos
+            
             let taxaAdm = 0;
             let encargosFiscais = 0;
             
@@ -2104,19 +2104,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const porcentagem = parseFloat(item.porcentagemInput.value.replace(/\./g, '').replace(',', '.')) || 0;
                 
                 if (item.campo === 'taxa_adm') {
-                    const base = salario + encargosValor;
-                    taxaAdm = base * (porcentagem / 100);
+                    // Taxa Adm sobre (Salário + Encargos + Adicionais)
+                    const baseTaxaAdm = subtotalSalarioEncargosAdicionais;
+                    taxaAdm = baseTaxaAdm * (porcentagem / 100);
                     item.valorSpan.textContent = formatarMoeda(taxaAdm);
-                    item.calculoSpan.textContent = `(${formatarMoeda(base)} × ${porcentagem}%)`;
+                    item.calculoSpan.textContent = `(${formatarMoeda(baseTaxaAdm)} × ${porcentagem}%)`;
                 } else if (item.campo === 'encargos_fiscais') {
-                    const base = subtotalCargo + taxaAdm;
-                    encargosFiscais = base * (porcentagem / 100);
+                    // Encargos fiscais sobre (Subtotal Salário+Encargos+Adicionais + Insumos+Benefícios + Taxa Adm)
+                    const baseEncargosFiscais = subtotalSalarioEncargosAdicionais + subtotalInsumosBeneficios + taxaAdm;
+                    encargosFiscais = baseEncargosFiscais * (porcentagem / 100);
                     item.valorSpan.textContent = formatarMoeda(encargosFiscais);
-                    item.calculoSpan.textContent = `(${formatarMoeda(base)} × ${porcentagem}%)`;
+                    item.calculoSpan.textContent = `(${formatarMoeda(baseEncargosFiscais)} × ${porcentagem}%)`;
                 }
             });
             
-            const totalPrestacao = subtotalCargo + taxaAdm + encargosFiscais;
+            // Total da prestação = Base dos encargos fiscais + Encargos fiscais
+            const totalPrestacao = (subtotalSalarioEncargosAdicionais + subtotalInsumosBeneficios + taxaAdm) + encargosFiscais;
             totalSpan.textContent = formatarMoeda(totalPrestacao);
             header.querySelector('.summary-value').textContent = formatarMoeda(totalPrestacao);
             
@@ -2694,6 +2697,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             let totalAdicionais = 0;
             
+            // ========== CALCULAR ADICIONAIS ==========
             const heCheck = adicionaisContent.querySelector('.he-check');
             const heConteudo = adicionaisContent.querySelector('.he-conteudo');
             const heResultado = adicionaisContent.querySelector('.he-resultado');
@@ -2763,26 +2767,42 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             updateAdicionaisSummary(totalAdicionais);
             
+            // ========== CALCULAR TOTAIS DAS SEÇÕES ==========
             const uniformesData = atualizarUniformesTotais();
             const totalUniformeEpi = uniformesData?.totalGeral || 0;
             const totalBeneficios = calcularBeneficios();
             const totalSeguranca = calcularSeguranca();
             const totalInsumos = calcularInsumos();
             
+            // ========== CÁLCULOS PRINCIPAIS ==========
             const valorEncargos = salario * taxaEncargos;
-            const subtotalSalarioEncargos = salario + valorEncargos + totalAdicionais;
+            
+            // SUB TOTAL SALARIO + ENCARGOS + ADICIONAIS (Base para Taxa Adm)
+            const subtotalSalarioEncargosAdicionais = salario + valorEncargos + totalAdicionais;
+            
+            // SUB TOTAL DOS INSUMOS E BENEFICIOS (Uniformes/EPIs + Benefícios + SST + Insumos)
             const subtotalInsumosBeneficios = totalUniformeEpi + totalBeneficios + totalSeguranca + totalInsumos;
             
-            const despesasResult = calcularDespesas(subtotalSalarioEncargos, salario, valorEncargos);
+            // Calcular Despesas (Taxa Adm e Encargos Fiscais) com a nova lógica
+            const despesasResult = calcularDespesas(subtotalSalarioEncargosAdicionais, subtotalInsumosBeneficios);
+            
+            // Total dos Exames
             const totalExames = calcularExames();
+            
+            // TOTAL FINAL DA VAGA
             const totalFinalVaga = despesasResult.totalPrestacao + totalExames;
             
+            // Base para encargos fiscais (para exibição)
+            const baseEncargosFiscais = subtotalSalarioEncargosAdicionais + subtotalInsumosBeneficios + despesasResult.taxaAdm;
+            
+            // ========== MONTAR HTML DOS RESULTADOS ==========
             let resultadosHTML = `
                 <div class="resultado-bloco">
                     <span class="rotulo"><i class="fas fa-calculator"></i> Encargos (${(taxaEncargos * 100).toFixed(2)}%)</span>
                     <span class="valor">${formatarMoeda(valorEncargos)}</span>
                 </div>
             `;
+            
             if (totalAdicionais > 0) {
                 resultadosHTML += `
                     <div class="resultado-bloco">
@@ -2791,10 +2811,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                     </div>
                 `;
             }
+            
             resultadosHTML += `
                 <div class="resultado-bloco subtotal-cargo">
-                    <span class="rotulo"><i class="fas fa-file-invoice"></i> SUB TOTAL SALARIO + ENCARGOS</span>
-                    <span class="valor">${formatarMoeda(subtotalSalarioEncargos)}</span>
+                    <span class="rotulo"><i class="fas fa-file-invoice"></i> SALÁRIO + ENCARGOS + ADICIONAIS</span>
+                    <span class="valor">${formatarMoeda(subtotalSalarioEncargosAdicionais)}</span>
                 </div>
             `;
             
@@ -2806,6 +2827,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     </div>
                 `;
             }
+            
             if (totalBeneficios > 0) {
                 resultadosHTML += `
                     <div class="resultado-bloco">
@@ -2814,6 +2836,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     </div>
                 `;
             }
+            
             if (totalSeguranca > 0) {
                 resultadosHTML += `
                     <div class="resultado-bloco">
@@ -2822,6 +2845,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     </div>
                 `;
             }
+            
             if (totalInsumos > 0) {
                 resultadosHTML += `
                     <div class="resultado-bloco">
@@ -2830,9 +2854,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                     </div>
                 `;
             }
+            
             resultadosHTML += `
                 <div class="resultado-bloco subtotal-insumos">
-                    <span class="rotulo"><i class="fas fa-boxes"></i> SUB TOTAL DOS INSUMOS E BENEFICIOS</span>
+                    <span class="rotulo"><i class="fas fa-boxes"></i> INSUMOS + BENEFÍCIOS</span>
                     <span class="valor">${formatarMoeda(subtotalInsumosBeneficios)}</span>
                 </div>
                 <div class="resultado-bloco">
@@ -2844,14 +2869,19 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <span class="valor">${formatarMoeda(despesasResult.encargosFiscais)}</span>
                 </div>
                 <div class="resultado-bloco">
+                    <span class="rotulo"><i class="fas fa-chart-line"></i> BASE ENCARGOS FISCAIS</span>
+                    <span class="valor">${formatarMoeda(baseEncargosFiscais)}</span>
+                </div>
+                <div class="resultado-bloco">
                     <span class="rotulo"><i class="fas fa-stethoscope"></i> Exames e Treinamentos</span>
                     <span class="valor">${formatarMoeda(totalExames)}</span>
                 </div>
                 <div class="resultado-bloco total-prestacao">
-                    <span class="rotulo"><i class="fas fa-calculator"></i> Total da vaga</span>
+                    <span class="rotulo"><i class="fas fa-calculator"></i> TOTAL DA VAGA</span>
                     <span class="valor" style="color: #c10404; font-size: 1.2rem;">${formatarMoeda(totalFinalVaga)}</span>
                 </div>
             `;
+            
             resultadosDiv.innerHTML = resultadosHTML;
             calcularTotalGeral();
         }
