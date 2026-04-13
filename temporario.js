@@ -1441,7 +1441,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         };
     }
 
-    function criarBeneficiosSection(dadosBeneficios = {}) {
+    function criarBeneficiosSection(cargoItem, dadosBeneficios = {}, dadosBeneficiosPersonalizados = []) {
         const conteudoHtml = `
             <div class="beneficios-fixos">
                 <h4 style="color: #c10404; margin-bottom: 0.8rem; font-size: 0.85rem;">Benefícios Fixos</h4>
