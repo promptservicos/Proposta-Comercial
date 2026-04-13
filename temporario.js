@@ -869,6 +869,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (dados.cargos && dados.cargos.length > 0) {
                     container.innerHTML = '';
                     dados.cargos.forEach(c => {
+                        console.log('=== CARREGANDO CARGO DO RASCUNHO ===');
+                        console.log('Nome:', c.nome);
+                        console.log('Adicionais brutos:', c.adicionais);
+
                         let examesObj = c.exames || {};
                         
                         // GARANTIR que os adicionais existem
@@ -2506,6 +2510,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function criarCargoItem(cargo = '', quantidade = 1, salario = 0, dadosAdicionais = {}, dadosUniformes = {}, dadosEpis = {}, dadosBeneficios = {}, dadosSeguranca = {}, dadosInsumos = {}, dadosDespesas = {}, dadosExames = {}, treinamentoValor = 0, encargosPercentual = 55.83, dadosBeneficiosPersonalizados = []) {
+        console.log('=== criarCargoItem CHAMADA ===');
+        console.log('dadosAdicionais recebidos:', dadosAdicionais);
+        console.log('horasExtras:', dadosAdicionais?.horasExtras);
+        console.log('heHoras:', dadosAdicionais?.heHoras);
+        
         const item = document.createElement('div');
         item.className = 'cargo-item';
         
@@ -2849,73 +2858,76 @@ document.addEventListener('DOMContentLoaded', async function() {
             salvarRascunho();
         });
         
-        // ========== RESTAURAR ADICIONAIS (IMPORTANTE: ANTES DO PRIMEIRO atualizarResultados) ==========
-        console.log('Restaurando adicionais:', dadosAdicionais);
-        
-        if (dadosAdicionais) {
-            // Forçar a expansão da seção para que os elementos existam
-            const adicionaisHeader = item.querySelector('.expandable-section:first-child .section-header');
-            const adicionaisContentElem = item.querySelector('.expandable-section:first-child .section-content');
+        // ========== RESTAURAR ADICIONAIS ==========
+        // Usar setTimeout para garantir que o DOM já foi completamente criado
+        setTimeout(() => {
+            console.log('=== RESTAURANDO ADICIONAIS (após DOM) ===');
+            console.log('dadosAdicionais:', dadosAdicionais);
             
-            // Expandir se estiver colapsado para poder manipular os elementos
-            if (adicionaisContentElem && adicionaisContentElem.classList.contains('collapsed')) {
-                adicionaisContentElem.classList.remove('collapsed');
-                const toggleIcon = adicionaisHeader?.querySelector('.section-toggle');
-                if (toggleIcon) {
-                    toggleIcon.classList.remove('fa-chevron-down');
-                    toggleIcon.classList.add('fa-chevron-up');
+            if (dadosAdicionais) {
+                // Forçar a expansão da seção
+                const adicionaisHeader = item.querySelector('.expandable-section:first-child .section-header');
+                const adicionaisContentElem = item.querySelector('.expandable-section:first-child .section-content');
+                
+                if (adicionaisContentElem && adicionaisContentElem.classList.contains('collapsed')) {
+                    adicionaisContentElem.classList.remove('collapsed');
+                    const toggleIcon = adicionaisHeader?.querySelector('.section-toggle');
+                    if (toggleIcon) {
+                        toggleIcon.classList.remove('fa-chevron-down');
+                        toggleIcon.classList.add('fa-chevron-up');
+                    }
                 }
+                
+                // Restaurar checkboxes
+                const heCheck = adicionaisContent.querySelector('.he-check');
+                const anCheck = adicionaisContent.querySelector('.an-check');
+                const perCheck = adicionaisContent.querySelector('.per-check');
+                const insCheck = adicionaisContent.querySelector('.ins-check');
+                const heHoras = adicionaisContent.querySelector('.he-horas');
+                const anHoras = adicionaisContent.querySelector('.an-horas');
+                
+                if (heCheck) {
+                    heCheck.checked = dadosAdicionais.horasExtras === true;
+                    console.log('Set heCheck.checked =', dadosAdicionais.horasExtras);
+                }
+                if (anCheck) {
+                    anCheck.checked = dadosAdicionais.noturno === true;
+                    console.log('Set anCheck.checked =', dadosAdicionais.noturno);
+                }
+                if (perCheck) {
+                    perCheck.checked = dadosAdicionais.periculosidade === true;
+                    console.log('Set perCheck.checked =', dadosAdicionais.periculosidade);
+                }
+                if (insCheck) {
+                    insCheck.checked = dadosAdicionais.insalubridade === true;
+                    console.log('Set insCheck.checked =', dadosAdicionais.insalubridade);
+                }
+                if (heHoras && dadosAdicionais.heHoras) {
+                    heHoras.value = dadosAdicionais.heHoras;
+                    console.log('Set heHoras.value =', dadosAdicionais.heHoras);
+                }
+                if (anHoras && dadosAdicionais.anHoras) {
+                    anHoras.value = dadosAdicionais.anHoras;
+                    console.log('Set anHoras.value =', dadosAdicionais.anHoras);
+                }
+                
+                // Mostrar/esconder os conteúdos
+                const heConteudo = adicionaisContent.querySelector('.he-conteudo');
+                const anConteudo = adicionaisContent.querySelector('.an-conteudo');
+                const perConteudo = adicionaisContent.querySelector('.per-conteudo');
+                const insConteudo = adicionaisContent.querySelector('.ins-conteudo');
+                
+                if (heConteudo) heConteudo.classList.toggle('hidden', !dadosAdicionais.horasExtras);
+                if (anConteudo) anConteudo.classList.toggle('hidden', !dadosAdicionais.noturno);
+                if (perConteudo) perConteudo.classList.toggle('hidden', !dadosAdicionais.periculosidade);
+                if (insConteudo) insConteudo.classList.toggle('hidden', !dadosAdicionais.insalubridade);
+                
+                // Forçar atualização dos resultados
+                atualizarResultados();
             }
-            
-            // Restaurar checkboxes
-            const heCheck = adicionaisContent.querySelector('.he-check');
-            const anCheck = adicionaisContent.querySelector('.an-check');
-            const perCheck = adicionaisContent.querySelector('.per-check');
-            const insCheck = adicionaisContent.querySelector('.ins-check');
-            const heHoras = adicionaisContent.querySelector('.he-horas');
-            const anHoras = adicionaisContent.querySelector('.an-horas');
-            
-            if (dadosAdicionais.horasExtras && heCheck) {
-                heCheck.checked = true;
-                console.log('Restaurou horasExtras: true');
-            }
-            if (dadosAdicionais.noturno && anCheck) {
-                anCheck.checked = true;
-                console.log('Restaurou noturno: true');
-            }
-            if (dadosAdicionais.periculosidade && perCheck) {
-                perCheck.checked = true;
-                console.log('Restaurou periculosidade: true');
-            }
-            if (dadosAdicionais.insalubridade && insCheck) {
-                insCheck.checked = true;
-                console.log('Restaurou insalubridade: true');
-            }
-            if (dadosAdicionais.heHoras && heHoras) {
-                heHoras.value = dadosAdicionais.heHoras;
-                console.log('Restaurou heHoras:', dadosAdicionais.heHoras);
-            }
-            if (dadosAdicionais.anHoras && anHoras) {
-                anHoras.value = dadosAdicionais.anHoras;
-                console.log('Restaurou anHoras:', dadosAdicionais.anHoras);
-            }
-            
-            // Mostrar/esconder os conteúdos baseado nos checkboxes
-            const heConteudo = adicionaisContent.querySelector('.he-conteudo');
-            const anConteudo = adicionaisContent.querySelector('.an-conteudo');
-            const perConteudo = adicionaisContent.querySelector('.per-conteudo');
-            const insConteudo = adicionaisContent.querySelector('.ins-conteudo');
-            
-            if (heConteudo) heConteudo.classList.toggle('hidden', !dadosAdicionais.horasExtras);
-            if (anConteudo) anConteudo.classList.toggle('hidden', !dadosAdicionais.noturno);
-            if (perConteudo) perConteudo.classList.toggle('hidden', !dadosAdicionais.periculosidade);
-            if (insConteudo) insConteudo.classList.toggle('hidden', !dadosAdicionais.insalubridade);
-            
-            // Recolher a seção se ela estava colapsada originalmente
-            // (vamos manter expandida por enquanto para garantir que os valores sejam aplicados)
-        }
+        }, 100);
         
-        // Forçar a atualização dos resultados APÓS restaurar os valores
+        // Primeira atualização
         atualizarResultados();
         
         return item;
@@ -2942,6 +2954,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                     container.innerHTML = '';
                     if (data.cargos && data.cargos.length > 0) {
                         data.cargos.forEach(c => {
+                                console.log('=== CARREGANDO CARGO DO FIREBASE ===');
+                                console.log('Nome:', c.nome);
+                                console.log('Adicionais brutos:', c.adicionais);
+                                console.log('Horas Extras:', c.adicionais?.horasExtras);
+                                console.log('Horas Extras valor:', c.adicionais?.heHoras);
+                                console.log('Noturno:', c.adicionais?.noturno);
+                                console.log('Periculosidade:', c.adicionais?.periculosidade);
+                                console.log('Insalubridade:', c.adicionais?.insalubridade);
                             let examesObj = {};
                             if (c.exames) {
                                 if (Array.isArray(c.exames)) {
@@ -3313,6 +3333,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                 exames,
                 treinamento,
                 totalVaga
+            });
+
+            console.log('=== SALVANDO CARGO ===');
+            console.log('Nome:', nome);
+            console.log('Adicionais sendo salvos:', {
+                horasExtras: heCheck?.checked || false,
+                noturno: anCheck?.checked || false,
+                heHoras: heHoras,
+                anHoras: anHoras
             });
         });
         
