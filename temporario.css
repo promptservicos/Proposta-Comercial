@@ -2453,3 +2453,456 @@ body.light-mode .exame-custom-item .exame-custom-preco-input {
     border: 1px solid #ddd !important;
     color: #333 !important;
 }
+
+/* ========== CORREÇÃO MODO CLARO PARA TOTAIS E FUNDOS ESCUROS ========== */
+
+/* Totais de Uniformes e EPIs */
+body.light-mode .uniformes-total,
+body.light-mode .epis-total,
+body.light-mode .uniformes-total-geral,
+body.light-mode .epis-total-geral,
+body.light-mode .beneficios-total-geral,
+body.light-mode .seguranca-total-geral,
+body.light-mode .insumos-total-geral,
+body.light-mode .exames-total-geral {
+    background: #f5f5f5 !important;
+    background-color: #f5f5f5 !important;
+    border-top: 1px solid #e0e0e0 !important;
+    color: #333 !important;
+}
+
+body.light-mode .uniformes-total span,
+body.light-mode .epis-total span,
+body.light-mode .uniformes-total-geral span,
+body.light-mode .epis-total-geral span,
+body.light-mode .beneficios-total-geral span,
+body.light-mode .seguranca-total-geral span,
+body.light-mode .insumos-total-geral span,
+body.light-mode .exames-total-geral span {
+    color: #333 !important;
+}
+
+body.light-mode .uniformes-total span:last-child,
+body.light-mode .epis-total span:last-child,
+body.light-mode .uniformes-total-geral strong,
+body.light-mode .epis-total-geral strong,
+body.light-mode .beneficios-total-geral strong,
+body.light-mode .seguranca-total-geral strong,
+body.light-mode .insumos-total-geral strong,
+body.light-mode .exames-total-geral strong {
+    color: #c10404 !important;
+}
+
+/* Totais de Exames */
+body.light-mode .exames-total {
+    background: #f5f5f5 !important;
+    background-color: #f5f5f5 !important;
+    border-top: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .exames-total span:first-child {
+    color: #666 !important;
+}
+
+body.light-mode .exames-total span:last-child {
+    color: #c10404 !important;
+}
+
+/* Resultados e blocos de resultado */
+body.light-mode .cargo-resultados {
+    background: #fafafa !important;
+    border: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .resultado-bloco {
+    background: rgba(0, 0, 0, 0.03) !important;
+}
+
+body.light-mode .resultado-bloco .rotulo {
+    color: #666 !important;
+}
+
+body.light-mode .resultado-bloco .valor {
+    color: #333 !important;
+}
+
+body.light-mode .resultado-bloco.total-prestacao .valor {
+    color: #c10404 !important;
+}
+
+/* Seções expansíveis */
+body.light-mode .expandable-section {
+    background: #ffffff !important;
+    border: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .section-header {
+    background: #f5f5f5 !important;
+    border-bottom: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .section-content {
+    background: #ffffff !important;
+}
+
+/* Uniformes e EPIs boxes */
+body.light-mode .uniformes-box,
+body.light-mode .epis-box {
+    background: #ffffff !important;
+    border: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .box-header {
+    background: #f5f5f5 !important;
+    border-bottom: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .box-header h4 {
+    color: #c10404 !important;
+}
+
+/* Dropdown menus */
+body.light-mode .dropdown-menu {
+    background: #ffffff !important;
+    border: 1px solid #c10404 !important;
+}
+
+body.light-mode .item-lista {
+    border-bottom: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .item-nome {
+    color: #333 !important;
+}
+
+body.light-mode .item-preco {
+    color: #c10404 !important;
+}
+
+/* Inputs dentro dos itens */
+body.light-mode .item-input input {
+    background: #ffffff !important;
+    border: 1px solid #ddd !important;
+    color: #333 !important;
+}
+
+body.light-mode .item-input span {
+    color: #666 !important;
+}
+
+/* Benefícios */
+body.light-mode .beneficio-card,
+body.light-mode .beneficio-custom-card {
+    background: #ffffff !important;
+    border: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .beneficio-nome {
+    color: #c10404 !important;
+}
+
+body.light-mode .beneficio-campo label {
+    color: #666 !important;
+}
+
+body.light-mode .beneficio-campo input {
+    background: #ffffff !important;
+    border: 1px solid #ddd !important;
+    color: #333 !important;
+}
+
+body.light-mode .beneficio-total {
+    color: #c10404 !important;
+}
+
+/* Benefícios personalizados - inputs */
+body.light-mode .beneficio-custom-nome {
+    background: #ffffff !important;
+    border: 1px solid #ddd !important;
+    color: #c10404 !important;
+}
+
+body.light-mode .beneficio-custom-valor,
+body.light-mode .beneficio-custom-dias {
+    background: #ffffff !important;
+    border: 1px solid #ddd !important;
+    color: #333 !important;
+}
+
+/* Segurança */
+body.light-mode .seguranca-item {
+    background: #ffffff !important;
+    border: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .seguranca-nome {
+    color: #c10404 !important;
+}
+
+body.light-mode .seguranca-campo label {
+    color: #666 !important;
+}
+
+body.light-mode .seguranca-campo input {
+    background: #ffffff !important;
+    border: 1px solid #ddd !important;
+    color: #333 !important;
+}
+
+body.light-mode .seguranca-total {
+    color: #c10404 !important;
+}
+
+/* Insumos */
+body.light-mode .insumo-card {
+    background: #ffffff !important;
+    border: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .insumo-nome {
+    color: #c10404 !important;
+}
+
+body.light-mode .insumo-campo label {
+    color: #666 !important;
+}
+
+body.light-mode .insumo-campo input {
+    background: #ffffff !important;
+    border: 1px solid #ddd !important;
+    color: #333 !important;
+}
+
+body.light-mode .insumo-total {
+    color: #c10404 !important;
+}
+
+/* Despesas */
+body.light-mode .despesas-section {
+    background: #ffffff !important;
+    border: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .despesas-header {
+    background: #f5f5f5 !important;
+    border-bottom: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .despesas-title {
+    color: #c10404 !important;
+}
+
+body.light-mode .despesas-summary {
+    color: #666 !important;
+}
+
+body.light-mode .despesas-content {
+    background: #ffffff !important;
+}
+
+body.light-mode .despesa-card {
+    background: #ffffff !important;
+    border: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .despesa-nome {
+    color: #c10404 !important;
+}
+
+body.light-mode .despesa-campo label {
+    color: #666 !important;
+}
+
+body.light-mode .despesa-campo input {
+    background: #ffffff !important;
+    border: 1px solid #ddd !important;
+    color: #333 !important;
+}
+
+body.light-mode .despesa-valor {
+    color: #c10404 !important;
+}
+
+body.light-mode .despesa-calculo {
+    color: #888 !important;
+}
+
+body.light-mode .despesas-total {
+    border-top-color: #c10404 !important;
+}
+
+body.light-mode .despesas-total span:first-child {
+    color: #666 !important;
+}
+
+body.light-mode .despesas-total span:last-child {
+    color: #c10404 !important;
+}
+
+/* Exames */
+body.light-mode .exames-section {
+    background: #ffffff !important;
+    border: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .exames-header {
+    background: #f5f5f5 !important;
+    border-bottom: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .exames-title {
+    color: #c10404 !important;
+}
+
+body.light-mode .exames-summary {
+    color: #666 !important;
+}
+
+body.light-mode .exames-content {
+    background: #ffffff !important;
+}
+
+body.light-mode .exames-box {
+    background: #ffffff !important;
+    border: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .exames-box .box-header {
+    background: #f5f5f5 !important;
+    border-bottom: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .exames-box .box-header h4 {
+    color: #c10404 !important;
+}
+
+body.light-mode .exames-item {
+    border-bottom: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .exames-item-nome {
+    color: #333 !important;
+}
+
+body.light-mode .exames-item-preco {
+    color: #c10404 !important;
+}
+
+body.light-mode .treinamento-box {
+    background: #ffffff !important;
+    border: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .treinamento-box h4 {
+    color: #c10404 !important;
+}
+
+body.light-mode .treinamento-input {
+    background: #f5f5f5 !important;
+    border: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .treinamento-input span {
+    color: #c10404 !important;
+}
+
+body.light-mode .treinamento-input input {
+    color: #333 !important;
+}
+
+body.light-mode .exames-resumo {
+    border-top-color: #c10404 !important;
+}
+
+body.light-mode .exames-resumo span {
+    color: #c10404 !important;
+}
+
+/* Itens personalizados */
+body.light-mode .item-custom {
+    background: #ffffff !important;
+    border-bottom: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .item-custom .item-custom-nome {
+    color: #c10404 !important;
+}
+
+body.light-mode .item-custom .item-custom-preco-input,
+body.light-mode .item-custom .item-custom-quantidade-input,
+body.light-mode .item-custom .item-custom-depreciacao-input {
+    background: #ffffff !important;
+    border: 1px solid #ddd !important;
+    color: #333 !important;
+}
+
+body.light-mode .btn-add-custom {
+    background: #f5f5f5 !important;
+    color: #c10404 !important;
+    border: 1px dashed #c10404 !important;
+}
+
+/* Exames personalizados */
+body.light-mode .exame-custom-item {
+    background: #ffffff !important;
+    border-bottom: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .exame-custom-item .exame-custom-nome {
+    color: #c10404 !important;
+}
+
+body.light-mode .exame-custom-item .exame-custom-preco-input {
+    background: #ffffff !important;
+    border: 1px solid #ddd !important;
+    color: #333 !important;
+}
+
+/* Botão adicionar benefício */
+body.light-mode .btn-add-beneficio {
+    background: #f5f5f5 !important;
+    border: 1px dashed #c10404 !important;
+    color: #c10404 !important;
+}
+
+body.light-mode .btn-add-beneficio:hover {
+    background: rgba(193, 4, 4, 0.1) !important;
+}
+
+/* Botão remover */
+body.light-mode .btn-remover,
+body.light-mode .btn-remover-custom,
+body.light-mode .btn-remover-beneficio,
+body.light-mode .btn-remover-exame-custom {
+    background: #f0f0f0 !important;
+    border: 1px solid rgba(193, 4, 4, 0.4) !important;
+    color: #c10404 !important;
+}
+
+body.light-mode .btn-remover:hover,
+body.light-mode .btn-remover-custom:hover,
+body.light-mode .btn-remover-beneficio:hover,
+body.light-mode .btn-remover-exame-custom:hover {
+    background: #ffe5e5 !important;
+    border-color: #ff4444 !important;
+    color: #ff4444 !important;
+}
+
+/* Cargo item e linha */
+body.light-mode .cargo-item {
+    background: #fafafa !important;
+    border: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .cargo-linha {
+    background: #ffffff !important;
+    border: 1px solid #e8e8e8 !important;
+}
+
+body.light-mode .cargo-titulo {
+    color: #c10404 !important;
+}
+
+body.light-mode .campo-pequeno label {
+    color: #555 !important;
+}
