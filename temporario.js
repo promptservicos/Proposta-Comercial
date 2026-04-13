@@ -97,6 +97,11 @@ const EXAMES_COMPLEMENTARES = [
 const TAXA_EXAMES = 0.1375;
 const DRAFT_KEY = 'proposta_temporario_draft';
 
+// ========== DEBUG - Remover depois ==========
+function debugLog(message, data) {
+    console.log(`[DEBUG] ${message}`, data || '');
+}
+
 function formatarMoeda(valor) {
     return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
@@ -626,7 +631,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 
                 dados.cargos.push(cargo);
             });
-            
+           
+            // Dentro de salvarRascunho, ANTES do localStorage.setItem
+            console.log('=== DADOS SENDO SALVOS ===');
+            console.log('Benefícios Personalizados:', dados.cargos.map(c => c.beneficiosPersonalizados));
+            console.log('Uniformes Custom:', dados.cargos.map(c => c.uniformes?.custom));
+            console.log('EPIs Custom:', dados.cargos.map(c => c.epis?.custom));
+            console.log('Exames Custom:', dados.cargos.map(c => c.exames?.custom));
+
             localStorage.setItem(DRAFT_KEY, JSON.stringify(dados));
         } catch (e) {
             console.error('Erro ao salvar rascunho:', e);
@@ -1357,6 +1369,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function criarBeneficiosSection(cargoItem, dadosBeneficios = {}, dadosBeneficiosPersonalizados = []) {
+        console.log('criarBeneficiosSection - dadosBeneficiosPersonalizados recebidos:', dadosBeneficiosPersonalizados);
+        
         const conteudoHtml = `
             <div class="beneficios-fixos">
                 <h4 style="color: #c10404; margin-bottom: 0.8rem; font-size: 0.85rem;">Benefícios Fixos</h4>
@@ -1373,6 +1387,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 Total para <span class="beneficios-qtd-funcionarios">1</span> funcionário(s): <strong class="beneficios-valor-geral">R$ 0,00</strong>
             </div>
         `;
+        
         const { section, updateSummary, content } = criarSecaoExpansivel('Benefícios', 'fa-gift', conteudoHtml, true);
         const fixosGrid = content.querySelector('.beneficios-fixos-grid');
         const customGrid = content.querySelector('.beneficios-custom-grid');
@@ -1380,7 +1395,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         const beneficiosTotalGeralSpan = content.querySelector('.beneficios-valor-geral');
         const beneficiosQtdFuncionariosSpan = content.querySelector('.beneficios-qtd-funcionarios');
         
-        let customBeneficios = [...(dadosBeneficiosPersonalizados || [])];
+        // Array para armazenar os benefícios personalizados (referências DOM)
+        const customBeneficiosRefs = [];
         
         function atualizarTotalGeral(totalPorFuncionario) {
             const qtdFuncionarios = parseInt(cargoItem?.querySelector('.cargo-quantidade')?.value) || 1;
@@ -1390,7 +1406,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             return totalGeral;
         }
         
-        // Benefícios fixos (do BENEFICIOS original)
+        // Benefícios fixos
         BENEFICIOS.forEach(b => {
             const card = document.createElement('div');
             card.className = 'beneficio-card';
@@ -1413,12 +1429,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             fixosGrid.appendChild(card);
         });
         
+        // Função para criar um card de benefício personalizado
         function criarBeneficioCustomizado(beneficio = null) {
             const card = document.createElement('div');
             card.className = 'beneficio-custom-card';
             const nome = beneficio?.nome || '';
             const valorDiario = beneficio?.valorDiario || 0;
             const dias = beneficio?.dias || 0;
+            
             card.innerHTML = `
                 <div class="beneficio-nome" style="min-width: 150px;">
                     <input type="text" class="beneficio-custom-nome" placeholder="Nome do benefício" value="${escapeHtml(nome)}" style="background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%); border: 1px solid #2c2c2c; border-radius: 30px; padding: 0.4rem 0.8rem; color: #c10404; font-weight: 600; width: 100%;">
@@ -1439,23 +1457,64 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </button>
             `;
             
+            // Adicionar event listeners
+            const nomeInput = card.querySelector('.beneficio-custom-nome');
+            const valorInput = card.querySelector('.beneficio-custom-valor');
+            const diasInput = card.querySelector('.beneficio-custom-dias');
             const btnRemover = card.querySelector('.btn-remover-beneficio');
-            btnRemover.addEventListener('click', () => {
-                card.remove();
+            
+            // Formatação do valor
+            valorInput.addEventListener('input', function(e) {
+                let valor = e.target.value.replace(/\D/g, '');
+                e.target.value = valor ? (parseInt(valor) / 100).toFixed(2).replace('.', ',') : '';
                 calcularTotal();
                 salvarRascunho();
                 if (cargoItem && cargoItem.dispatchEvent) cargoItem.dispatchEvent(new Event('recalcular'));
             });
             
+            diasInput.addEventListener('input', () => {
+                calcularTotal();
+                salvarRascunho();
+                if (cargoItem && cargoItem.dispatchEvent) cargoItem.dispatchEvent(new Event('recalcular'));
+            });
+            
+            nomeInput.addEventListener('input', () => {
+                salvarRascunho();
+            });
+            
+            btnRemover.addEventListener('click', () => {
+                card.remove();
+                const index = customBeneficiosRefs.findIndex(ref => ref.card === card);
+                if (index !== -1) customBeneficiosRefs.splice(index, 1);
+                calcularTotal();
+                salvarRascunho();
+                if (cargoItem && cargoItem.dispatchEvent) cargoItem.dispatchEvent(new Event('recalcular'));
+            });
+            
+            // Atualizar total inicial
+            const valor = parseFloat(valorInput.value.replace(/\./g, '').replace(',', '.')) || 0;
+            const diasVal = parseInt(diasInput.value) || 0;
+            const totalSpan = card.querySelector('.beneficio-total');
+            totalSpan.textContent = `Total: ${formatarMoeda(valor * diasVal)}`;
+            
             return card;
         }
         
-        customBeneficios.forEach(b => {
-            customGrid.appendChild(criarBeneficioCustomizado(b));
-        });
+        // Carregar benefícios personalizados existentes
+        console.log('Carregando benefícios personalizados:', dadosBeneficiosPersonalizados);
+        if (dadosBeneficiosPersonalizados && dadosBeneficiosPersonalizados.length > 0) {
+            dadosBeneficiosPersonalizados.forEach(beneficio => {
+                const card = criarBeneficioCustomizado(beneficio);
+                customGrid.appendChild(card);
+                customBeneficiosRefs.push({ card, data: beneficio });
+            });
+        }
         
+        // Botão para adicionar novo benefício
         btnAdicionar.addEventListener('click', () => {
-            customGrid.appendChild(criarBeneficioCustomizado());
+            const card = criarBeneficioCustomizado();
+            customGrid.appendChild(card);
+            customBeneficiosRefs.push({ card, data: null });
             calcularTotal();
             salvarRascunho();
         });
@@ -1463,6 +1522,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         function calcularTotal() {
             let total = 0;
             
+            // Benefícios fixos
             fixosGrid.querySelectorAll('.beneficio-card').forEach(card => {
                 const valorInput = card.querySelector('.beneficio-valor');
                 const diasInput = card.querySelector('.beneficio-dias');
@@ -1474,6 +1534,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 totalSpan.textContent = `Total: ${formatarMoeda(subtotal)}`;
             });
             
+            // Benefícios personalizados
             customGrid.querySelectorAll('.beneficio-custom-card').forEach(card => {
                 const valorInput = card.querySelector('.beneficio-custom-valor');
                 const diasInput = card.querySelector('.beneficio-custom-dias');
@@ -1490,6 +1551,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             return total;
         }
         
+        // Event listeners para benefícios fixos
         fixosGrid.querySelectorAll('.beneficio-valor, .beneficio-dias').forEach(input => {
             input.addEventListener('input', function(e) {
                 if (e.target.classList.contains('beneficio-valor')) {
@@ -1502,22 +1564,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
         
-        customGrid.addEventListener('input', function(e) {
-            if (e.target.classList.contains('beneficio-custom-valor')) {
-                let valor = e.target.value.replace(/\D/g, '');
-                e.target.value = valor ? (parseInt(valor) / 100).toFixed(2).replace('.', ',') : '';
-                calcularTotal();
-                salvarRascunho();
-                if (cargoItem && cargoItem.dispatchEvent) cargoItem.dispatchEvent(new Event('recalcular'));
-            } else if (e.target.classList.contains('beneficio-custom-dias')) {
-                calcularTotal();
-                salvarRascunho();
-                if (cargoItem && cargoItem.dispatchEvent) cargoItem.dispatchEvent(new Event('recalcular'));
-            } else if (e.target.classList.contains('beneficio-custom-nome')) {
-                salvarRascunho();
-            }
-        });
-        
+        // Atualizar quantidade de funcionários
         if (cargoItem) {
             const qtdInput = cargoItem.querySelector('.cargo-quantidade');
             if (qtdInput) {
@@ -1528,7 +1575,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         calcularTotal();
         
-        return { section, calcularTotal, getDados: () => {
+        // Função para capturar dados
+        const getDados = () => {
             const beneficios = {};
             fixosGrid.querySelectorAll('.beneficio-card').forEach(card => {
                 const campo = card.querySelector('.beneficio-valor').dataset.campo;
@@ -1536,7 +1584,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const diasInput = card.querySelector('.beneficio-dias');
                 const valor = parseFloat(valorInput.value.replace(/\./g, '').replace(',', '.')) || 0;
                 const dias = parseInt(diasInput.value) || 0;
-                if (valor > 0 || dias > 0) beneficios[campo] = { valorDiario: valor, dias: dias };
+                if (valor > 0 || dias > 0) {
+                    beneficios[campo] = { valorDiario: valor, dias: dias };
+                }
             });
             
             const beneficiosPersonalizados = [];
@@ -1547,11 +1597,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const nome = nomeInput.value.trim();
                 const valor = parseFloat(valorInput.value.replace(/\./g, '').replace(',', '.')) || 0;
                 const dias = parseInt(diasInput.value) || 0;
-                if (nome && (valor > 0 || dias > 0)) beneficiosPersonalizados.push({ nome, valorDiario: valor, dias: dias });
+                if (nome && (valor > 0 || dias > 0)) {
+                    beneficiosPersonalizados.push({ nome, valorDiario: valor, dias: dias });
+                }
             });
             
+            console.log('getDados - Benefícios Personalizados capturados:', beneficiosPersonalizados);
+            
             return { beneficios, beneficiosPersonalizados };
-        } };
+        };
+        
+        return { section, calcularTotal, getDados };
     }
 
     function criarSegurancaSection(cargoItem, dadosSeguranca = {}) {
@@ -2852,6 +2908,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
             
+            // Depois de capturar os benefícios fixos, adicione:
+            const beneficiosPersonalizados = [];
+            item.querySelectorAll('.beneficio-custom-card').forEach(card => {
+                const nomeInput = card.querySelector('.beneficio-custom-nome');
+                const valorInput = card.querySelector('.beneficio-custom-valor');
+                const diasInput = card.querySelector('.beneficio-custom-dias');
+                const nome = nomeInput?.value.trim() || '';
+                const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
+                const dias = parseInt(diasInput?.value) || 0;
+                if (nome && (valor > 0 || dias > 0)) {
+                    beneficiosPersonalizados.push({ nome, valorDiario: valor, dias: dias });
+                }
+            });
+
             const segurancaSection = item.querySelectorAll('.expandable-section')[3];
             let seguranca = {};
             if (segurancaSection && segurancaSection.__getSegurancaDados) {
@@ -2940,6 +3010,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 uniformes,
                 epis,
                 beneficios,
+                beneficiosPersonalizados,
                 seguranca,
                 insumos,
                 despesas,
@@ -2976,7 +3047,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             mostrarModal('Erro ao salvar proposta.');
         }
     });
-    
+
     initTema();
     initCompartilhar();
     checkVisualizacao();
