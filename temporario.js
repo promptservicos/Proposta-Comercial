@@ -2509,19 +2509,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         };
     }
 
-        function criarCargoItem(cargo = '', quantidade = 1, salario = 0, dadosAdicionais = {}, dadosUniformes = {}, dadosEpis = {}, dadosBeneficios = {}, dadosSeguranca = {}, dadosInsumos = {}, dadosDespesas = {}, dadosExames = {}, treinamentoValor = 0, encargosPercentual = 55.83, dadosBeneficiosPersonalizados = []) {
-            
-            console.log('🔵 criarCargoItem - ADICIONAIS RECEBIDOS:', {
-                cargo: cargo,
-                dadosAdicionais: dadosAdicionais,
-                horasExtras: dadosAdicionais?.horasExtras,
-                heHoras: dadosAdicionais?.heHoras
-            });
-
-        console.log('=== criarCargoItem CHAMADA ===');
-        console.log('dadosAdicionais recebidos:', dadosAdicionais);
-        console.log('horasExtras:', dadosAdicionais?.horasExtras);
-        console.log('heHoras:', dadosAdicionais?.heHoras);
+    function criarCargoItem(cargo = '', quantidade = 1, salario = 0, dadosAdicionais = {}, dadosUniformes = {}, dadosEpis = {}, dadosBeneficios = {}, dadosSeguranca = {}, dadosInsumos = {}, dadosDespesas = {}, dadosExames = {}, treinamentoValor = 0, encargosPercentual = 55.83, dadosBeneficiosPersonalizados = []) {
+        
+        console.log('🔵 criarCargoItem - ADICIONAIS RECEBIDOS:', {
+            cargo: cargo,
+            dadosAdicionais: dadosAdicionais,
+            horasExtras: dadosAdicionais?.horasExtras,
+            heHoras: dadosAdicionais?.heHoras
+        });
         
         const item = document.createElement('div');
         item.className = 'cargo-item';
@@ -2867,75 +2862,69 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
         
         // ========== RESTAURAR ADICIONAIS ==========
-        // Usar setTimeout para garantir que o DOM já foi completamente criado
-        setTimeout(() => {
-            console.log('=== RESTAURANDO ADICIONAIS (após DOM) ===');
-            console.log('dadosAdicionais:', dadosAdicionais);
+        // IMPORTANTE: Fazer isso ANTES da primeira atualização de resultados
+        if (dadosAdicionais) {
+            console.log('🟢 RESTAURANDO ADICIONAIS:', dadosAdicionais);
             
-            if (dadosAdicionais) {
-                // Forçar a expansão da seção
-                const adicionaisHeader = item.querySelector('.expandable-section:first-child .section-header');
-                const adicionaisContentElem = item.querySelector('.expandable-section:first-child .section-content');
-                
-                if (adicionaisContentElem && adicionaisContentElem.classList.contains('collapsed')) {
-                    adicionaisContentElem.classList.remove('collapsed');
-                    const toggleIcon = adicionaisHeader?.querySelector('.section-toggle');
-                    if (toggleIcon) {
-                        toggleIcon.classList.remove('fa-chevron-down');
-                        toggleIcon.classList.add('fa-chevron-up');
-                    }
+            // Forçar a expansão da seção para que os elementos existam
+            const adicionaisContentElem = item.querySelector('.expandable-section:first-child .section-content');
+            const adicionaisHeader = item.querySelector('.expandable-section:first-child .section-header');
+            
+            if (adicionaisContentElem && adicionaisContentElem.classList.contains('collapsed')) {
+                adicionaisContentElem.classList.remove('collapsed');
+                const toggleIcon = adicionaisHeader?.querySelector('.section-toggle');
+                if (toggleIcon) {
+                    toggleIcon.classList.remove('fa-chevron-down');
+                    toggleIcon.classList.add('fa-chevron-up');
                 }
-                
-                // Restaurar checkboxes
-                const heCheck = adicionaisContent.querySelector('.he-check');
-                const anCheck = adicionaisContent.querySelector('.an-check');
-                const perCheck = adicionaisContent.querySelector('.per-check');
-                const insCheck = adicionaisContent.querySelector('.ins-check');
-                const heHoras = adicionaisContent.querySelector('.he-horas');
-                const anHoras = adicionaisContent.querySelector('.an-horas');
-                
-                if (heCheck) {
-                    heCheck.checked = dadosAdicionais.horasExtras === true;
-                    console.log('Set heCheck.checked =', dadosAdicionais.horasExtras);
-                }
-                if (anCheck) {
-                    anCheck.checked = dadosAdicionais.noturno === true;
-                    console.log('Set anCheck.checked =', dadosAdicionais.noturno);
-                }
-                if (perCheck) {
-                    perCheck.checked = dadosAdicionais.periculosidade === true;
-                    console.log('Set perCheck.checked =', dadosAdicionais.periculosidade);
-                }
-                if (insCheck) {
-                    insCheck.checked = dadosAdicionais.insalubridade === true;
-                    console.log('Set insCheck.checked =', dadosAdicionais.insalubridade);
-                }
-                if (heHoras && dadosAdicionais.heHoras) {
-                    heHoras.value = dadosAdicionais.heHoras;
-                    console.log('Set heHoras.value =', dadosAdicionais.heHoras);
-                }
-                if (anHoras && dadosAdicionais.anHoras) {
-                    anHoras.value = dadosAdicionais.anHoras;
-                    console.log('Set anHoras.value =', dadosAdicionais.anHoras);
-                }
-                
-                // Mostrar/esconder os conteúdos
-                const heConteudo = adicionaisContent.querySelector('.he-conteudo');
-                const anConteudo = adicionaisContent.querySelector('.an-conteudo');
-                const perConteudo = adicionaisContent.querySelector('.per-conteudo');
-                const insConteudo = adicionaisContent.querySelector('.ins-conteudo');
-                
-                if (heConteudo) heConteudo.classList.toggle('hidden', !dadosAdicionais.horasExtras);
-                if (anConteudo) anConteudo.classList.toggle('hidden', !dadosAdicionais.noturno);
-                if (perConteudo) perConteudo.classList.toggle('hidden', !dadosAdicionais.periculosidade);
-                if (insConteudo) insConteudo.classList.toggle('hidden', !dadosAdicionais.insalubridade);
-                
-                // Forçar atualização dos resultados
-                atualizarResultados();
             }
-        }, 100);
+            
+            // Restaurar checkboxes
+            const heCheck = adicionaisContent.querySelector('.he-check');
+            const anCheck = adicionaisContent.querySelector('.an-check');
+            const perCheck = adicionaisContent.querySelector('.per-check');
+            const insCheck = adicionaisContent.querySelector('.ins-check');
+            const heHoras = adicionaisContent.querySelector('.he-horas');
+            const anHoras = adicionaisContent.querySelector('.an-horas');
+            
+            if (heCheck) {
+                heCheck.checked = dadosAdicionais.horasExtras === true;
+                console.log('✅ Restaurou horasExtras:', dadosAdicionais.horasExtras);
+            }
+            if (anCheck) {
+                anCheck.checked = dadosAdicionais.noturno === true;
+                console.log('✅ Restaurou noturno:', dadosAdicionais.noturno);
+            }
+            if (perCheck) {
+                perCheck.checked = dadosAdicionais.periculosidade === true;
+                console.log('✅ Restaurou periculosidade:', dadosAdicionais.periculosidade);
+            }
+            if (insCheck) {
+                insCheck.checked = dadosAdicionais.insalubridade === true;
+                console.log('✅ Restaurou insalubridade:', dadosAdicionais.insalubridade);
+            }
+            if (heHoras && dadosAdicionais.heHoras) {
+                heHoras.value = dadosAdicionais.heHoras;
+                console.log('✅ Restaurou heHoras:', dadosAdicionais.heHoras);
+            }
+            if (anHoras && dadosAdicionais.anHoras) {
+                anHoras.value = dadosAdicionais.anHoras;
+                console.log('✅ Restaurou anHoras:', dadosAdicionais.anHoras);
+            }
+            
+            // Mostrar/esconder os conteúdos
+            const heConteudo = adicionaisContent.querySelector('.he-conteudo');
+            const anConteudo = adicionaisContent.querySelector('.an-conteudo');
+            const perConteudo = adicionaisContent.querySelector('.per-conteudo');
+            const insConteudo = adicionaisContent.querySelector('.ins-conteudo');
+            
+            if (heConteudo) heConteudo.classList.toggle('hidden', !dadosAdicionais.horasExtras);
+            if (anConteudo) anConteudo.classList.toggle('hidden', !dadosAdicionais.noturno);
+            if (perConteudo) perConteudo.classList.toggle('hidden', !dadosAdicionais.periculosidade);
+            if (insConteudo) insConteudo.classList.toggle('hidden', !dadosAdicionais.insalubridade);
+        }
         
-        // Primeira atualização
+        // Primeira atualização dos resultados (já com os adicionais restaurados)
         atualizarResultados();
         
         return item;
