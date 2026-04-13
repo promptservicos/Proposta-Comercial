@@ -152,7 +152,6 @@ async function gerarImagemPorCargo() {
                 const perCheck = adicionaisContent.querySelector('.per-check');
                 const insCheck = adicionaisContent.querySelector('.ins-check');
                 
-                // Verificar se tem valores (não apenas checkbox marcado)
                 if (heCheck && heCheck.checked) {
                     const horas = parseFloat(adicionaisContent.querySelector('.he-horas')?.value) || 0;
                     if (horas > 0) adicionais.push('HORA EXTRA');
@@ -172,14 +171,11 @@ async function gerarImagemPorCargo() {
         function secaoTemValores(secaoElement) {
             if (!secaoElement) return false;
             
-            // Verificar inputs de valor em cards
-            const cards = secaoElement.querySelectorAll('.beneficio-card, .seguranca-item, .insumo-card, .despesa-card, .adicional-card');
+            const cards = secaoElement.querySelectorAll('.beneficio-card, .seguranca-item, .insumo-card, .despesa-card, .adicional-card, .exames-item');
             
             for (const card of cards) {
-                // Verificar inputs de valor
                 const valorInputs = card.querySelectorAll('input[type="text"], input[type="number"]');
                 for (const input of valorInputs) {
-                    // Pular inputs de quantidade/depreciação em uniformes/EPIs
                     if (input.classList.contains('quantidade-uniforme') || 
                         input.classList.contains('quantidade-epi') ||
                         input.classList.contains('depreciacao-uniforme') ||
@@ -197,14 +193,12 @@ async function gerarImagemPorCargo() {
                     if (valor > 0) return true;
                 }
                 
-                // Verificar checkbox de exames
                 const checkboxes = card.querySelectorAll('input[type="checkbox"]');
                 for (const cb of checkboxes) {
                     if (cb.checked) return true;
                 }
             }
             
-            // Verificar se há itens personalizados
             const customItems = secaoElement.querySelectorAll('.item-custom, .beneficio-custom-card, .exame-custom-item');
             for (const item of customItems) {
                 const qtdInput = item.querySelector('.item-custom-quantidade-input, .beneficio-custom-valor');
@@ -213,14 +207,13 @@ async function gerarImagemPorCargo() {
                     if (valor > 0) return true;
                 }
                 
-                // Verificar checkbox em exame personalizado
                 const checkbox = item.querySelector('.exame-custom-checkbox');
                 if (checkbox && checkbox.checked) return true;
             }
             
-            // Verificar totais de uniformes/EPIs
             const uniformesTotal = secaoElement.querySelector('.uniformes-total span:last-child');
             const episTotal = secaoElement.querySelector('.epis-total span:last-child');
+            const examesTotal = secaoElement.querySelector('.exames-total span:last-child');
             
             if (uniformesTotal) {
                 const valor = parseFloat(uniformesTotal.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
@@ -228,6 +221,10 @@ async function gerarImagemPorCargo() {
             }
             if (episTotal) {
                 const valor = parseFloat(episTotal.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
+                if (valor > 0) return true;
+            }
+            if (examesTotal) {
+                const valor = parseFloat(examesTotal.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
                 if (valor > 0) return true;
             }
             
@@ -238,7 +235,6 @@ async function gerarImagemPorCargo() {
         function cloneCargoLimpo(cargoOriginal) {
             const clone = cargoOriginal.cloneNode(true);
             
-            // Lista de seções para verificar
             const secoes = [
                 { selector: '.expandable-section:nth-child(2)', nome: 'Uniformes e EPIs' },
                 { selector: '.expandable-section:nth-child(3)', nome: 'Benefícios' },
@@ -248,7 +244,6 @@ async function gerarImagemPorCargo() {
                 { selector: '.exames-section', nome: 'Exames' }
             ];
             
-            // Verificar e remover seções vazias
             secoes.forEach(secao => {
                 const elemento = clone.querySelector(secao.selector);
                 if (elemento && !secaoTemValores(elemento)) {
@@ -256,7 +251,6 @@ async function gerarImagemPorCargo() {
                 }
             });
             
-            // Verificar se a seção de adicionais tem valores
             const adicionaisSection = clone.querySelector('.expandable-section:first-child');
             if (adicionaisSection && !secaoTemValores(adicionaisSection)) {
                 adicionaisSection.style.display = 'none';
@@ -276,9 +270,7 @@ async function gerarImagemPorCargo() {
             }
         });
         
-        // Salvar estado original do tema
         const wasLightMode = document.body.classList.contains('light-mode');
-        
         if (!wasLightMode) {
             document.body.classList.add('light-mode');
         }
@@ -287,8 +279,6 @@ async function gerarImagemPorCargo() {
         
         const zip = new JSZip();
         const clienteNome = cliente.replace(/[^a-zA-Z0-9]/g, '_');
-        
-        // Contador para nomes repetidos
         const nomeContador = new Map();
         
         // ========== 1. GERAR IMAGEM DO TOTAL DA PROPOSTA ==========
@@ -370,21 +360,19 @@ async function gerarImagemPorCargo() {
         const totalBlob = await new Promise(resolve => totalCanvas.toBlob(resolve, 'image/png'));
         zip.file(`${clienteNome}_TOTAL_DA_PROPOSTA.png`, totalBlob);
         
-        // ========== 2. GERAR IMAGEM PARA CADA CARGO E ADICIONAR AO ZIP ==========
+        // ========== 2. GERAR IMAGEM PARA CADA CARGO ==========
         const promessasImagens = [];
         
         for (let i = 0; i < cargos.length; i++) {
             const cargo = cargos[i];
             const cargoNomeBase = cargo.querySelector('.cargo-nome').value.trim() || `Cargo_${i + 1}`;
             
-            // Contar ocorrências deste nome
             const ocorrenciaAtual = (nomeContador.get(cargoNomeBase) || 0) + 1;
             nomeContador.set(cargoNomeBase, ocorrenciaAtual);
             
             const totalOcorrencias = nomeCount.get(cargoNomeBase) || 1;
             const numeroSufixo = totalOcorrencias > 1 ? ` (${ocorrenciaAtual})` : '';
             
-            // Obter adicionais ativos
             const adicionais = getAdicionaisAtivos(cargo);
             const adicionaisSufixo = adicionais.length > 0 ? ` + ${adicionais.join(' + ')}` : '';
             
@@ -399,37 +387,53 @@ async function gerarImagemPorCargo() {
             
             const promise = (async () => {
                 try {
-                    // Clonar o cargo e limpar seções vazias
                     const cloneCargo = cloneCargoLimpo(cargo);
                     
-                    // Fechar dropdowns no clone
-                    const cloneDropdowns = cloneCargo.querySelectorAll('.dropdown-menu');
-                    cloneDropdowns.forEach(dropdown => {
-                        dropdown.classList.remove('open');
-                        dropdown.style.display = 'none';
-                        const header = dropdown.previousElementSibling;
-                        if (header && header.classList.contains('box-header')) {
-                            const icon = header.querySelector('i');
-                            if (icon) {
-                                icon.classList.remove('fa-chevron-up');
-                                icon.classList.add('fa-chevron-down');
-                            }
+                    // ========== EXPANDIR TODAS AS SEÇÕES ==========
+                    const todasSecoes = cloneCargo.querySelectorAll('.expandable-section, .exames-section, .despesas-section');
+                    todasSecoes.forEach(secao => {
+                        // Expandir conteúdo
+                        const content = secao.querySelector('.section-content, .exames-content, .despesas-content');
+                        if (content) {
+                            content.classList.remove('collapsed');
+                            content.style.display = 'block';
+                        }
+                        
+                        // Mudar ícone para cima
+                        const toggleIcon = secao.querySelector('.section-toggle, .exames-toggle, .despesas-toggle');
+                        if (toggleIcon) {
+                            toggleIcon.classList.remove('fa-chevron-down');
+                            toggleIcon.classList.add('fa-chevron-up');
                         }
                     });
                     
-                    // Expandir todas as seções (apenas as que não foram ocultadas)
-                    const cloneSecoes = cloneCargo.querySelectorAll('.expandable-section, .exames-section, .despesas-section');
-                    cloneSecoes.forEach(secao => {
-                        if (secao.style.display !== 'none') {
-                            const content = secao.querySelector('.section-content, .exames-content, .despesas-content');
-                            if (content && content.classList.contains('collapsed')) {
-                                content.classList.remove('collapsed');
-                            }
-                            const toggleIcon = secao.querySelector('.section-toggle, .exames-toggle, .despesas-toggle');
-                            if (toggleIcon) {
-                                toggleIcon.classList.remove('fa-chevron-down');
-                                toggleIcon.classList.add('fa-chevron-up');
-                            }
+                    // ========== EXPANDIR BOXES DE EXAMES ==========
+                    const examesBoxes = cloneCargo.querySelectorAll('.exames-box');
+                    examesBoxes.forEach(box => {
+                        const dropdownMenu = box.querySelector('.dropdown-menu');
+                        if (dropdownMenu) {
+                            dropdownMenu.classList.remove('open');
+                            dropdownMenu.style.display = 'none';
+                        }
+                        const headerIcon = box.querySelector('.box-header i');
+                        if (headerIcon) {
+                            headerIcon.classList.remove('fa-chevron-up');
+                            headerIcon.classList.add('fa-chevron-down');
+                        }
+                    });
+                    
+                    // ========== EXPANDIR BOXES DE UNIFORMES/EPIs ==========
+                    const uniformesBoxes = cloneCargo.querySelectorAll('.uniformes-box, .epis-box');
+                    uniformesBoxes.forEach(box => {
+                        const dropdownMenu = box.querySelector('.dropdown-menu');
+                        if (dropdownMenu) {
+                            dropdownMenu.classList.remove('open');
+                            dropdownMenu.style.display = 'none';
+                        }
+                        const headerIcon = box.querySelector('.box-header i');
+                        if (headerIcon) {
+                            headerIcon.classList.remove('fa-chevron-up');
+                            headerIcon.classList.add('fa-chevron-down');
                         }
                     });
                     
@@ -468,30 +472,14 @@ async function gerarImagemPorCargo() {
                     
                     document.body.appendChild(elementoImagem);
                     
-                    // Ajustar estilos e altura dos inputs
+                    // Ajustar estilos
                     const cargoCloneElem = elementoImagem.querySelector('.cargo-item');
                     if (cargoCloneElem) {
                         cargoCloneElem.style.margin = '0';
                         cargoCloneElem.style.boxShadow = 'none';
                     }
                     
-                    // Aumentar altura dos inputs para não cortar o texto
-                    const allInputs = elementoImagem.querySelectorAll('input');
-                    allInputs.forEach(input => {
-                        input.style.minHeight = '36px';
-                        input.style.height = 'auto';
-                        input.style.padding = '8px 12px';
-                    });
-                    
-                    // Ajustar específicamente os campos pequenos
-                    const smallInputs = elementoImagem.querySelectorAll('.beneficio-campo input, .seguranca-campo input, .insumo-campo input, .despesa-campo input');
-                    smallInputs.forEach(input => {
-                        input.style.minHeight = '34px';
-                        input.style.height = 'auto';
-                        input.style.padding = '6px 10px';
-                    });
-                    
-                    // Garantir que todos os conteúdos estão visíveis
+                    // Garantir que todas as seções de conteúdo estão visíveis
                     const allContents = elementoImagem.querySelectorAll('.section-content, .exames-content, .despesas-content');
                     allContents.forEach(content => {
                         if (content.parentElement?.style.display !== 'none') {
@@ -500,7 +488,28 @@ async function gerarImagemPorCargo() {
                         }
                     });
                     
-                    // Esconder todos os dropdowns
+                    // Garantir que os totais de exames estão visíveis
+                    const examesTotals = elementoImagem.querySelectorAll('.exames-total, .exames-resumo, .exames-total-geral');
+                    examesTotals.forEach(total => {
+                        if (total) total.style.display = 'block';
+                    });
+                    
+                    // Aumentar altura dos inputs
+                    const allInputs = elementoImagem.querySelectorAll('input');
+                    allInputs.forEach(input => {
+                        input.style.minHeight = '36px';
+                        input.style.height = 'auto';
+                        input.style.padding = '8px 12px';
+                    });
+                    
+                    const smallInputs = elementoImagem.querySelectorAll('.beneficio-campo input, .seguranca-campo input, .insumo-campo input, .despesa-campo input');
+                    smallInputs.forEach(input => {
+                        input.style.minHeight = '34px';
+                        input.style.height = 'auto';
+                        input.style.padding = '6px 10px';
+                    });
+                    
+                    // Esconder todos os dropdowns abertos
                     const imagemDropdowns = elementoImagem.querySelectorAll('.dropdown-menu');
                     imagemDropdowns.forEach(dropdown => {
                         dropdown.style.display = 'none';
@@ -537,7 +546,6 @@ async function gerarImagemPorCargo() {
             promessasImagens.push(promise);
         }
         
-        // Aguardar TODAS as imagens serem processadas
         console.log('Aguardando processamento de todas as imagens...');
         if (btnCompartilhar) {
             btnCompartilhar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Finalizando imagens...';
@@ -550,12 +558,10 @@ async function gerarImagemPorCargo() {
         
         console.log(`Processamento concluído: ${sucessos} sucessos, ${falhas} falhas`);
         
-        // Restaurar tema original
         if (!wasLightMode) {
             document.body.classList.remove('light-mode');
         }
         
-        // Gerar e baixar o arquivo ZIP
         console.log('Gerando arquivo ZIP...');
         if (btnCompartilhar) {
             btnCompartilhar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Compactando arquivos...';
@@ -575,7 +581,6 @@ async function gerarImagemPorCargo() {
         link.click();
         URL.revokeObjectURL(link.href);
         
-        // Mostrar resultado
         let mensagem = `✅ ${sucessos + 1} imagem(ns) gerada(s) com sucesso!\n- 1 imagem com o TOTAL da proposta\n- ${sucessos} imagem(ns) com detalhes dos cargos\n\n📦 Arquivo ZIP salvo na pasta Downloads`;
         
         if (sucessos !== cargos.length) {
