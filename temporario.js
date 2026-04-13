@@ -657,29 +657,62 @@ document.addEventListener('DOMContentLoaded', async function() {
             };
             
             document.querySelectorAll('.cargo-item').forEach(item => {
+                // ========== DADOS BÁSICOS ==========
                 const cargo = {
                     nome: item.querySelector('.cargo-nome')?.value || '',
                     quantidade: item.querySelector('.cargo-quantidade')?.value || 1,
                     salario: item.querySelector('.cargo-salario')?.value || '',
                     encargosPercentual: item.querySelector('.encargos-percentual')?.value || '55,83',
                     adicionais: {
-                        horasExtras: item.querySelector('.he-check')?.checked || false,
-                        noturno: item.querySelector('.an-check')?.checked || false,
-                        periculosidade: item.querySelector('.per-check')?.checked || false,
-                        insalubridade: item.querySelector('.ins-check')?.checked || false,
-                        heHoras: item.querySelector('.he-horas')?.value || 0,
-                        anHoras: item.querySelector('.an-horas')?.value || 0
+                        horasExtras: false,
+                        noturno: false,
+                        periculosidade: false,
+                        insalubridade: false,
+                        heHoras: 0,
+                        anHoras: 0
                     },
                     uniformes: {},
                     epis: {},
                     beneficios: {},
-                    beneficiosPersonalizados: [],  // <-- ADICIONAR ESTA LINHA
+                    beneficiosPersonalizados: [],
                     seguranca: {},
                     insumos: {},
                     despesas: {},
                     exames: {},
                     treinamento: 0
                 };
+                
+                // ========== CAPTURAR ADICIONAIS ==========
+                const adicionaisSection = item.querySelector('.expandable-section:first-child');
+                const adicionaisContent = adicionaisSection ? adicionaisSection.querySelector('.section-content') : null;
+                
+                // Forçar expansão para acessar os elementos
+                if (adicionaisContent && adicionaisContent.classList.contains('collapsed')) {
+                    adicionaisContent.classList.remove('collapsed');
+                    const toggleIcon = adicionaisSection?.querySelector('.section-toggle');
+                    if (toggleIcon) {
+                        toggleIcon.classList.remove('fa-chevron-down');
+                        toggleIcon.classList.add('fa-chevron-up');
+                    }
+                }
+                
+                if (adicionaisContent) {
+                    const heCheck = adicionaisContent.querySelector('.he-check');
+                    const anCheck = adicionaisContent.querySelector('.an-check');
+                    const perCheck = adicionaisContent.querySelector('.per-check');
+                    const insCheck = adicionaisContent.querySelector('.ins-check');
+                    const heHorasInput = adicionaisContent.querySelector('.he-horas');
+                    const anHorasInput = adicionaisContent.querySelector('.an-horas');
+                    
+                    cargo.adicionais = {
+                        horasExtras: heCheck ? heCheck.checked : false,
+                        noturno: anCheck ? anCheck.checked : false,
+                        periculosidade: perCheck ? perCheck.checked : false,
+                        insalubridade: insCheck ? insCheck.checked : false,
+                        heHoras: heHorasInput ? parseFloat(heHorasInput.value) || 0 : 0,
+                        anHoras: anHorasInput ? parseFloat(anHorasInput.value) || 0 : 0
+                    };
+                }
                 
                 // ========== UNIFORMES PADRÃO ==========
                 item.querySelectorAll('.uniformes-box .item-lista').forEach(lista => {
@@ -722,7 +755,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
                 
                 // ========== BENEFÍCIOS PERSONALIZADOS ==========
-                // ⬇️⬇️⬇️ ESTE É O BLOCO QUE FALTAVA ⬇️⬇️⬇️
                 const beneficiosPersonalizados = [];
                 item.querySelectorAll('.beneficio-custom-card').forEach(card => {
                     const nomeInput = card.querySelector('.beneficio-custom-nome');
@@ -736,7 +768,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 });
                 cargo.beneficiosPersonalizados = beneficiosPersonalizados;
-                // ⬆️⬆️⬆️ FIM DO BLOCO ⬆️⬆️⬆️
                 
                 // ========== SEGURANÇA ==========
                 item.querySelectorAll('.seguranca-item').forEach(card => {
@@ -846,15 +877,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 
                 dados.cargos.push(cargo);
             });
-           
-            // Dentro de salvarRascunho, ANTES do localStorage.setItem
-            console.log('=== DADOS SENDO SALVOS ===');
+            
+            // Log para debug
+            console.log('=== DADOS SENDO SALVOS NO RASCUNHO ===');
+            console.log('Adicionais dos cargos:', dados.cargos.map(c => c.adicionais));
             console.log('Benefícios Personalizados:', dados.cargos.map(c => c.beneficiosPersonalizados));
-            console.log('Uniformes Custom:', dados.cargos.map(c => c.uniformes?.custom));
-            console.log('EPIs Custom:', dados.cargos.map(c => c.epis?.custom));
-            console.log('Exames Custom:', dados.cargos.map(c => c.exames?.custom));
-
+            
             localStorage.setItem(DRAFT_KEY, JSON.stringify(dados));
+            
         } catch (e) {
             console.error('Erro ao salvar rascunho:', e);
         }
@@ -3150,7 +3180,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         const propostaId = urlParams.get('id');
         
         const cargos = [];
-        document.querySelectorAll('.cargo-item').forEach(item => {
+        
+        for (const item of document.querySelectorAll('.cargo-item')) {
             const nome = item.querySelector('.cargo-nome').value.trim() || 'Cargo sem nome';
             const qtd = parseInt(item.querySelector('.cargo-quantidade').value) || 1;
             const salarioInput = item.querySelector('.cargo-salario').value;
@@ -3159,14 +3190,46 @@ document.addEventListener('DOMContentLoaded', async function() {
             const encargosPercentualInput = item.querySelector('.encargos-percentual');
             const encargosPercentual = parseFloat(encargosPercentualInput?.value.replace(/\./g, '').replace(',', '.')) || 55.83;
             
-            const adicionaisSection = item.querySelector('.expandable-section:first-child .section-content');
-            const heCheck = adicionaisSection?.querySelector('.he-check');
-            const anCheck = adicionaisSection?.querySelector('.an-check');
-            const perCheck = adicionaisSection?.querySelector('.per-check');
-            const insCheck = adicionaisSection?.querySelector('.ins-check');
-            const heHoras = parseFloat(adicionaisSection?.querySelector('.he-horas')?.value) || 0;
-            const anHoras = parseFloat(adicionaisSection?.querySelector('.an-horas')?.value) || 0;
+            // ========== CAPTURAR ADICIONAIS DE FORMA ROBUSTA ==========
+            const adicionaisSection = item.querySelector('.expandable-section:first-child');
+            const adicionaisContent = adicionaisSection ? adicionaisSection.querySelector('.section-content') : null;
             
+            // Forçar a expansão da seção se estiver colapsada para acessar os elementos
+            if (adicionaisContent && adicionaisContent.classList.contains('collapsed')) {
+                adicionaisContent.classList.remove('collapsed');
+                const toggleIcon = adicionaisSection?.querySelector('.section-toggle');
+                if (toggleIcon) {
+                    toggleIcon.classList.remove('fa-chevron-down');
+                    toggleIcon.classList.add('fa-chevron-up');
+                }
+            }
+            
+            // Buscar os elementos dentro da seção de adicionais
+            const heCheck = adicionaisContent ? adicionaisContent.querySelector('.he-check') : null;
+            const anCheck = adicionaisContent ? adicionaisContent.querySelector('.an-check') : null;
+            const perCheck = adicionaisContent ? adicionaisContent.querySelector('.per-check') : null;
+            const insCheck = adicionaisContent ? adicionaisContent.querySelector('.ins-check') : null;
+            const heHorasInput = adicionaisContent ? adicionaisContent.querySelector('.he-horas') : null;
+            const anHorasInput = adicionaisContent ? adicionaisContent.querySelector('.an-horas') : null;
+            
+            // Valores capturados
+            const horasExtrasValue = heCheck ? heCheck.checked : false;
+            const noturnoValue = anCheck ? anCheck.checked : false;
+            const periculosidadeValue = perCheck ? perCheck.checked : false;
+            const insalubridadeValue = insCheck ? insCheck.checked : false;
+            const heHorasValue = heHorasInput ? parseFloat(heHorasInput.value) || 0 : 0;
+            const anHorasValue = anHorasInput ? parseFloat(anHorasInput.value) || 0 : 0;
+            
+            console.log('🔴 CAPTURANDO ADICIONAIS DO DOM:', {
+                heCheckExiste: !!heCheck,
+                anCheckExiste: !!anCheck,
+                horasExtrasValue: horasExtrasValue,
+                noturnoValue: noturnoValue,
+                heHorasValue: heHorasValue,
+                anHorasValue: anHorasValue
+            });
+            
+            // ========== UNIFORMES E EPIS ==========
             const uniformesSection = item.querySelectorAll('.expandable-section')[1];
             let uniformes = {}, epis = {};
             if (uniformesSection && uniformesSection.__getUniformesDados) {
@@ -3204,10 +3267,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
             
+            // ========== BENEFÍCIOS ==========
             const beneficiosSection = item.querySelectorAll('.expandable-section')[2];
             let beneficios = {};
+            let beneficiosPersonalizados = [];
+            
             if (beneficiosSection && beneficiosSection.__getBeneficiosDados) {
-                beneficios = beneficiosSection.__getBeneficiosDados();
+                const dados = beneficiosSection.__getBeneficiosDados();
+                beneficios = dados.beneficios || {};
+                beneficiosPersonalizados = dados.beneficiosPersonalizados || [];
             } else {
                 item.querySelectorAll('.beneficio-card').forEach(card => {
                     const campo = card.querySelector('.beneficio-valor')?.dataset.campo;
@@ -3219,22 +3287,21 @@ document.addEventListener('DOMContentLoaded', async function() {
                         beneficios[campo] = { valorDiario: valor, dias: dias };
                     }
                 });
+                
+                item.querySelectorAll('.beneficio-custom-card').forEach(card => {
+                    const nomeInput = card.querySelector('.beneficio-custom-nome');
+                    const valorInput = card.querySelector('.beneficio-custom-valor');
+                    const diasInput = card.querySelector('.beneficio-custom-dias');
+                    const nome = nomeInput?.value.trim() || '';
+                    const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
+                    const dias = parseInt(diasInput?.value) || 0;
+                    if (nome && (valor > 0 || dias > 0)) {
+                        beneficiosPersonalizados.push({ nome, valorDiario: valor, dias: dias });
+                    }
+                });
             }
             
-            // Depois de capturar os benefícios fixos, adicione:
-            const beneficiosPersonalizados = [];
-            item.querySelectorAll('.beneficio-custom-card').forEach(card => {
-                const nomeInput = card.querySelector('.beneficio-custom-nome');
-                const valorInput = card.querySelector('.beneficio-custom-valor');
-                const diasInput = card.querySelector('.beneficio-custom-dias');
-                const nome = nomeInput?.value.trim() || '';
-                const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
-                const dias = parseInt(diasInput?.value) || 0;
-                if (nome && (valor > 0 || dias > 0)) {
-                    beneficiosPersonalizados.push({ nome, valorDiario: valor, dias: dias });
-                }
-            });
-
+            // ========== SEGURANÇA ==========
             const segurancaSection = item.querySelectorAll('.expandable-section')[3];
             let seguranca = {};
             if (segurancaSection && segurancaSection.__getSegurancaDados) {
@@ -3252,6 +3319,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
             
+            // ========== INSUMOS ==========
             const insumosSection = item.querySelectorAll('.expandable-section')[4];
             let insumos = {};
             if (insumosSection && insumosSection.__getInsumosDados) {
@@ -3267,6 +3335,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
             
+            // ========== DESPESAS ==========
             const despesasSection = item.querySelector('.despesas-section');
             let despesas = {};
             if (despesasSection && despesasSection.__getDespesasDados) {
@@ -3282,6 +3351,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
             
+            // ========== EXAMES ==========
             const examesSection = item.querySelector('.exames-section');
             let exames = {};
             let treinamento = 0;
@@ -3290,34 +3360,33 @@ document.addEventListener('DOMContentLoaded', async function() {
                 exames = dados.exames || {};
                 treinamento = dados.treinamento || 0;
             } else if (examesSection) {
-                const examesData = { exames: {}, treinamento: 0 };
                 examesSection.querySelectorAll('.exame-checkbox').forEach(cb => {
                     if (cb.checked) {
-                        examesData.exames[cb.dataset.nome] = true;
+                        exames[cb.dataset.nome] = true;
                     }
                 });
                 const treinamentoInputExames = examesSection.querySelector('.treinamento-valor');
                 if (treinamentoInputExames) {
-                    examesData.treinamento = parseFloat(treinamentoInputExames.value.replace(/\./g, '').replace(',', '.')) || 0;
+                    treinamento = parseFloat(treinamentoInputExames.value.replace(/\./g, '').replace(',', '.')) || 0;
                 }
-                exames = examesData.exames;
-                treinamento = examesData.treinamento;
             }
             
+            // ========== TOTAL DA VAGA ==========
             const totalVagaElem = item.querySelector('.total-prestacao .valor');
             const totalVaga = totalVagaElem ? parseFloat(totalVagaElem.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0 : 0;
             
+            // ========== MONTAR OBJETO DO CARGO ==========
             cargos.push({
                 nome,
                 quantidade: qtd,
                 salario,
                 adicionais: {
-                    horasExtras: heCheck?.checked || false,
-                    noturno: anCheck?.checked || false,
-                    periculosidade: perCheck?.checked || false,
-                    insalubridade: insCheck?.checked || false,
-                    heHoras: heHoras,
-                    anHoras: anHoras,
+                    horasExtras: horasExtrasValue,
+                    noturno: noturnoValue,
+                    periculosidade: periculosidadeValue,
+                    insalubridade: insalubridadeValue,
+                    heHoras: heHorasValue,
+                    anHoras: anHorasValue,
                     encargosPercentual: encargosPercentual
                 },
                 uniformes,
@@ -3331,17 +3400,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                 treinamento,
                 totalVaga
             });
-
+            
             console.log('🔴 ADICIONAIS SENDO SALVOS:', {
-            nome: nome,
-            horasExtras: heCheck?.checked || false,
-            noturno: anCheck?.checked || false,
-            periculosidade: perCheck?.checked || false,
-            insalubridade: insCheck?.checked || false,
-            heHoras: heHoras,
-            anHoras: anHoras
+                nome: nome,
+                horasExtras: horasExtrasValue,
+                noturno: noturnoValue,
+                periculosidade: periculosidadeValue,
+                insalubridade: insalubridadeValue,
+                heHoras: heHorasValue,
+                anHoras: anHorasValue
             });
-        });
+        }
         
         const totalGeral = parseFloat(totalGeralEl.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.'));
         
@@ -3353,6 +3422,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             cargos,
             totalGeral
         };
+        
+        console.log('📦 PROPOSTA COMPLETA SENDO ENVIADA:', proposta);
         
         try {
             if (propostaId) {
