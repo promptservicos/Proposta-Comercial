@@ -2735,13 +2735,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             const totalExames = calcularExames();
             const totalFinalVaga = despesasResult.totalPrestacao + totalExames;
             
-            encargosPercentualInput.addEventListener('input', function(e) {
-                let valor = e.target.value.replace(/\D/g, '');
-                e.target.value = valor ? (parseInt(valor) / 100).toFixed(2).replace('.', ',') : '';
-                atualizarResultados();
-                salvarRascunho();
-            });
-            
             let resultadosHTML = `
                 <div class="resultado-bloco">
                     <span class="rotulo"><i class="fas fa-calculator"></i> Encargos (${(taxaEncargos * 100).toFixed(2)}%)</span>
@@ -2821,9 +2814,18 @@ document.addEventListener('DOMContentLoaded', async function() {
             calcularTotalGeral();
         }
         
+        // ========== EVENT LISTENERS ==========
         item.querySelector('.cargo-nome').addEventListener('input', () => { atualizarResultados(); salvarRascunho(); });
         item.querySelector('.cargo-quantidade').addEventListener('input', () => { atualizarResultados(); salvarRascunho(); });
         item.querySelector('.cargo-salario').addEventListener('input', function(e) {
+            let valor = e.target.value.replace(/\D/g, '');
+            e.target.value = valor ? (parseInt(valor) / 100).toFixed(2).replace('.', ',') : '';
+            atualizarResultados();
+            salvarRascunho();
+        });
+        
+        const encargosInput = item.querySelector('.encargos-percentual');
+        encargosInput.addEventListener('input', function(e) {
             let valor = e.target.value.replace(/\D/g, '');
             e.target.value = valor ? (parseInt(valor) / 100).toFixed(2).replace('.', ',') : '';
             atualizarResultados();
@@ -2847,37 +2849,75 @@ document.addEventListener('DOMContentLoaded', async function() {
             salvarRascunho();
         });
         
-        // ========== RESTAURAR ADICIONAIS EXISTENTES ==========
+        // ========== RESTAURAR ADICIONAIS (IMPORTANTE: ANTES DO PRIMEIRO atualizarResultados) ==========
+        console.log('Restaurando adicionais:', dadosAdicionais);
+        
         if (dadosAdicionais) {
+            // Forçar a expansão da seção para que os elementos existam
+            const adicionaisHeader = item.querySelector('.expandable-section:first-child .section-header');
             const adicionaisContentElem = item.querySelector('.expandable-section:first-child .section-content');
-            if (adicionaisContentElem) {
-                const heCheck = adicionaisContentElem.querySelector('.he-check');
-                const anCheck = adicionaisContentElem.querySelector('.an-check');
-                const perCheck = adicionaisContentElem.querySelector('.per-check');
-                const insCheck = adicionaisContentElem.querySelector('.ins-check');
-                const heHoras = adicionaisContentElem.querySelector('.he-horas');
-                const anHoras = adicionaisContentElem.querySelector('.an-horas');
-                
-                if (dadosAdicionais.horasExtras && heCheck) heCheck.checked = true;
-                if (dadosAdicionais.noturno && anCheck) anCheck.checked = true;
-                if (dadosAdicionais.periculosidade && perCheck) perCheck.checked = true;
-                if (dadosAdicionais.insalubridade && insCheck) insCheck.checked = true;
-                if (dadosAdicionais.heHoras && heHoras) heHoras.value = dadosAdicionais.heHoras;
-                if (dadosAdicionais.anHoras && anHoras) anHoras.value = dadosAdicionais.anHoras;
-                
-                const heConteudo = adicionaisContentElem.querySelector('.he-conteudo');
-                const anConteudo = adicionaisContentElem.querySelector('.an-conteudo');
-                const perConteudo = adicionaisContentElem.querySelector('.per-conteudo');
-                const insConteudo = adicionaisContentElem.querySelector('.ins-conteudo');
-                
-                if (heConteudo) heConteudo.classList.toggle('hidden', !dadosAdicionais.horasExtras);
-                if (anConteudo) anConteudo.classList.toggle('hidden', !dadosAdicionais.noturno);
-                if (perConteudo) perConteudo.classList.toggle('hidden', !dadosAdicionais.periculosidade);
-                if (insConteudo) insConteudo.classList.toggle('hidden', !dadosAdicionais.insalubridade);
+            
+            // Expandir se estiver colapsado para poder manipular os elementos
+            if (adicionaisContentElem && adicionaisContentElem.classList.contains('collapsed')) {
+                adicionaisContentElem.classList.remove('collapsed');
+                const toggleIcon = adicionaisHeader?.querySelector('.section-toggle');
+                if (toggleIcon) {
+                    toggleIcon.classList.remove('fa-chevron-down');
+                    toggleIcon.classList.add('fa-chevron-up');
+                }
             }
+            
+            // Restaurar checkboxes
+            const heCheck = adicionaisContent.querySelector('.he-check');
+            const anCheck = adicionaisContent.querySelector('.an-check');
+            const perCheck = adicionaisContent.querySelector('.per-check');
+            const insCheck = adicionaisContent.querySelector('.ins-check');
+            const heHoras = adicionaisContent.querySelector('.he-horas');
+            const anHoras = adicionaisContent.querySelector('.an-horas');
+            
+            if (dadosAdicionais.horasExtras && heCheck) {
+                heCheck.checked = true;
+                console.log('Restaurou horasExtras: true');
+            }
+            if (dadosAdicionais.noturno && anCheck) {
+                anCheck.checked = true;
+                console.log('Restaurou noturno: true');
+            }
+            if (dadosAdicionais.periculosidade && perCheck) {
+                perCheck.checked = true;
+                console.log('Restaurou periculosidade: true');
+            }
+            if (dadosAdicionais.insalubridade && insCheck) {
+                insCheck.checked = true;
+                console.log('Restaurou insalubridade: true');
+            }
+            if (dadosAdicionais.heHoras && heHoras) {
+                heHoras.value = dadosAdicionais.heHoras;
+                console.log('Restaurou heHoras:', dadosAdicionais.heHoras);
+            }
+            if (dadosAdicionais.anHoras && anHoras) {
+                anHoras.value = dadosAdicionais.anHoras;
+                console.log('Restaurou anHoras:', dadosAdicionais.anHoras);
+            }
+            
+            // Mostrar/esconder os conteúdos baseado nos checkboxes
+            const heConteudo = adicionaisContent.querySelector('.he-conteudo');
+            const anConteudo = adicionaisContent.querySelector('.an-conteudo');
+            const perConteudo = adicionaisContent.querySelector('.per-conteudo');
+            const insConteudo = adicionaisContent.querySelector('.ins-conteudo');
+            
+            if (heConteudo) heConteudo.classList.toggle('hidden', !dadosAdicionais.horasExtras);
+            if (anConteudo) anConteudo.classList.toggle('hidden', !dadosAdicionais.noturno);
+            if (perConteudo) perConteudo.classList.toggle('hidden', !dadosAdicionais.periculosidade);
+            if (insConteudo) insConteudo.classList.toggle('hidden', !dadosAdicionais.insalubridade);
+            
+            // Recolher a seção se ela estava colapsada originalmente
+            // (vamos manter expandida por enquanto para garantir que os valores sejam aplicados)
         }
         
+        // Forçar a atualização dos resultados APÓS restaurar os valores
         atualizarResultados();
+        
         return item;
     }
     
