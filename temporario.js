@@ -3174,6 +3174,22 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     document.getElementById('btn-salvar').addEventListener('click', async function() {
+        // ========== EXPANDIR TODAS AS SEÇÕES DE ADICIONAIS ANTES DE SALVAR ==========
+        document.querySelectorAll('.expandable-section:first-child').forEach(secao => {
+            const content = secao.querySelector('.section-content');
+            const toggleIcon = secao.querySelector('.section-toggle');
+            if (content && content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                if (toggleIcon) {
+                    toggleIcon.classList.remove('fa-chevron-down');
+                    toggleIcon.classList.add('fa-chevron-up');
+                }
+            }
+        });
+        
+        // Pequeno delay para garantir que os elementos foram renderizados
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         const vendedor = document.getElementById('vendedor-nome').textContent;
         const cliente = clienteInput.value || 'SEM CLIENTE';
         const urlParams = new URLSearchParams(window.location.search);
@@ -3190,29 +3206,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             const encargosPercentualInput = item.querySelector('.encargos-percentual');
             const encargosPercentual = parseFloat(encargosPercentualInput?.value.replace(/\./g, '').replace(',', '.')) || 55.83;
             
-            // ========== CAPTURAR ADICIONAIS DE FORMA ROBUSTA ==========
-            const adicionaisSection = item.querySelector('.expandable-section:first-child');
-            const adicionaisContent = adicionaisSection ? adicionaisSection.querySelector('.section-content') : null;
+            // ========== CAPTURAR ADICIONAIS - BUSCA DIRETA EM TODO O CARGO ==========
+            const heCheck = item.querySelector('.he-check');
+            const anCheck = item.querySelector('.an-check');
+            const perCheck = item.querySelector('.per-check');
+            const insCheck = item.querySelector('.ins-check');
+            const heHorasInput = item.querySelector('.he-horas');
+            const anHorasInput = item.querySelector('.an-horas');
             
-            // Forçar a expansão da seção se estiver colapsada para acessar os elementos
-            if (adicionaisContent && adicionaisContent.classList.contains('collapsed')) {
-                adicionaisContent.classList.remove('collapsed');
-                const toggleIcon = adicionaisSection?.querySelector('.section-toggle');
-                if (toggleIcon) {
-                    toggleIcon.classList.remove('fa-chevron-down');
-                    toggleIcon.classList.add('fa-chevron-up');
-                }
-            }
-            
-            // Buscar os elementos dentro da seção de adicionais
-            const heCheck = adicionaisContent ? adicionaisContent.querySelector('.he-check') : null;
-            const anCheck = adicionaisContent ? adicionaisContent.querySelector('.an-check') : null;
-            const perCheck = adicionaisContent ? adicionaisContent.querySelector('.per-check') : null;
-            const insCheck = adicionaisContent ? adicionaisContent.querySelector('.ins-check') : null;
-            const heHorasInput = adicionaisContent ? adicionaisContent.querySelector('.he-horas') : null;
-            const anHorasInput = adicionaisContent ? adicionaisContent.querySelector('.an-horas') : null;
-            
-            // Valores capturados
             const horasExtrasValue = heCheck ? heCheck.checked : false;
             const noturnoValue = anCheck ? anCheck.checked : false;
             const periculosidadeValue = perCheck ? perCheck.checked : false;
@@ -3223,6 +3224,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             console.log('🔴 CAPTURANDO ADICIONAIS DO DOM:', {
                 heCheckExiste: !!heCheck,
                 anCheckExiste: !!anCheck,
+                perCheckExiste: !!perCheck,
+                insCheckExiste: !!insCheck,
                 horasExtrasValue: horasExtrasValue,
                 noturnoValue: noturnoValue,
                 heHorasValue: heHorasValue,
