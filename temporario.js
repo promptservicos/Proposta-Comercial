@@ -2509,7 +2509,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         };
     }
 
-    function criarCargoItem(cargo = '', quantidade = 1, salario = 0, dadosAdicionais = {}, dadosUniformes = {}, dadosEpis = {}, dadosBeneficios = {}, dadosSeguranca = {}, dadosInsumos = {}, dadosDespesas = {}, dadosExames = {}, treinamentoValor = 0, encargosPercentual = 55.83, dadosBeneficiosPersonalizados = []) {
+        function criarCargoItem(cargo = '', quantidade = 1, salario = 0, dadosAdicionais = {}, dadosUniformes = {}, dadosEpis = {}, dadosBeneficios = {}, dadosSeguranca = {}, dadosInsumos = {}, dadosDespesas = {}, dadosExames = {}, treinamentoValor = 0, encargosPercentual = 55.83, dadosBeneficiosPersonalizados = []) {
+            
+            console.log('🔵 criarCargoItem - ADICIONAIS RECEBIDOS:', {
+                cargo: cargo,
+                dadosAdicionais: dadosAdicionais,
+                horasExtras: dadosAdicionais?.horasExtras,
+                heHoras: dadosAdicionais?.heHoras
+            });
+
         console.log('=== criarCargoItem CHAMADA ===');
         console.log('dadosAdicionais recebidos:', dadosAdicionais);
         console.log('horasExtras:', dadosAdicionais?.horasExtras);
@@ -3335,13 +3343,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 totalVaga
             });
 
-            console.log('=== SALVANDO CARGO ===');
-            console.log('Nome:', nome);
-            console.log('Adicionais sendo salvos:', {
-                horasExtras: heCheck?.checked || false,
-                noturno: anCheck?.checked || false,
-                heHoras: heHoras,
-                anHoras: anHoras
+            console.log('🔴 ADICIONAIS SENDO SALVOS:', {
+            nome: nome,
+            horasExtras: heCheck?.checked || false,
+            noturno: anCheck?.checked || false,
+            periculosidade: perCheck?.checked || false,
+            insalubridade: insCheck?.checked || false,
+            heHoras: heHoras,
+            anHoras: anHoras
             });
         });
         
