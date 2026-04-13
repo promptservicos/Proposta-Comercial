@@ -1084,7 +1084,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             return btnDiv;
         }
         
-        // Adicionar itens padrão
+        // Adicionar itens padrão UNIFORMES
         UNIFORMES.forEach(u => {
             const { div, atualizar, getQuantidade, getDepreciacao, getMensal, getTotal } = criarItemListaComDepreciacao(u, 'uniforme');
             const quantidadeInput = div.querySelector('.quantidade-uniforme');
@@ -1126,7 +1126,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             salvarRascunho();
         });
         
-        // Adicionar itens padrão EPIs
+        // Adicionar itens padrão EPIS
         EPIS.forEach(e => {
             const { div, atualizar, getQuantidade, getDepreciacao, getMensal, getTotal } = criarItemListaComDepreciacao(e, 'epi');
             const quantidadeInput = div.querySelector('.quantidade-epi');
@@ -1168,33 +1168,86 @@ document.addEventListener('DOMContentLoaded', async function() {
             salvarRascunho();
         });
         
+        // Função para calcular total mensal de uniformes (padrão + personalizados)
         function calcularTotalUniformeMensal() {
             let total = 0;
-            uniformesItems.forEach(item => { total += item.getMensal(); });
-            uniformesCustomItems.forEach(item => { total += item.getMensal(); });
+            // Itens padrão
+            uniformesItems.forEach(item => {
+                if (typeof item.getMensal === 'function') {
+                    total += item.getMensal();
+                }
+            });
+            // Itens personalizados
+            uniformesCustomItems.forEach(item => {
+                if (typeof item.getMensal === 'function') {
+                    total += item.getMensal();
+                }
+            });
             uniformesTotalSpan.textContent = formatarMoeda(total);
             return total;
         }
         
+        // Função para calcular total GERAL de uniformes (para multiplicar pela quantidade)
         function calcularTotalUniformeGeral(qtdFuncionarios) {
             let total = 0;
-            uniformesItems.forEach(item => { total += item.getTotal(); });
-            uniformesCustomItems.forEach(item => { total += item.getTotal(); });
+            // Itens padrão
+            uniformesItems.forEach(item => {
+                if (typeof item.getTotal === 'function') {
+                    total += item.getTotal();
+                } else if (typeof item.getQuantidade === 'function' && typeof item.getPreco === 'function') {
+                    // Fallback se getTotal não existir
+                    total += item.getQuantidade() * item.getPreco();
+                }
+            });
+            // Itens personalizados
+            uniformesCustomItems.forEach(item => {
+                if (typeof item.getTotal === 'function') {
+                    total += item.getTotal();
+                } else if (typeof item.getQuantidade === 'function' && typeof item.getPreco === 'function') {
+                    total += item.getQuantidade() * item.getPreco();
+                }
+            });
             return total * qtdFuncionarios;
         }
         
+        // Função para calcular total mensal de EPIs (padrão + personalizados)
         function calcularTotalEpiMensal() {
             let total = 0;
-            episItems.forEach(item => { total += item.getMensal(); });
-            episCustomItems.forEach(item => { total += item.getMensal(); });
+            // Itens padrão
+            episItems.forEach(item => {
+                if (typeof item.getMensal === 'function') {
+                    total += item.getMensal();
+                }
+            });
+            // Itens personalizados
+            episCustomItems.forEach(item => {
+                if (typeof item.getMensal === 'function') {
+                    total += item.getMensal();
+                }
+            });
             episTotalSpan.textContent = formatarMoeda(total);
             return total;
         }
         
+        // Função para calcular total GERAL de EPIs (para multiplicar pela quantidade)
         function calcularTotalEpiGeral(qtdFuncionarios) {
             let total = 0;
-            episItems.forEach(item => { total += item.getTotal(); });
-            episCustomItems.forEach(item => { total += item.getTotal(); });
+            // Itens padrão
+            episItems.forEach(item => {
+                if (typeof item.getTotal === 'function') {
+                    total += item.getTotal();
+                } else if (typeof item.getQuantidade === 'function' && typeof item.getPreco === 'function') {
+                    total += item.getQuantidade() * item.getPreco();
+                }
+            });
+            // Itens personalizados
+            episCustomItems.forEach(item => {
+                if (typeof item.getTotal === 'function') {
+                    total += item.getTotal();
+                } else if (typeof item.getQuantidade === 'function' && typeof item.getPreco === 'function') {
+                    total += item.getQuantidade() * item.getPreco();
+                }
+            });
             return total * qtdFuncionarios;
         }
         
