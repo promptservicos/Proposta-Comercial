@@ -109,12 +109,11 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// ========== FUNÇÃO PARA GERAR IMAGEM DA PROPOSTA NO FORMATO HORIZONTAL ==========
 // ========== FUNÇÃO PARA GERAR IMAGEM POR CARGO E IMAGEM DO TOTAL ==========
 async function gerarImagemPorCargo() {
-    // Mostrar indicador de carregamento
     const btnCompartilhar = document.getElementById('btn-compartilhar');
     const textoOriginal = btnCompartilhar ? btnCompartilhar.innerHTML : '';
+    
     if (btnCompartilhar) {
         btnCompartilhar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando imagens...';
         btnCompartilhar.disabled = true;
@@ -125,6 +124,8 @@ async function gerarImagemPorCargo() {
         const vendedor = document.getElementById('vendedor-nome').textContent || 'Não informado';
         const dataAtual = new Date().toLocaleDateString('pt-BR');
         const cargos = document.querySelectorAll('.cargo-item');
+        
+        console.log(`Total de cargos encontrados: ${cargos.length}`);
         
         // Calcular total geral da proposta
         let totalGeralProposta = 0;
@@ -140,64 +141,18 @@ async function gerarImagemPorCargo() {
         // Salvar estado original do tema
         const wasLightMode = document.body.classList.contains('light-mode');
         
-        // FORÇAR MODO CLARO temporariamente
         if (!wasLightMode) {
             document.body.classList.add('light-mode');
         }
         
-        // Salvar estado original das seções expansíveis
-        const todasSecoes = document.querySelectorAll('.expandable-section, .exames-section, .despesas-section');
-        const estadosOriginais = [];
-        
-        // Expandir todas as seções (mantendo dropdowns FECHADOS)
-        todasSecoes.forEach((secao, index) => {
-            const content = secao.querySelector('.section-content, .exames-content, .despesas-content');
-            const toggleIcon = secao.querySelector('.section-toggle, .exames-toggle, .despesas-toggle');
-            const isCollapsed = content?.classList.contains('collapsed');
-            
-            estadosOriginais.push({
-                index,
-                secao,
-                content,
-                toggleIcon,
-                wasCollapsed: isCollapsed
-            });
-            
-            // Expandir se estiver colapsado
-            if (isCollapsed && content) {
-                content.classList.remove('collapsed');
-                if (toggleIcon) {
-                    toggleIcon.classList.remove('fa-chevron-down');
-                    toggleIcon.classList.add('fa-chevron-up');
-                }
-            }
-        });
-        
-        // GARANTIR QUE DROPDOWNS FECHEM - remover classe open de todos
-        const allDropdowns = document.querySelectorAll('.dropdown-menu.open');
-        const dropdownsOriginais = [];
-        allDropdowns.forEach(dropdown => {
-            if (dropdown.classList.contains('open')) {
-                dropdownsOriginais.push(dropdown);
-                dropdown.classList.remove('open');
-                const header = dropdown.previousElementSibling;
-                if (header && header.classList.contains('box-header')) {
-                    const icon = header.querySelector('i');
-                    if (icon) {
-                        icon.classList.remove('fa-chevron-up');
-                        icon.classList.add('fa-chevron-down');
-                    }
-                }
-            }
-        });
-        
-        // Pequeno delay para garantir que as animações terminaram
+        // Pequeno delay para estabilizar
         await new Promise(resolve => setTimeout(resolve, 300));
         
         const zip = new JSZip();
         const clienteNome = cliente.replace(/[^a-zA-Z0-9]/g, '_');
         
         // ========== 1. GERAR IMAGEM DO TOTAL DA PROPOSTA ==========
+        console.log('Gerando imagem do total da proposta...');
         const totalElemento = document.createElement('div');
         totalElemento.style.position = 'fixed';
         totalElemento.style.left = '-9999px';
@@ -215,7 +170,7 @@ async function gerarImagemPorCargo() {
                         <i class="fas fa-chart-line" style="font-size: 30px; color: #fff;"></i>
                     </div>
                     <h1 style="color: #c10404; margin: 0; font-size: 28px;">Prompt Serviços</h1>
-                    <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">Proposta de Contrato Terceirizado</p>
+                    <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">Proposta de Contrato Temporário</p>
                 </div>
                 
                 <div style="background: #f5f5f5; padding: 15px; border-radius: 12px; margin-bottom: 30px; text-align: left;">
@@ -275,11 +230,18 @@ async function gerarImagemPorCargo() {
         const totalBlob = await new Promise(resolve => totalCanvas.toBlob(resolve, 'image/png'));
         zip.file(`${clienteNome}_TOTAL_DA_PROPOSTA.png`, totalBlob);
         
-        // ========== 2. GERAR IMAGEM PARA CADA CARGO ==========
+        // ========== 2. GERAR IMAGEM PARA CADA CARGO (UM POR VEZ) ==========
         for (let i = 0; i < cargos.length; i++) {
             const cargo = cargos[i];
             const cargoNome = cargo.querySelector('.cargo-nome').value.trim() || `Cargo_${i + 1}`;
             const nomeArquivo = `${clienteNome}_${cargoNome.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
+            
+            console.log(`Gerando imagem ${i + 1}/${cargos.length}: ${cargoNome}`);
+            
+            // Atualizar progresso no botão (opcional)
+            if (btnCompartilhar) {
+                btnCompartilhar.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Gerando imagem ${i + 1}/${cargos.length}...`;
+            }
             
             // Clonar o cargo para não afetar a tela original
             const cloneCargo = cargo.cloneNode(true);
@@ -298,7 +260,7 @@ async function gerarImagemPorCargo() {
                 }
             });
             
-            // GARANTIR QUE DROPDOWNS FECHADOS no clone
+            // Fechar dropdowns no clone
             const cloneDropdowns = cloneCargo.querySelectorAll('.dropdown-menu');
             cloneDropdowns.forEach(dropdown => {
                 dropdown.classList.remove('open');
@@ -330,7 +292,7 @@ async function gerarImagemPorCargo() {
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #c10404;">
                         <div>
                             <h1 style="color: #c10404; margin: 0; font-size: 20px;">Prompt Serviços</h1>
-                            <p style="color: #666; margin: 0; font-size: 11px;">Proposta de Contrato Terceirizado</p>
+                            <p style="color: #666; margin: 0; font-size: 11px;">Proposta de Contrato Temporário</p>
                         </div>
                         <div style="text-align: right;">
                             <div style="font-size: 10px; color: #888;">Data: ${dataAtual}</div>
@@ -371,36 +333,8 @@ async function gerarImagemPorCargo() {
             elementoImagem.style.backgroundColor = '#ffffff';
             elementoImagem.style.color = '#333333';
             
-            const allInputs = elementoImagem.querySelectorAll('input, select, textarea');
-            allInputs.forEach(input => {
-                input.style.height = 'auto';
-                input.style.minHeight = '32px';
-                input.style.padding = '6px 10px';
-                input.style.boxSizing = 'border-box';
-            });
-            
-            const allBeneficioCampos = elementoImagem.querySelectorAll('.beneficio-campo input, .seguranca-campo input, .insumo-campo input');
-            allBeneficioCampos.forEach(campo => {
-                campo.style.height = 'auto';
-                campo.style.minHeight = '30px';
-                campo.style.padding = '4px 8px';
-            });
-            
-            const allCards = elementoImagem.querySelectorAll('.beneficio-card, .seguranca-item, .insumo-card, .despesa-card');
-            allCards.forEach(card => {
-                card.style.overflow = 'visible';
-                card.style.minHeight = 'auto';
-            });
-            
-            const resultadosBlocos = elementoImagem.querySelectorAll('.resultado-bloco');
-            resultadosBlocos.forEach(bloco => {
-                bloco.style.marginBottom = '8px';
-                bloco.style.padding = '6px';
-            });
-            
+            // Pequeno delay para garantir que o DOM foi renderizado
             await new Promise(resolve => setTimeout(resolve, 200));
-            
-            const alturaReal = elementoImagem.scrollHeight;
             
             const canvas = await html2canvas(elementoImagem, {
                 scale: 2,
@@ -408,39 +342,18 @@ async function gerarImagemPorCargo() {
                 logging: false,
                 useCORS: true,
                 allowTaint: false,
-                height: alturaReal,
-                windowHeight: alturaReal
+                windowWidth: elementoImagem.scrollWidth,
+                windowHeight: elementoImagem.scrollHeight
             });
             
             document.body.removeChild(elementoImagem);
             
             const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
             zip.file(nomeArquivo, blob);
+            
+            // Pequeno delay entre cargos para não sobrecarregar
+            await new Promise(resolve => setTimeout(resolve, 300));
         }
-        
-        // Restaurar estado original das seções
-        estadosOriginais.forEach(({ content, toggleIcon, wasCollapsed }) => {
-            if (wasCollapsed && content) {
-                content.classList.add('collapsed');
-                if (toggleIcon) {
-                    toggleIcon.classList.remove('fa-chevron-up');
-                    toggleIcon.classList.add('fa-chevron-down');
-                }
-            }
-        });
-        
-        // Restaurar dropdowns que estavam abertos originalmente
-        dropdownsOriginais.forEach(dropdown => {
-            dropdown.classList.add('open');
-            const header = dropdown.previousElementSibling;
-            if (header && header.classList.contains('box-header')) {
-                const icon = header.querySelector('i');
-                if (icon) {
-                    icon.classList.remove('fa-chevron-down');
-                    icon.classList.add('fa-chevron-up');
-                }
-            }
-        });
         
         // Restaurar tema original
         if (!wasLightMode) {
@@ -448,6 +361,7 @@ async function gerarImagemPorCargo() {
         }
         
         // Gerar e baixar o arquivo ZIP
+        console.log('Gerando arquivo ZIP...');
         const content = await zip.generateAsync({ type: 'blob' });
         const link = document.createElement('a');
         link.download = `Propostas_${clienteNome}_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.zip`;
@@ -459,7 +373,7 @@ async function gerarImagemPorCargo() {
         
     } catch (error) {
         console.error('Erro ao gerar imagens:', error);
-        alert('Erro ao gerar imagens. Tente novamente.');
+        alert('Erro ao gerar imagens. Tente novamente.\n' + error.message);
     } finally {
         const btnCompartilhar = document.getElementById('btn-compartilhar');
         if (btnCompartilhar) {
@@ -729,6 +643,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     container.innerHTML = '';
                     dados.cargos.forEach(c => {
                         let examesObj = c.exames || {};
+                        // ⬇️⬇️⬇️ ADICIONAR beneficiosPersonalizados ⬇️⬇️⬇️
                         container.appendChild(criarCargoItem(
                             c.nome,
                             c.quantidade,
@@ -743,7 +658,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                             examesObj,
                             c.treinamento || 0,
                             parseFloat(c.adicionais?.encargosPercentual?.replace(/\./g, '').replace(',', '.')) || 55.83,
-                            c.beneficiosPersonalizados || []  // <-- ADICIONAR ESTA LINHA
+                            c.beneficiosPersonalizados || []  // <-- LINHA IMPORTANTE
                         ));
                     });
                     calcularTotalGeral();
@@ -2695,6 +2610,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 }
                             }
                             
+                            // ⬇️⬇️⬇️ ADICIONAR beneficiosPersonalizados ⬇️⬇️⬇️
                             container.appendChild(criarCargoItem(
                                 c.nome,
                                 c.quantidade,
@@ -2709,28 +2625,28 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 examesObj,
                                 c.treinamento || 0,
                                 c.adicionais?.encargosPercentual || 55.83,
-                                c.beneficiosPersonalizados || []  // <-- ADICIONAR ESTA LINHA
+                                c.beneficiosPersonalizados || []  // <-- LINHA IMPORTANTE
                             ));
                         });
                     } else {
-                        container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, {}, 0, 55.83));
+                        container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, {}, 0, 55.83, []));
                     }
                     calcularTotalGeral();
                     localStorage.removeItem(DRAFT_KEY);
                 } else {
                     if (!carregarRascunho()) {
-                        container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, {}, 0, 55.83));
+                        container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, {}, 0, 55.83, []));
                     }
                 }
             } catch (error) {
                 console.error('Erro ao carregar proposta:', error);
                 if (!carregarRascunho()) {
-                    container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, {}, 0, 55.83));
+                    container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, {}, 0, 55.83, []));
                 }
             }
         } else {
             if (!carregarRascunho()) {
-                container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, {}, 0, 55.83));
+                container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, {}, 0, 55.83, []));
             }
         }
     }
