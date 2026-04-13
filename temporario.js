@@ -137,7 +137,6 @@ async function gerarImagemPorCargo() {
             const cargoNomeBase = cargo.querySelector('.cargo-nome').value.trim() || `Cargo_${i + 1}`;
             nomesBase.push(cargoNomeBase);
             
-            // Contar ocorrências
             const count = nomeCount.get(cargoNomeBase) || 0;
             nomeCount.set(cargoNomeBase, count + 1);
         }
@@ -153,8 +152,15 @@ async function gerarImagemPorCargo() {
                 const perCheck = adicionaisContent.querySelector('.per-check');
                 const insCheck = adicionaisContent.querySelector('.ins-check');
                 
-                if (heCheck && heCheck.checked) adicionais.push('HORA EXTRA');
-                if (anCheck && anCheck.checked) adicionais.push('NOTURNO');
+                // Verificar se tem valores (não apenas checkbox marcado)
+                if (heCheck && heCheck.checked) {
+                    const horas = parseFloat(adicionaisContent.querySelector('.he-horas')?.value) || 0;
+                    if (horas > 0) adicionais.push('HORA EXTRA');
+                }
+                if (anCheck && anCheck.checked) {
+                    const horas = parseFloat(adicionaisContent.querySelector('.an-horas')?.value) || 0;
+                    if (horas > 0) adicionais.push('NOTURNO');
+                }
                 if (perCheck && perCheck.checked) adicionais.push('PERICULOSIDADE');
                 if (insCheck && insCheck.checked) adicionais.push('INSALUBRIDADE');
             }
@@ -162,26 +168,40 @@ async function gerarImagemPorCargo() {
             return adicionais;
         }
         
-        // Função para verificar se uma seção tem valores > 0
+        // Função melhorada para verificar se uma seção tem valores > 0
         function secaoTemValores(secaoElement) {
             if (!secaoElement) return false;
             
-            // Verificar inputs de valor
-            const inputs = secaoElement.querySelectorAll('input[type="text"], input[type="number"]');
-            for (const input of inputs) {
-                let valor = 0;
-                if (input.type === 'text') {
-                    valor = parseFloat(input.value.replace(/\./g, '').replace(',', '.')) || 0;
-                } else if (input.type === 'number') {
-                    valor = parseFloat(input.value) || 0;
+            // Verificar inputs de valor em cards
+            const cards = secaoElement.querySelectorAll('.beneficio-card, .seguranca-item, .insumo-card, .despesa-card, .adicional-card');
+            
+            for (const card of cards) {
+                // Verificar inputs de valor
+                const valorInputs = card.querySelectorAll('input[type="text"], input[type="number"]');
+                for (const input of valorInputs) {
+                    // Pular inputs de quantidade/depreciação em uniformes/EPIs
+                    if (input.classList.contains('quantidade-uniforme') || 
+                        input.classList.contains('quantidade-epi') ||
+                        input.classList.contains('depreciacao-uniforme') ||
+                        input.classList.contains('depreciacao-epi')) {
+                        continue;
+                    }
+                    
+                    let valor = 0;
+                    if (input.type === 'text') {
+                        valor = parseFloat(input.value.replace(/\./g, '').replace(',', '.')) || 0;
+                    } else if (input.type === 'number') {
+                        valor = parseFloat(input.value) || 0;
+                    }
+                    
+                    if (valor > 0) return true;
                 }
                 
-                // Verificar também checkboxes marcados em exames
-                if (input.type === 'checkbox' && input.checked) {
-                    return true;
+                // Verificar checkbox de exames
+                const checkboxes = card.querySelectorAll('input[type="checkbox"]');
+                for (const cb of checkboxes) {
+                    if (cb.checked) return true;
                 }
-                
-                if (valor > 0) return true;
             }
             
             // Verificar se há itens personalizados
@@ -192,6 +212,23 @@ async function gerarImagemPorCargo() {
                     const valor = parseFloat(qtdInput.value.replace(/\./g, '').replace(',', '.')) || 0;
                     if (valor > 0) return true;
                 }
+                
+                // Verificar checkbox em exame personalizado
+                const checkbox = item.querySelector('.exame-custom-checkbox');
+                if (checkbox && checkbox.checked) return true;
+            }
+            
+            // Verificar totais de uniformes/EPIs
+            const uniformesTotal = secaoElement.querySelector('.uniformes-total span:last-child');
+            const episTotal = secaoElement.querySelector('.epis-total span:last-child');
+            
+            if (uniformesTotal) {
+                const valor = parseFloat(uniformesTotal.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
+                if (valor > 0) return true;
+            }
+            if (episTotal) {
+                const valor = parseFloat(episTotal.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
+                if (valor > 0) return true;
             }
             
             return false;
@@ -248,6 +285,7 @@ async function gerarImagemPorCargo() {
         
         await new Promise(resolve => setTimeout(resolve, 300));
         
+        const zip = new JSZip();
         const clienteNome = cliente.replace(/[^a-zA-Z0-9]/g, '_');
         
         // Contador para nomes repetidos
@@ -329,26 +367,20 @@ async function gerarImagemPorCargo() {
         
         document.body.removeChild(totalElemento);
         
-        const totalLink = document.createElement('a');
-        totalLink.download = `${clienteNome}_TOTAL_DA_PROPOSTA.png`;
-        totalLink.href = totalCanvas.toDataURL('image/png');
-        totalLink.click();
+        const totalBlob = await new Promise(resolve => totalCanvas.toBlob(resolve, 'image/png'));
+        zip.file(`${clienteNome}_TOTAL_DA_PROPOSTA.png`, totalBlob);
         
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // ========== 2. GERAR IMAGEM PARA CADA CARGO ==========
-        let cargosGerados = 0;
-        let cargosComErro = [];
+        // ========== 2. GERAR IMAGEM PARA CADA CARGO E ADICIONAR AO ZIP ==========
+        const promessasImagens = [];
         
         for (let i = 0; i < cargos.length; i++) {
             const cargo = cargos[i];
             const cargoNomeBase = cargo.querySelector('.cargo-nome').value.trim() || `Cargo_${i + 1}`;
             
-            // Contar ocorrências deste nome para adicionar (1), (2)
+            // Contar ocorrências deste nome
             const ocorrenciaAtual = (nomeContador.get(cargoNomeBase) || 0) + 1;
             nomeContador.set(cargoNomeBase, ocorrenciaAtual);
             
-            // Verificar se precisa de número (se houver mais de um com mesmo nome)
             const totalOcorrencias = nomeCount.get(cargoNomeBase) || 1;
             const numeroSufixo = totalOcorrencias > 1 ? ` (${ocorrenciaAtual})` : '';
             
@@ -356,173 +388,205 @@ async function gerarImagemPorCargo() {
             const adicionais = getAdicionaisAtivos(cargo);
             const adicionaisSufixo = adicionais.length > 0 ? ` + ${adicionais.join(' + ')}` : '';
             
-            // Nome completo do arquivo
             const nomeCompleto = `${cargoNomeBase}${numeroSufixo}${adicionaisSufixo}`;
             const nomeArquivo = `${clienteNome}_${nomeCompleto.replace(/[^a-zA-Z0-9À-ú+()]/g, '_')}.png`;
             
-            console.log(`Gerando imagem ${i + 1}/${cargos.length}: ${nomeCompleto}`);
+            console.log(`Preparando imagem ${i + 1}/${cargos.length}: ${nomeCompleto}`);
             
             if (btnCompartilhar) {
-                btnCompartilhar.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Gerando ${i + 1}/${cargos.length}: ${nomeCompleto.substring(0, 25)}...`;
+                btnCompartilhar.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Preparando ${i + 1}/${cargos.length}: ${nomeCompleto.substring(0, 25)}...`;
             }
             
-            try {
-                // Clonar o cargo e limpar seções vazias
-                const cloneCargo = cloneCargoLimpo(cargo);
-                
-                // Fechar dropdowns no clone
-                const cloneDropdowns = cloneCargo.querySelectorAll('.dropdown-menu');
-                cloneDropdowns.forEach(dropdown => {
-                    dropdown.classList.remove('open');
-                    dropdown.style.display = 'none';
-                    const header = dropdown.previousElementSibling;
-                    if (header && header.classList.contains('box-header')) {
-                        const icon = header.querySelector('i');
-                        if (icon) {
-                            icon.classList.remove('fa-chevron-up');
-                            icon.classList.add('fa-chevron-down');
+            const promise = (async () => {
+                try {
+                    // Clonar o cargo e limpar seções vazias
+                    const cloneCargo = cloneCargoLimpo(cargo);
+                    
+                    // Fechar dropdowns no clone
+                    const cloneDropdowns = cloneCargo.querySelectorAll('.dropdown-menu');
+                    cloneDropdowns.forEach(dropdown => {
+                        dropdown.classList.remove('open');
+                        dropdown.style.display = 'none';
+                        const header = dropdown.previousElementSibling;
+                        if (header && header.classList.contains('box-header')) {
+                            const icon = header.querySelector('i');
+                            if (icon) {
+                                icon.classList.remove('fa-chevron-up');
+                                icon.classList.add('fa-chevron-down');
+                            }
                         }
+                    });
+                    
+                    // Expandir todas as seções (apenas as que não foram ocultadas)
+                    const cloneSecoes = cloneCargo.querySelectorAll('.expandable-section, .exames-section, .despesas-section');
+                    cloneSecoes.forEach(secao => {
+                        if (secao.style.display !== 'none') {
+                            const content = secao.querySelector('.section-content, .exames-content, .despesas-content');
+                            if (content && content.classList.contains('collapsed')) {
+                                content.classList.remove('collapsed');
+                            }
+                            const toggleIcon = secao.querySelector('.section-toggle, .exames-toggle, .despesas-toggle');
+                            if (toggleIcon) {
+                                toggleIcon.classList.remove('fa-chevron-down');
+                                toggleIcon.classList.add('fa-chevron-up');
+                            }
+                        }
+                    });
+                    
+                    // Criar elemento para imagem
+                    const elementoImagem = document.createElement('div');
+                    elementoImagem.style.position = 'fixed';
+                    elementoImagem.style.left = '-9999px';
+                    elementoImagem.style.top = '-9999px';
+                    elementoImagem.style.backgroundColor = '#ffffff';
+                    elementoImagem.style.padding = '20px';
+                    elementoImagem.style.borderRadius = '16px';
+                    elementoImagem.style.width = '1000px';
+                    elementoImagem.style.fontFamily = "'Inter', 'Segoe UI', sans-serif";
+                    
+                    elementoImagem.innerHTML = `
+                        <div style="margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #c10404;">
+                                <div>
+                                    <h1 style="color: #c10404; margin: 0; font-size: 20px;">Prompt Serviços</h1>
+                                    <p style="color: #666; margin: 0; font-size: 11px;">Proposta de Contrato Temporário</p>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 10px; color: #888;">Data: ${dataAtual}</div>
+                                    <div style="font-size: 10px; color: #888;">Vendedor: ${vendedor}</div>
+                                </div>
+                            </div>
+                            <div style="background: #f5f5f5; padding: 8px 12px; border-radius: 8px;">
+                                <strong>Cliente:</strong> ${cliente}
+                            </div>
+                        </div>
+                        ${cloneCargo.outerHTML}
+                        <div style="margin-top: 20px; text-align: center; padding-top: 10px; border-top: 1px solid #e0e0e0; font-size: 9px; color: #888;">
+                            Documento gerado em ${dataAtual} - Proposta válida por 30 dias
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(elementoImagem);
+                    
+                    // Ajustar estilos e altura dos inputs
+                    const cargoCloneElem = elementoImagem.querySelector('.cargo-item');
+                    if (cargoCloneElem) {
+                        cargoCloneElem.style.margin = '0';
+                        cargoCloneElem.style.boxShadow = 'none';
                     }
-                });
-                
-                // Expandir todas as seções (apenas as que não foram ocultadas)
-                const cloneSecoes = cloneCargo.querySelectorAll('.expandable-section, .exames-section, .despesas-section');
-                cloneSecoes.forEach(secao => {
-                    if (secao.style.display !== 'none') {
-                        const content = secao.querySelector('.section-content, .exames-content, .despesas-content');
-                        if (content && content.classList.contains('collapsed')) {
+                    
+                    // Aumentar altura dos inputs para não cortar o texto
+                    const allInputs = elementoImagem.querySelectorAll('input');
+                    allInputs.forEach(input => {
+                        input.style.minHeight = '36px';
+                        input.style.height = 'auto';
+                        input.style.padding = '8px 12px';
+                    });
+                    
+                    // Ajustar específicamente os campos pequenos
+                    const smallInputs = elementoImagem.querySelectorAll('.beneficio-campo input, .seguranca-campo input, .insumo-campo input, .despesa-campo input');
+                    smallInputs.forEach(input => {
+                        input.style.minHeight = '34px';
+                        input.style.height = 'auto';
+                        input.style.padding = '6px 10px';
+                    });
+                    
+                    // Garantir que todos os conteúdos estão visíveis
+                    const allContents = elementoImagem.querySelectorAll('.section-content, .exames-content, .despesas-content');
+                    allContents.forEach(content => {
+                        if (content.parentElement?.style.display !== 'none') {
+                            content.style.display = 'block';
                             content.classList.remove('collapsed');
                         }
-                        const toggleIcon = secao.querySelector('.section-toggle, .exames-toggle, .despesas-toggle');
-                        if (toggleIcon) {
-                            toggleIcon.classList.remove('fa-chevron-down');
-                            toggleIcon.classList.add('fa-chevron-up');
-                        }
-                    }
-                });
-                
-                // Criar elemento para imagem
-                const elementoImagem = document.createElement('div');
-                elementoImagem.style.position = 'fixed';
-                elementoImagem.style.left = '-9999px';
-                elementoImagem.style.top = '-9999px';
-                elementoImagem.style.backgroundColor = '#ffffff';
-                elementoImagem.style.padding = '20px';
-                elementoImagem.style.borderRadius = '16px';
-                elementoImagem.style.width = '1000px';
-                elementoImagem.style.fontFamily = "'Inter', 'Segoe UI', sans-serif";
-                
-                elementoImagem.innerHTML = `
-                    <div style="margin-bottom: 20px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #c10404;">
-                            <div>
-                                <h1 style="color: #c10404; margin: 0; font-size: 20px;">Prompt Serviços</h1>
-                                <p style="color: #666; margin: 0; font-size: 11px;">Proposta de Contrato Temporário</p>
-                            </div>
-                            <div style="text-align: right;">
-                                <div style="font-size: 10px; color: #888;">Data: ${dataAtual}</div>
-                                <div style="font-size: 10px; color: #888;">Vendedor: ${vendedor}</div>
-                            </div>
-                        </div>
-                        <div style="background: #f5f5f5; padding: 8px 12px; border-radius: 8px;">
-                            <strong>Cliente:</strong> ${cliente}
-                        </div>
-                    </div>
-                    ${cloneCargo.outerHTML}
-                    <div style="margin-top: 20px; text-align: center; padding-top: 10px; border-top: 1px solid #e0e0e0; font-size: 9px; color: #888;">
-                        Documento gerado em ${dataAtual} - Proposta válida por 30 dias
-                    </div>
-                `;
-                
-                document.body.appendChild(elementoImagem);
-                
-                // Ajustar estilos e altura dos inputs
-                const cargoCloneElem = elementoImagem.querySelector('.cargo-item');
-                if (cargoCloneElem) {
-                    cargoCloneElem.style.margin = '0';
-                    cargoCloneElem.style.boxShadow = 'none';
+                    });
+                    
+                    // Esconder todos os dropdowns
+                    const imagemDropdowns = elementoImagem.querySelectorAll('.dropdown-menu');
+                    imagemDropdowns.forEach(dropdown => {
+                        dropdown.style.display = 'none';
+                        dropdown.classList.remove('open');
+                    });
+                    
+                    elementoImagem.style.backgroundColor = '#ffffff';
+                    elementoImagem.style.color = '#333333';
+                    
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    
+                    const canvas = await html2canvas(elementoImagem, {
+                        scale: 1.5,
+                        backgroundColor: '#ffffff',
+                        logging: false,
+                        useCORS: true,
+                        allowTaint: false
+                    });
+                    
+                    document.body.removeChild(elementoImagem);
+                    
+                    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                    zip.file(nomeArquivo, blob);
+                    
+                    console.log(`✅ Imagem ${i + 1}/${cargos.length} adicionada ao ZIP: ${nomeArquivo}`);
+                    return { success: true, index: i, nome: nomeCompleto };
+                    
+                } catch (cargoError) {
+                    console.error(`❌ Erro no cargo ${i + 1}: ${cargoNomeBase}`, cargoError);
+                    return { success: false, index: i, nome: cargoNomeBase, erro: cargoError.message };
                 }
-                
-                // Aumentar altura dos inputs para não cortar o texto
-                const allInputs = elementoImagem.querySelectorAll('input');
-                allInputs.forEach(input => {
-                    input.style.minHeight = '32px';
-                    input.style.height = 'auto';
-                    input.style.padding = '6px 10px';
-                });
-                
-                // Ajustar específicamente os campos de benefício, segurança, etc.
-                const smallInputs = elementoImagem.querySelectorAll('.beneficio-campo input, .seguranca-campo input, .insumo-campo input, .despesa-campo input');
-                smallInputs.forEach(input => {
-                    input.style.minHeight = '32px';
-                    input.style.height = 'auto';
-                    input.style.padding = '6px 8px';
-                });
-                
-                // Garantir que todos os conteúdos estão visíveis
-                const allContents = elementoImagem.querySelectorAll('.section-content, .exames-content, .despesas-content');
-                allContents.forEach(content => {
-                    if (content.parentElement?.style.display !== 'none') {
-                        content.style.display = 'block';
-                        content.classList.remove('collapsed');
-                    }
-                });
-                
-                // Esconder todos os dropdowns
-                const imagemDropdowns = elementoImagem.querySelectorAll('.dropdown-menu');
-                imagemDropdowns.forEach(dropdown => {
-                    dropdown.style.display = 'none';
-                    dropdown.classList.remove('open');
-                });
-                
-                elementoImagem.style.backgroundColor = '#ffffff';
-                elementoImagem.style.color = '#333333';
-                
-                await new Promise(resolve => setTimeout(resolve, 300));
-                
-                const canvas = await html2canvas(elementoImagem, {
-                    scale: 1.5,
-                    backgroundColor: '#ffffff',
-                    logging: false,
-                    useCORS: true,
-                    allowTaint: false
-                });
-                
-                document.body.removeChild(elementoImagem);
-                
-                const link = document.createElement('a');
-                link.download = nomeArquivo;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-                
-                cargosGerados++;
-                console.log(`✅ Imagem ${i + 1}/${cargos.length} baixada: ${nomeArquivo}`);
-                
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-            } catch (cargoError) {
-                console.error(`❌ Erro no cargo ${i + 1}: ${cargoNomeBase}`, cargoError);
-                cargosComErro.push({ index: i + 1, nome: cargoNomeBase, erro: cargoError.message });
-            }
+            })();
+            
+            promessasImagens.push(promise);
         }
+        
+        // Aguardar TODAS as imagens serem processadas
+        console.log('Aguardando processamento de todas as imagens...');
+        if (btnCompartilhar) {
+            btnCompartilhar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Finalizando imagens...';
+        }
+        
+        const resultados = await Promise.all(promessasImagens);
+        
+        const sucessos = resultados.filter(r => r.success).length;
+        const falhas = resultados.filter(r => !r.success).length;
+        
+        console.log(`Processamento concluído: ${sucessos} sucessos, ${falhas} falhas`);
         
         // Restaurar tema original
         if (!wasLightMode) {
             document.body.classList.remove('light-mode');
         }
         
-        // Mostrar resultado
-        let mensagem = `✅ ${cargosGerados + 1} imagem(ns) gerada(s) com sucesso!\n- 1 imagem do TOTAL da proposta\n- ${cargosGerados} imagem(ns) dos cargos`;
+        // Gerar e baixar o arquivo ZIP
+        console.log('Gerando arquivo ZIP...');
+        if (btnCompartilhar) {
+            btnCompartilhar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Compactando arquivos...';
+        }
         
-        if (cargosComErro.length > 0) {
-            mensagem += `\n\n⚠️ ${cargosComErro.length} cargo(s) falharam:\n`;
-            cargosComErro.forEach(erro => {
-                mensagem += `- Cargo ${erro.index}: ${erro.nome}\n`;
+        const content = await zip.generateAsync({ 
+            type: "blob",
+            compression: "DEFLATE",
+            compressionOptions: { level: 1 }
+        });
+        
+        console.log(`ZIP gerado com ${Object.keys(zip.files).length} arquivos`);
+        
+        const link = document.createElement('a');
+        link.download = `Propostas_${clienteNome}_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.zip`;
+        link.href = URL.createObjectURL(content);
+        link.click();
+        URL.revokeObjectURL(link.href);
+        
+        // Mostrar resultado
+        let mensagem = `✅ ${sucessos + 1} imagem(ns) gerada(s) com sucesso!\n- 1 imagem com o TOTAL da proposta\n- ${sucessos} imagem(ns) com detalhes dos cargos\n\n📦 Arquivo ZIP salvo na pasta Downloads`;
+        
+        if (sucessos !== cargos.length) {
+            mensagem += `\n\n⚠️ Apenas ${sucessos} de ${cargos.length} cargos foram gerados.`;
+        }
+        
+        if (falhas > 0) {
+            mensagem += `\n\n❌ ${falhas} cargo(s) falharam:\n`;
+            resultados.filter(r => !r.success).forEach(erro => {
+                mensagem += `- Cargo ${erro.index + 1}: ${erro.nome}\n`;
             });
-            mensagem += `\nTente gerar novamente esses cargos separadamente.`;
-        } else {
-            mensagem += `\n\n📁 As imagens foram salvas individualmente na sua pasta de downloads.`;
-            mensagem += `\n📝 Nomes dos arquivos incluem adicionais ativos e numeração para cargos duplicados.`;
         }
         
         alert(mensagem);
