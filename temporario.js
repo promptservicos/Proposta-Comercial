@@ -127,6 +127,107 @@ async function gerarImagemPorCargo() {
         
         console.log(`Total de cargos encontrados: ${cargos.length}`);
         
+        // Mapa para contar nomes de cargos repetidos
+        const nomeCount = new Map();
+        
+        // Primeiro, coletar todos os nomes base para contar
+        const nomesBase = [];
+        for (let i = 0; i < cargos.length; i++) {
+            const cargo = cargos[i];
+            const cargoNomeBase = cargo.querySelector('.cargo-nome').value.trim() || `Cargo_${i + 1}`;
+            nomesBase.push(cargoNomeBase);
+            
+            // Contar ocorrências
+            const count = nomeCount.get(cargoNomeBase) || 0;
+            nomeCount.set(cargoNomeBase, count + 1);
+        }
+        
+        // Função para obter os adicionais ativos de um cargo
+        function getAdicionaisAtivos(cargoItem) {
+            const adicionais = [];
+            const adicionaisContent = cargoItem.querySelector('.expandable-section:first-child .section-content');
+            
+            if (adicionaisContent) {
+                const heCheck = adicionaisContent.querySelector('.he-check');
+                const anCheck = adicionaisContent.querySelector('.an-check');
+                const perCheck = adicionaisContent.querySelector('.per-check');
+                const insCheck = adicionaisContent.querySelector('.ins-check');
+                
+                if (heCheck && heCheck.checked) adicionais.push('HORA EXTRA');
+                if (anCheck && anCheck.checked) adicionais.push('NOTURNO');
+                if (perCheck && perCheck.checked) adicionais.push('PERICULOSIDADE');
+                if (insCheck && insCheck.checked) adicionais.push('INSALUBRIDADE');
+            }
+            
+            return adicionais;
+        }
+        
+        // Função para verificar se uma seção tem valores > 0
+        function secaoTemValores(secaoElement) {
+            if (!secaoElement) return false;
+            
+            // Verificar inputs de valor
+            const inputs = secaoElement.querySelectorAll('input[type="text"], input[type="number"]');
+            for (const input of inputs) {
+                let valor = 0;
+                if (input.type === 'text') {
+                    valor = parseFloat(input.value.replace(/\./g, '').replace(',', '.')) || 0;
+                } else if (input.type === 'number') {
+                    valor = parseFloat(input.value) || 0;
+                }
+                
+                // Verificar também checkboxes marcados em exames
+                if (input.type === 'checkbox' && input.checked) {
+                    return true;
+                }
+                
+                if (valor > 0) return true;
+            }
+            
+            // Verificar se há itens personalizados
+            const customItems = secaoElement.querySelectorAll('.item-custom, .beneficio-custom-card, .exame-custom-item');
+            for (const item of customItems) {
+                const qtdInput = item.querySelector('.item-custom-quantidade-input, .beneficio-custom-valor');
+                if (qtdInput) {
+                    const valor = parseFloat(qtdInput.value.replace(/\./g, '').replace(',', '.')) || 0;
+                    if (valor > 0) return true;
+                }
+            }
+            
+            return false;
+        }
+        
+        // Função para clonar e limpar seções vazias
+        function cloneCargoLimpo(cargoOriginal) {
+            const clone = cargoOriginal.cloneNode(true);
+            
+            // Lista de seções para verificar
+            const secoes = [
+                { selector: '.expandable-section:nth-child(2)', nome: 'Uniformes e EPIs' },
+                { selector: '.expandable-section:nth-child(3)', nome: 'Benefícios' },
+                { selector: '.expandable-section:nth-child(4)', nome: 'Segurança' },
+                { selector: '.expandable-section:nth-child(5)', nome: 'Insumos' },
+                { selector: '.despesas-section', nome: 'Despesas' },
+                { selector: '.exames-section', nome: 'Exames' }
+            ];
+            
+            // Verificar e remover seções vazias
+            secoes.forEach(secao => {
+                const elemento = clone.querySelector(secao.selector);
+                if (elemento && !secaoTemValores(elemento)) {
+                    elemento.style.display = 'none';
+                }
+            });
+            
+            // Verificar se a seção de adicionais tem valores
+            const adicionaisSection = clone.querySelector('.expandable-section:first-child');
+            if (adicionaisSection && !secaoTemValores(adicionaisSection)) {
+                adicionaisSection.style.display = 'none';
+            }
+            
+            return clone;
+        }
+        
         // Calcular total geral da proposta
         let totalGeralProposta = 0;
         cargos.forEach(cargo => {
@@ -149,7 +250,10 @@ async function gerarImagemPorCargo() {
         
         const clienteNome = cliente.replace(/[^a-zA-Z0-9]/g, '_');
         
-        // ========== 1. BAIXAR IMAGEM DO TOTAL DA PROPOSTA ==========
+        // Contador para nomes repetidos
+        const nomeContador = new Map();
+        
+        // ========== 1. GERAR IMAGEM DO TOTAL DA PROPOSTA ==========
         console.log('Gerando imagem do total da proposta...');
         const totalElemento = document.createElement('div');
         totalElemento.style.position = 'fixed';
@@ -225,7 +329,6 @@ async function gerarImagemPorCargo() {
         
         document.body.removeChild(totalElemento);
         
-        // Baixar imagem do total
         const totalLink = document.createElement('a');
         totalLink.download = `${clienteNome}_TOTAL_DA_PROPOSTA.png`;
         totalLink.href = totalCanvas.toDataURL('image/png');
@@ -233,24 +336,39 @@ async function gerarImagemPorCargo() {
         
         await new Promise(resolve => setTimeout(resolve, 500));
         
-        // ========== 2. BAIXAR IMAGEM PARA CADA CARGO INDIVIDUALMENTE ==========
+        // ========== 2. GERAR IMAGEM PARA CADA CARGO ==========
         let cargosGerados = 0;
         let cargosComErro = [];
         
         for (let i = 0; i < cargos.length; i++) {
             const cargo = cargos[i];
-            const cargoNome = cargo.querySelector('.cargo-nome').value.trim() || `Cargo_${i + 1}`;
-            const nomeArquivo = `${clienteNome}_${cargoNome.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
+            const cargoNomeBase = cargo.querySelector('.cargo-nome').value.trim() || `Cargo_${i + 1}`;
             
-            console.log(`Gerando imagem ${i + 1}/${cargos.length}: ${cargoNome}`);
+            // Contar ocorrências deste nome para adicionar (1), (2)
+            const ocorrenciaAtual = (nomeContador.get(cargoNomeBase) || 0) + 1;
+            nomeContador.set(cargoNomeBase, ocorrenciaAtual);
+            
+            // Verificar se precisa de número (se houver mais de um com mesmo nome)
+            const totalOcorrencias = nomeCount.get(cargoNomeBase) || 1;
+            const numeroSufixo = totalOcorrencias > 1 ? ` (${ocorrenciaAtual})` : '';
+            
+            // Obter adicionais ativos
+            const adicionais = getAdicionaisAtivos(cargo);
+            const adicionaisSufixo = adicionais.length > 0 ? ` + ${adicionais.join(' + ')}` : '';
+            
+            // Nome completo do arquivo
+            const nomeCompleto = `${cargoNomeBase}${numeroSufixo}${adicionaisSufixo}`;
+            const nomeArquivo = `${clienteNome}_${nomeCompleto.replace(/[^a-zA-Z0-9À-ú+()]/g, '_')}.png`;
+            
+            console.log(`Gerando imagem ${i + 1}/${cargos.length}: ${nomeCompleto}`);
             
             if (btnCompartilhar) {
-                btnCompartilhar.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Gerando ${i + 1}/${cargos.length}: ${cargoNome.substring(0, 20)}...`;
+                btnCompartilhar.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Gerando ${i + 1}/${cargos.length}: ${nomeCompleto.substring(0, 25)}...`;
             }
             
             try {
-                // Clonar o cargo
-                const cloneCargo = cargo.cloneNode(true);
+                // Clonar o cargo e limpar seções vazias
+                const cloneCargo = cloneCargoLimpo(cargo);
                 
                 // Fechar dropdowns no clone
                 const cloneDropdowns = cloneCargo.querySelectorAll('.dropdown-menu');
@@ -267,17 +385,19 @@ async function gerarImagemPorCargo() {
                     }
                 });
                 
-                // Expandir todas as seções
+                // Expandir todas as seções (apenas as que não foram ocultadas)
                 const cloneSecoes = cloneCargo.querySelectorAll('.expandable-section, .exames-section, .despesas-section');
                 cloneSecoes.forEach(secao => {
-                    const content = secao.querySelector('.section-content, .exames-content, .despesas-content');
-                    if (content && content.classList.contains('collapsed')) {
-                        content.classList.remove('collapsed');
-                    }
-                    const toggleIcon = secao.querySelector('.section-toggle, .exames-toggle, .despesas-toggle');
-                    if (toggleIcon) {
-                        toggleIcon.classList.remove('fa-chevron-down');
-                        toggleIcon.classList.add('fa-chevron-up');
+                    if (secao.style.display !== 'none') {
+                        const content = secao.querySelector('.section-content, .exames-content, .despesas-content');
+                        if (content && content.classList.contains('collapsed')) {
+                            content.classList.remove('collapsed');
+                        }
+                        const toggleIcon = secao.querySelector('.section-toggle, .exames-toggle, .despesas-toggle');
+                        if (toggleIcon) {
+                            toggleIcon.classList.remove('fa-chevron-down');
+                            toggleIcon.classList.add('fa-chevron-up');
+                        }
                     }
                 });
                 
@@ -316,19 +436,39 @@ async function gerarImagemPorCargo() {
                 
                 document.body.appendChild(elementoImagem);
                 
-                // Ajustar estilos
+                // Ajustar estilos e altura dos inputs
                 const cargoCloneElem = elementoImagem.querySelector('.cargo-item');
                 if (cargoCloneElem) {
                     cargoCloneElem.style.margin = '0';
                     cargoCloneElem.style.boxShadow = 'none';
                 }
                 
-                const allContents = elementoImagem.querySelectorAll('.section-content, .exames-content, .despesas-content');
-                allContents.forEach(content => {
-                    content.style.display = 'block';
-                    content.classList.remove('collapsed');
+                // Aumentar altura dos inputs para não cortar o texto
+                const allInputs = elementoImagem.querySelectorAll('input');
+                allInputs.forEach(input => {
+                    input.style.minHeight = '32px';
+                    input.style.height = 'auto';
+                    input.style.padding = '6px 10px';
                 });
                 
+                // Ajustar específicamente os campos de benefício, segurança, etc.
+                const smallInputs = elementoImagem.querySelectorAll('.beneficio-campo input, .seguranca-campo input, .insumo-campo input, .despesa-campo input');
+                smallInputs.forEach(input => {
+                    input.style.minHeight = '32px';
+                    input.style.height = 'auto';
+                    input.style.padding = '6px 8px';
+                });
+                
+                // Garantir que todos os conteúdos estão visíveis
+                const allContents = elementoImagem.querySelectorAll('.section-content, .exames-content, .despesas-content');
+                allContents.forEach(content => {
+                    if (content.parentElement?.style.display !== 'none') {
+                        content.style.display = 'block';
+                        content.classList.remove('collapsed');
+                    }
+                });
+                
+                // Esconder todos os dropdowns
                 const imagemDropdowns = elementoImagem.querySelectorAll('.dropdown-menu');
                 imagemDropdowns.forEach(dropdown => {
                     dropdown.style.display = 'none';
@@ -350,21 +490,19 @@ async function gerarImagemPorCargo() {
                 
                 document.body.removeChild(elementoImagem);
                 
-                // Baixar a imagem individualmente
                 const link = document.createElement('a');
                 link.download = nomeArquivo;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
                 
                 cargosGerados++;
-                console.log(`✅ Imagem ${i + 1}/${cargos.length} baixada: ${cargoNome}`);
+                console.log(`✅ Imagem ${i + 1}/${cargos.length} baixada: ${nomeArquivo}`);
                 
-                // Delay entre downloads para não sobrecarregar
-                await new Promise(resolve => setTimeout(resolve, 800));
+                await new Promise(resolve => setTimeout(resolve, 500));
                 
             } catch (cargoError) {
-                console.error(`❌ Erro no cargo ${i + 1}: ${cargoNome}`, cargoError);
-                cargosComErro.push({ index: i + 1, nome: cargoNome, erro: cargoError.message });
+                console.error(`❌ Erro no cargo ${i + 1}: ${cargoNomeBase}`, cargoError);
+                cargosComErro.push({ index: i + 1, nome: cargoNomeBase, erro: cargoError.message });
             }
         }
         
@@ -384,6 +522,7 @@ async function gerarImagemPorCargo() {
             mensagem += `\nTente gerar novamente esses cargos separadamente.`;
         } else {
             mensagem += `\n\n📁 As imagens foram salvas individualmente na sua pasta de downloads.`;
+            mensagem += `\n📝 Nomes dos arquivos incluem adicionais ativos e numeração para cargos duplicados.`;
         }
         
         alert(mensagem);

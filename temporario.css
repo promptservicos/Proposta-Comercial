@@ -2906,3 +2906,32 @@ body.light-mode .cargo-titulo {
 body.light-mode .campo-pequeno label {
     color: #555 !important;
 }
+
+/* Garantir altura adequada para inputs */
+.input-moderno,
+.beneficio-campo input,
+.seguranca-campo input,
+.insumo-campo input,
+.despesa-campo input,
+.item-custom-preco-input,
+.item-custom-quantidade-input,
+.item-custom-depreciacao-input,
+.exame-custom-preco-input {
+    min-height: 36px !important;
+    height: auto !important;
+    padding: 8px 12px !important;
+    line-height: 1.4 !important;
+}
+
+/* Para inputs menores em cards */
+.beneficio-card .beneficio-campo input,
+.seguranca-item .seguranca-campo input {
+    min-height: 34px !important;
+    padding: 6px 10px !important;
+}
+
+/* Para checkboxes e elementos pequenos */
+input[type="checkbox"] {
+    min-height: 18px !important;
+    height: 18px !important;
+}
