@@ -147,11 +147,9 @@ async function gerarImagemPorCargo() {
         
         await new Promise(resolve => setTimeout(resolve, 300));
         
-        const zip = new JSZip();
         const clienteNome = cliente.replace(/[^a-zA-Z0-9]/g, '_');
-        const imagensParaZip = []; // Array para armazenar promessas
         
-        // ========== 1. GERAR IMAGEM DO TOTAL DA PROPOSTA ==========
+        // ========== 1. BAIXAR IMAGEM DO TOTAL DA PROPOSTA ==========
         console.log('Gerando imagem do total da proposta...');
         const totalElemento = document.createElement('div');
         totalElemento.style.position = 'fixed';
@@ -227,185 +225,165 @@ async function gerarImagemPorCargo() {
         
         document.body.removeChild(totalElemento);
         
-        const totalBlob = await new Promise(resolve => totalCanvas.toBlob(resolve, 'image/png'));
-        zip.file(`${clienteNome}_TOTAL_DA_PROPOSTA.png`, totalBlob);
+        // Baixar imagem do total
+        const totalLink = document.createElement('a');
+        totalLink.download = `${clienteNome}_TOTAL_DA_PROPOSTA.png`;
+        totalLink.href = totalCanvas.toDataURL('image/png');
+        totalLink.click();
         
-        // ========== 2. GERAR IMAGEM PARA CADA CARGO ==========
-        // Usar Promise.all para garantir que todas as imagens sejam processadas
-        const promessasImagens = [];
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // ========== 2. BAIXAR IMAGEM PARA CADA CARGO INDIVIDUALMENTE ==========
+        let cargosGerados = 0;
+        let cargosComErro = [];
         
         for (let i = 0; i < cargos.length; i++) {
             const cargo = cargos[i];
             const cargoNome = cargo.querySelector('.cargo-nome').value.trim() || `Cargo_${i + 1}`;
             const nomeArquivo = `${clienteNome}_${cargoNome.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
             
-            console.log(`Preparando imagem ${i + 1}/${cargos.length}: ${cargoNome}`);
+            console.log(`Gerando imagem ${i + 1}/${cargos.length}: ${cargoNome}`);
             
             if (btnCompartilhar) {
-                btnCompartilhar.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Preparando ${i + 1}/${cargos.length}: ${cargoNome.substring(0, 20)}...`;
+                btnCompartilhar.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Gerando ${i + 1}/${cargos.length}: ${cargoNome.substring(0, 20)}...`;
             }
             
-            // Criar uma promessa para cada imagem
-            const promise = (async () => {
-                try {
-                    // Clonar o cargo
-                    const cloneCargo = cargo.cloneNode(true);
-                    
-                    // Fechar dropdowns no clone
-                    const cloneDropdowns = cloneCargo.querySelectorAll('.dropdown-menu');
-                    cloneDropdowns.forEach(dropdown => {
-                        dropdown.classList.remove('open');
-                        dropdown.style.display = 'none';
-                        const header = dropdown.previousElementSibling;
-                        if (header && header.classList.contains('box-header')) {
-                            const icon = header.querySelector('i');
-                            if (icon) {
-                                icon.classList.remove('fa-chevron-up');
-                                icon.classList.add('fa-chevron-down');
-                            }
+            try {
+                // Clonar o cargo
+                const cloneCargo = cargo.cloneNode(true);
+                
+                // Fechar dropdowns no clone
+                const cloneDropdowns = cloneCargo.querySelectorAll('.dropdown-menu');
+                cloneDropdowns.forEach(dropdown => {
+                    dropdown.classList.remove('open');
+                    dropdown.style.display = 'none';
+                    const header = dropdown.previousElementSibling;
+                    if (header && header.classList.contains('box-header')) {
+                        const icon = header.querySelector('i');
+                        if (icon) {
+                            icon.classList.remove('fa-chevron-up');
+                            icon.classList.add('fa-chevron-down');
                         }
-                    });
-                    
-                    // Expandir todas as seções
-                    const cloneSecoes = cloneCargo.querySelectorAll('.expandable-section, .exames-section, .despesas-section');
-                    cloneSecoes.forEach(secao => {
-                        const content = secao.querySelector('.section-content, .exames-content, .despesas-content');
-                        if (content && content.classList.contains('collapsed')) {
-                            content.classList.remove('collapsed');
-                        }
-                        const toggleIcon = secao.querySelector('.section-toggle, .exames-toggle, .despesas-toggle');
-                        if (toggleIcon) {
-                            toggleIcon.classList.remove('fa-chevron-down');
-                            toggleIcon.classList.add('fa-chevron-up');
-                        }
-                    });
-                    
-                    // Criar elemento para imagem
-                    const elementoImagem = document.createElement('div');
-                    elementoImagem.style.position = 'fixed';
-                    elementoImagem.style.left = '-9999px';
-                    elementoImagem.style.top = '-9999px';
-                    elementoImagem.style.backgroundColor = '#ffffff';
-                    elementoImagem.style.padding = '20px';
-                    elementoImagem.style.borderRadius = '16px';
-                    elementoImagem.style.width = '1000px';
-                    elementoImagem.style.fontFamily = "'Inter', 'Segoe UI', sans-serif";
-                    
-                    elementoImagem.innerHTML = `
-                        <div style="margin-bottom: 20px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #c10404;">
-                                <div>
-                                    <h1 style="color: #c10404; margin: 0; font-size: 20px;">Prompt Serviços</h1>
-                                    <p style="color: #666; margin: 0; font-size: 11px;">Proposta de Contrato Temporário</p>
-                                </div>
-                                <div style="text-align: right;">
-                                    <div style="font-size: 10px; color: #888;">Data: ${dataAtual}</div>
-                                    <div style="font-size: 10px; color: #888;">Vendedor: ${vendedor}</div>
-                                </div>
-                            </div>
-                            <div style="background: #f5f5f5; padding: 8px 12px; border-radius: 8px;">
-                                <strong>Cliente:</strong> ${cliente}
-                            </div>
-                        </div>
-                        ${cloneCargo.outerHTML}
-                        <div style="margin-top: 20px; text-align: center; padding-top: 10px; border-top: 1px solid #e0e0e0; font-size: 9px; color: #888;">
-                            Documento gerado em ${dataAtual} - Proposta válida por 30 dias
-                        </div>
-                    `;
-                    
-                    document.body.appendChild(elementoImagem);
-                    
-                    // Ajustar estilos
-                    const cargoCloneElem = elementoImagem.querySelector('.cargo-item');
-                    if (cargoCloneElem) {
-                        cargoCloneElem.style.margin = '0';
-                        cargoCloneElem.style.boxShadow = 'none';
                     }
-                    
-                    const allContents = elementoImagem.querySelectorAll('.section-content, .exames-content, .despesas-content');
-                    allContents.forEach(content => {
-                        content.style.display = 'block';
+                });
+                
+                // Expandir todas as seções
+                const cloneSecoes = cloneCargo.querySelectorAll('.expandable-section, .exames-section, .despesas-section');
+                cloneSecoes.forEach(secao => {
+                    const content = secao.querySelector('.section-content, .exames-content, .despesas-content');
+                    if (content && content.classList.contains('collapsed')) {
                         content.classList.remove('collapsed');
-                    });
-                    
-                    const imagemDropdowns = elementoImagem.querySelectorAll('.dropdown-menu');
-                    imagemDropdowns.forEach(dropdown => {
-                        dropdown.style.display = 'none';
-                        dropdown.classList.remove('open');
-                    });
-                    
-                    elementoImagem.style.backgroundColor = '#ffffff';
-                    elementoImagem.style.color = '#333333';
-                    
-                    await new Promise(resolve => setTimeout(resolve, 300));
-                    
-                    const canvas = await html2canvas(elementoImagem, {
-                        scale: 1.5,
-                        backgroundColor: '#ffffff',
-                        logging: false,
-                        useCORS: true,
-                        allowTaint: false
-                    });
-                    
-                    document.body.removeChild(elementoImagem);
-                    
-                    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-                    
-                    // Adicionar ao zip
-                    zip.file(nomeArquivo, blob);
-                    
-                    console.log(`✅ Imagem ${i + 1}/${cargos.length} adicionada: ${cargoNome}`);
-                    return { success: true, index: i, nome: cargoNome };
-                    
-                } catch (cargoError) {
-                    console.error(`❌ Erro no cargo ${i + 1}: ${cargoNome}`, cargoError);
-                    return { success: false, index: i, nome: cargoNome, erro: cargoError.message };
+                    }
+                    const toggleIcon = secao.querySelector('.section-toggle, .exames-toggle, .despesas-toggle');
+                    if (toggleIcon) {
+                        toggleIcon.classList.remove('fa-chevron-down');
+                        toggleIcon.classList.add('fa-chevron-up');
+                    }
+                });
+                
+                // Criar elemento para imagem
+                const elementoImagem = document.createElement('div');
+                elementoImagem.style.position = 'fixed';
+                elementoImagem.style.left = '-9999px';
+                elementoImagem.style.top = '-9999px';
+                elementoImagem.style.backgroundColor = '#ffffff';
+                elementoImagem.style.padding = '20px';
+                elementoImagem.style.borderRadius = '16px';
+                elementoImagem.style.width = '1000px';
+                elementoImagem.style.fontFamily = "'Inter', 'Segoe UI', sans-serif";
+                
+                elementoImagem.innerHTML = `
+                    <div style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #c10404;">
+                            <div>
+                                <h1 style="color: #c10404; margin: 0; font-size: 20px;">Prompt Serviços</h1>
+                                <p style="color: #666; margin: 0; font-size: 11px;">Proposta de Contrato Temporário</p>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 10px; color: #888;">Data: ${dataAtual}</div>
+                                <div style="font-size: 10px; color: #888;">Vendedor: ${vendedor}</div>
+                            </div>
+                        </div>
+                        <div style="background: #f5f5f5; padding: 8px 12px; border-radius: 8px;">
+                            <strong>Cliente:</strong> ${cliente}
+                        </div>
+                    </div>
+                    ${cloneCargo.outerHTML}
+                    <div style="margin-top: 20px; text-align: center; padding-top: 10px; border-top: 1px solid #e0e0e0; font-size: 9px; color: #888;">
+                        Documento gerado em ${dataAtual} - Proposta válida por 30 dias
+                    </div>
+                `;
+                
+                document.body.appendChild(elementoImagem);
+                
+                // Ajustar estilos
+                const cargoCloneElem = elementoImagem.querySelector('.cargo-item');
+                if (cargoCloneElem) {
+                    cargoCloneElem.style.margin = '0';
+                    cargoCloneElem.style.boxShadow = 'none';
                 }
-            })();
-            
-            promessasImagens.push(promise);
+                
+                const allContents = elementoImagem.querySelectorAll('.section-content, .exames-content, .despesas-content');
+                allContents.forEach(content => {
+                    content.style.display = 'block';
+                    content.classList.remove('collapsed');
+                });
+                
+                const imagemDropdowns = elementoImagem.querySelectorAll('.dropdown-menu');
+                imagemDropdowns.forEach(dropdown => {
+                    dropdown.style.display = 'none';
+                    dropdown.classList.remove('open');
+                });
+                
+                elementoImagem.style.backgroundColor = '#ffffff';
+                elementoImagem.style.color = '#333333';
+                
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                const canvas = await html2canvas(elementoImagem, {
+                    scale: 1.5,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    useCORS: true,
+                    allowTaint: false
+                });
+                
+                document.body.removeChild(elementoImagem);
+                
+                // Baixar a imagem individualmente
+                const link = document.createElement('a');
+                link.download = nomeArquivo;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+                cargosGerados++;
+                console.log(`✅ Imagem ${i + 1}/${cargos.length} baixada: ${cargoNome}`);
+                
+                // Delay entre downloads para não sobrecarregar
+                await new Promise(resolve => setTimeout(resolve, 800));
+                
+            } catch (cargoError) {
+                console.error(`❌ Erro no cargo ${i + 1}: ${cargoNome}`, cargoError);
+                cargosComErro.push({ index: i + 1, nome: cargoNome, erro: cargoError.message });
+            }
         }
-        
-        // Aguardar TODAS as imagens serem processadas
-        console.log('Aguardando processamento de todas as imagens...');
-        if (btnCompartilhar) {
-            btnCompartilhar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Finalizando imagens...';
-        }
-        
-        const resultados = await Promise.all(promessasImagens);
-        
-        // Contar sucessos
-        const sucessos = resultados.filter(r => r.success).length;
-        const falhas = resultados.filter(r => !r.success).length;
-        
-        console.log(`Processamento concluído: ${sucessos} sucessos, ${falhas} falhas`);
         
         // Restaurar tema original
         if (!wasLightMode) {
             document.body.classList.remove('light-mode');
         }
         
-        // Gerar e baixar o arquivo ZIP
-        console.log('Gerando arquivo ZIP...');
-        if (btnCompartilhar) {
-            btnCompartilhar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Compactando arquivos...';
-        }
-        
-        const content = await zip.generateAsync({ type: 'blob' });
-        const link = document.createElement('a');
-        link.download = `Propostas_${clienteNome}_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.zip`;
-        link.href = URL.createObjectURL(content);
-        link.click();
-        URL.revokeObjectURL(link.href);
-        
         // Mostrar resultado
-        let mensagem = `✅ ${sucessos + 1} imagem(ns) gerada(s) com sucesso!\n- 1 imagem com o TOTAL da proposta\n- ${sucessos} imagem(ns) com detalhes dos cargos`;
+        let mensagem = `✅ ${cargosGerados + 1} imagem(ns) gerada(s) com sucesso!\n- 1 imagem do TOTAL da proposta\n- ${cargosGerados} imagem(ns) dos cargos`;
         
-        if (falhas > 0) {
-            mensagem += `\n\n⚠️ ${falhas} cargo(s) falharam:\n`;
-            resultados.filter(r => !r.success).forEach(erro => {
-                mensagem += `- Cargo ${erro.index + 1}: ${erro.nome}\n`;
+        if (cargosComErro.length > 0) {
+            mensagem += `\n\n⚠️ ${cargosComErro.length} cargo(s) falharam:\n`;
+            cargosComErro.forEach(erro => {
+                mensagem += `- Cargo ${erro.index}: ${erro.nome}\n`;
             });
+            mensagem += `\nTente gerar novamente esses cargos separadamente.`;
+        } else {
+            mensagem += `\n\n📁 As imagens foram salvas individualmente na sua pasta de downloads.`;
         }
         
         alert(mensagem);
