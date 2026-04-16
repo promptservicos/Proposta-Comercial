@@ -2099,9 +2099,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
         
         function calcularDespesas(subtotalSalarioEncargosAdicionais, subtotalInsumosBeneficios) {
-            // subtotalSalarioEncargosAdicionais = Salário + Encargos + Adicionais
-            // subtotalInsumosBeneficios = Uniformes/EPIs + Benefícios + SST + Insumos
-            
             let taxaAdm = 0;
             let encargosFiscais = 0;
             
@@ -2109,13 +2106,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const porcentagem = parseFloat(item.porcentagemInput.value.replace(/\./g, '').replace(',', '.')) || 0;
                 
                 if (item.campo === 'taxa_adm') {
-                    // Taxa Adm sobre (Salário + Encargos + Adicionais)
-                    const baseTaxaAdm = subtotalSalarioEncargosAdicionais;
+                    // NOVA LÓGICA: Taxa Adm sobre Salário+Encargos+Adicionais + Insumos+Benefícios
+                    const baseTaxaAdm = subtotalSalarioEncargosAdicionais + subtotalInsumosBeneficios;
                     taxaAdm = baseTaxaAdm * (porcentagem / 100);
                     item.valorSpan.textContent = formatarMoeda(taxaAdm);
                     item.calculoSpan.textContent = `(${formatarMoeda(baseTaxaAdm)} × ${porcentagem}%)`;
                 } else if (item.campo === 'encargos_fiscais') {
-                    // Encargos fiscais sobre (Subtotal Salário+Encargos+Adicionais + Insumos+Benefícios + Taxa Adm)
+                    // Encargos fiscais permanecem sobre (Salário+Encargos+Adicionais + Insumos+Benefícios + Taxa Adm)
                     const baseEncargosFiscais = subtotalSalarioEncargosAdicionais + subtotalInsumosBeneficios + taxaAdm;
                     encargosFiscais = baseEncargosFiscais * (porcentagem / 100);
                     item.valorSpan.textContent = formatarMoeda(encargosFiscais);
@@ -2123,7 +2120,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             });
             
-            // Total da prestação = Base dos encargos fiscais + Encargos fiscais
             const totalPrestacao = (subtotalSalarioEncargosAdicionais + subtotalInsumosBeneficios + taxaAdm) + encargosFiscais;
             totalSpan.textContent = formatarMoeda(totalPrestacao);
             header.querySelector('.summary-value').textContent = formatarMoeda(totalPrestacao);
