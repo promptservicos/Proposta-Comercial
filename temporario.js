@@ -2763,15 +2763,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             if (insConteudo) insConteudo.classList.toggle('hidden', !(insCheck && insCheck.checked));
             
-            // Atualiza o subtotal da seção "Adicionais" (apenas para exibição)
+            // Atualiza o subtotal da seção "Adicionais"
             updateAdicionaisSummary(totalAdicionaisBrutos);
             
             // ========== NOVA LÓGICA: ENCARGOS INCIDEM SOBRE (SALÁRIO + ADICIONAIS BRUTOS) ==========
-            const baseParaEncargos = salario + totalAdicionaisBrutos;
-            const valorEncargos = baseParaEncargos * taxaEncargos;
+            const baseParaEncargos = salario + totalAdicionaisBrutos;   // 1000 + 500 = 1500
+            const valorEncargos = baseParaEncargos * taxaEncargos;      // 1500 × 50% = 750
             
-            // O total de salário + adicionais + encargos (SEA) é a base para outros cálculos (ex: taxa adm)
-            const subtotalSalarioEncargosAdicionais = baseParaEncargos + valorEncargos;
+            // Total de salário + adicionais + encargos (SEA)
+            const subtotalSalarioEncargosAdicionais = baseParaEncargos + valorEncargos; // 1500 + 750 = 2250
             
             // ========== DEMAIS CÁLCULOS (Uniformes, Benefícios, etc.) ==========
             const uniformesData = atualizarUniformesTotais();
