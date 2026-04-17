@@ -2696,7 +2696,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             let taxaEncargos = parseFloat(encargosPercentualInput.value.replace(/\./g, '').replace(',', '.')) || 55.83;
             taxaEncargos = taxaEncargos / 100;
             
-            // ========== NOVA LÓGICA: CALCULAR ADICIONAIS EM VALOR BRUTO (SEM ENCARGOS) ==========
+            // ========== CALCULAR ADICIONAIS EM VALOR BRUTO (SEM ENCARGOS) ==========
             let totalAdicionaisBrutos = 0;
             
             const heCheck = adicionaisContent.querySelector('.he-check');
@@ -2763,12 +2763,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             if (insConteudo) insConteudo.classList.toggle('hidden', !(insCheck && insCheck.checked));
             
-            // Atualiza o subtotal da seção "Adicionais"
+            // Atualiza o subtotal da seção "Adicionais" (apenas para exibição)
             updateAdicionaisSummary(totalAdicionaisBrutos);
             
-            // ========== CÁLCULO DOS ENCARGOS SOBRE A BASE (SALÁRIO + ADICIONAIS BRUTOS) ==========
-            const baseEncargos = salario + totalAdicionaisBrutos;
-            const valorEncargos = baseEncargos * taxaEncargos;   // encargos TOTAIS
+            // ========== NOVA LÓGICA: ENCARGOS INCIDEM SOBRE (SALÁRIO + ADICIONAIS BRUTOS) ==========
+            const baseParaEncargos = salario + totalAdicionaisBrutos;
+            const valorEncargos = baseParaEncargos * taxaEncargos;
+            
+            // O total de salário + adicionais + encargos (SEA) é a base para outros cálculos (ex: taxa adm)
+            const subtotalSalarioEncargosAdicionais = baseParaEncargos + valorEncargos;
             
             // ========== DEMAIS CÁLCULOS (Uniformes, Benefícios, etc.) ==========
             const uniformesData = atualizarUniformesTotais();
@@ -2777,19 +2780,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             const totalSeguranca = calcularSeguranca();
             const totalInsumos = calcularInsumos();
             
-            // SUBTOTAL QUE SERVE DE BASE PARA TAXA ADM: salário + adicionais brutos + encargos totais
-            const subtotalSalarioEncargosAdicionais = baseEncargos + valorEncargos;
-            
-            // SUBTOTAL DOS INSUMOS E BENEFÍCIOS (já estão mensalizados)
             const subtotalInsumosBeneficios = totalUniformeEpi + totalBeneficios + totalSeguranca + totalInsumos;
             
             // Despesas (Taxa Adm e Encargos Fiscais) – usa o novo subtotal
             const despesasResult = calcularDespesas(subtotalSalarioEncargosAdicionais, subtotalInsumosBeneficios);
             
-            // Total dos Exames
             const totalExames = calcularExames();
-            
-            // TOTAL FINAL DA VAGA
             const totalFinalVaga = despesasResult.totalPrestacao + totalExames;
             
             // Base para encargos fiscais (apenas para exibição)
@@ -2814,7 +2810,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             resultadosHTML += `
                 <div class="resultado-bloco subtotal-cargo">
-                    <span class="rotulo"><i class="fas fa-file-invoice"></i> SALÁRIO + ENCARGOS + ADICIONAIS</span>
+                    <span class="rotulo"><i class="fas fa-file-invoice"></i> BASE (Salário + Adicionais)</span>
+                    <span class="valor">${formatarMoeda(baseParaEncargos)}</span>
+                </div>
+                <div class="resultado-bloco subtotal-cargo">
+                    <span class="rotulo"><i class="fas fa-file-invoice"></i> TOTAL (Salário + Adicionais + Encargos)</span>
                     <span class="valor">${formatarMoeda(subtotalSalarioEncargosAdicionais)}</span>
                 </div>
             `;
