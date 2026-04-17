@@ -2696,21 +2696,21 @@ document.addEventListener('DOMContentLoaded', async function() {
             let taxaEncargos = parseFloat(encargosPercentualInput.value.replace(/\./g, '').replace(',', '.')) || 55.83;
             taxaEncargos = taxaEncargos / 100;
             
-            let totalAdicionais = 0;
+            // ========== NOVA LÓGICA: CALCULAR ADICIONAIS EM VALOR BRUTO (SEM ENCARGOS) ==========
+            let totalAdicionaisBrutos = 0;
             
-            // ========== CALCULAR ADICIONAIS ==========
             const heCheck = adicionaisContent.querySelector('.he-check');
             const heConteudo = adicionaisContent.querySelector('.he-conteudo');
             const heResultado = adicionaisContent.querySelector('.he-resultado');
+            let valorHEBruto = 0;
             if (heCheck && heCheck.checked) {
                 const horas = parseFloat(adicionaisContent.querySelector('.he-horas')?.value) || 0;
                 if (horas > 0) {
-                    const valorHoraExtra = valorHora * 1.5 * horas;
-                    const dsr = (valorHoraExtra / 25) * 5;
-                    const encargosHE = (valorHoraExtra + dsr) * taxaEncargos;
-                    const totalHE = valorHoraExtra + dsr + encargosHE;
-                    if (heResultado) heResultado.innerHTML = `<span class="valor-label">Total Horas Extras</span><span class="valor-number">${formatarMoeda(totalHE)}</span>`;
-                    totalAdicionais += totalHE;
+                    const horaExtraBruta = valorHora * 1.5 * horas;
+                    const dsr = (horaExtraBruta / 25) * 5;
+                    valorHEBruto = horaExtraBruta + dsr;
+                    totalAdicionaisBrutos += valorHEBruto;
+                    if (heResultado) heResultado.innerHTML = `<span class="valor-label">Horas Extras (bruto)</span><span class="valor-number">${formatarMoeda(valorHEBruto)}</span>`;
                 } else {
                     if (heResultado) heResultado.innerHTML = '';
                 }
@@ -2722,14 +2722,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             const anCheck = adicionaisContent.querySelector('.an-check');
             const anConteudo = adicionaisContent.querySelector('.an-conteudo');
             const anResultado = adicionaisContent.querySelector('.an-resultado');
+            let valorANBruto = 0;
             if (anCheck && anCheck.checked) {
                 const horasNoturnas = parseFloat(adicionaisContent.querySelector('.an-horas')?.value) || 0;
                 if (horasNoturnas > 0) {
-                    const valorAdicionalNoturno = valorHora * 0.2 * horasNoturnas;
-                    const encargosAN = valorAdicionalNoturno * taxaEncargos;
-                    const totalAN = valorAdicionalNoturno + encargosAN;
-                    if (anResultado) anResultado.innerHTML = `<span class="valor-label">Total Ad. Noturno</span><span class="valor-number">${formatarMoeda(totalAN)}</span>`;
-                    totalAdicionais += totalAN;
+                    valorANBruto = valorHora * 0.2 * horasNoturnas;
+                    totalAdicionaisBrutos += valorANBruto;
+                    if (anResultado) anResultado.innerHTML = `<span class="valor-label">Ad. Noturno (bruto)</span><span class="valor-number">${formatarMoeda(valorANBruto)}</span>`;
                 } else {
                     if (anResultado) anResultado.innerHTML = '';
                 }
@@ -2741,12 +2740,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             const perCheck = adicionaisContent.querySelector('.per-check');
             const perConteudo = adicionaisContent.querySelector('.per-conteudo');
             const perResultado = adicionaisContent.querySelector('.per-resultado');
+            let valorPerBruto = 0;
             if (perCheck && perCheck.checked) {
-                const periculosidade = salario * 0.3;
-                const encargosPer = periculosidade * taxaEncargos;
-                const totalPer = periculosidade + encargosPer;
-                if (perResultado) perResultado.innerHTML = `<span class="valor-label">Total Periculosidade</span><span class="valor-number">${formatarMoeda(totalPer)}</span>`;
-                totalAdicionais += totalPer;
+                valorPerBruto = salario * 0.3;
+                totalAdicionaisBrutos += valorPerBruto;
+                if (perResultado) perResultado.innerHTML = `<span class="valor-label">Periculosidade (bruto)</span><span class="valor-number">${formatarMoeda(valorPerBruto)}</span>`;
             } else {
                 if (perResultado) perResultado.innerHTML = '';
             }
@@ -2755,36 +2753,37 @@ document.addEventListener('DOMContentLoaded', async function() {
             const insCheck = adicionaisContent.querySelector('.ins-check');
             const insConteudo = adicionaisContent.querySelector('.ins-conteudo');
             const insResultado = adicionaisContent.querySelector('.ins-resultado');
+            let valorInsBruto = 0;
             if (insCheck && insCheck.checked) {
-                const insalubridade = SALARIO_MINIMO * 0.2;
-                const encargosIns = insalubridade * taxaEncargos;
-                const totalIns = insalubridade + encargosIns;
-                if (insResultado) insResultado.innerHTML = `<span class="valor-label">Total Insalubridade</span><span class="valor-number">${formatarMoeda(totalIns)}</span>`;
-                totalAdicionais += totalIns;
+                valorInsBruto = SALARIO_MINIMO * 0.2;
+                totalAdicionaisBrutos += valorInsBruto;
+                if (insResultado) insResultado.innerHTML = `<span class="valor-label">Insalubridade (bruto)</span><span class="valor-number">${formatarMoeda(valorInsBruto)}</span>`;
             } else {
                 if (insResultado) insResultado.innerHTML = '';
             }
             if (insConteudo) insConteudo.classList.toggle('hidden', !(insCheck && insCheck.checked));
             
-            updateAdicionaisSummary(totalAdicionais);
+            // Atualiza o subtotal da seção "Adicionais"
+            updateAdicionaisSummary(totalAdicionaisBrutos);
             
-            // ========== CALCULAR TOTAIS DAS SEÇÕES ==========
+            // ========== CÁLCULO DOS ENCARGOS SOBRE A BASE (SALÁRIO + ADICIONAIS BRUTOS) ==========
+            const baseEncargos = salario + totalAdicionaisBrutos;
+            const valorEncargos = baseEncargos * taxaEncargos;   // encargos TOTAIS
+            
+            // ========== DEMAIS CÁLCULOS (Uniformes, Benefícios, etc.) ==========
             const uniformesData = atualizarUniformesTotais();
             const totalUniformeEpi = uniformesData?.totalGeral || 0;
             const totalBeneficios = calcularBeneficios();
             const totalSeguranca = calcularSeguranca();
             const totalInsumos = calcularInsumos();
             
-            // ========== CÁLCULOS PRINCIPAIS ==========
-            const valorEncargos = salario * taxaEncargos;
+            // SUBTOTAL QUE SERVE DE BASE PARA TAXA ADM: salário + adicionais brutos + encargos totais
+            const subtotalSalarioEncargosAdicionais = baseEncargos + valorEncargos;
             
-            // SUB TOTAL SALARIO + ENCARGOS + ADICIONAIS (Base para Taxa Adm)
-            const subtotalSalarioEncargosAdicionais = salario + valorEncargos + totalAdicionais;
-            
-            // SUB TOTAL DOS INSUMOS E BENEFICIOS (Uniformes/EPIs + Benefícios + SST + Insumos)
+            // SUBTOTAL DOS INSUMOS E BENEFÍCIOS (já estão mensalizados)
             const subtotalInsumosBeneficios = totalUniformeEpi + totalBeneficios + totalSeguranca + totalInsumos;
             
-            // Calcular Despesas (Taxa Adm e Encargos Fiscais) com a nova lógica
+            // Despesas (Taxa Adm e Encargos Fiscais) – usa o novo subtotal
             const despesasResult = calcularDespesas(subtotalSalarioEncargosAdicionais, subtotalInsumosBeneficios);
             
             // Total dos Exames
@@ -2793,7 +2792,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             // TOTAL FINAL DA VAGA
             const totalFinalVaga = despesasResult.totalPrestacao + totalExames;
             
-            // Base para encargos fiscais (para exibição)
+            // Base para encargos fiscais (apenas para exibição)
             const baseEncargosFiscais = subtotalSalarioEncargosAdicionais + subtotalInsumosBeneficios + despesasResult.taxaAdm;
             
             // ========== MONTAR HTML DOS RESULTADOS ==========
@@ -2804,11 +2803,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </div>
             `;
             
-            if (totalAdicionais > 0) {
+            if (totalAdicionaisBrutos > 0) {
                 resultadosHTML += `
                     <div class="resultado-bloco">
-                        <span class="rotulo"><i class="fas fa-plus-circle"></i> Adicionais</span>
-                        <span class="valor">${formatarMoeda(totalAdicionais)}</span>
+                        <span class="rotulo"><i class="fas fa-plus-circle"></i> Adicionais (brutos)</span>
+                        <span class="valor">${formatarMoeda(totalAdicionaisBrutos)}</span>
                     </div>
                 `;
             }
@@ -2923,11 +2922,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
         
         // ========== RESTAURAR ADICIONAIS ==========
-        // IMPORTANTE: Fazer isso ANTES da primeira atualização de resultados
         if (dadosAdicionais) {
             console.log('🟢 RESTAURANDO ADICIONAIS:', dadosAdicionais);
             
-            // Forçar a expansão da seção para que os elementos existam
             const adicionaisContentElem = item.querySelector('.expandable-section:first-child .section-content');
             const adicionaisHeader = item.querySelector('.expandable-section:first-child .section-header');
             
@@ -2940,7 +2937,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
             
-            // Restaurar checkboxes
             const heCheck = adicionaisContent.querySelector('.he-check');
             const anCheck = adicionaisContent.querySelector('.an-check');
             const perCheck = adicionaisContent.querySelector('.per-check');
@@ -2948,32 +2944,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             const heHoras = adicionaisContent.querySelector('.he-horas');
             const anHoras = adicionaisContent.querySelector('.an-horas');
             
-            if (heCheck) {
-                heCheck.checked = dadosAdicionais.horasExtras === true;
-                console.log('✅ Restaurou horasExtras:', dadosAdicionais.horasExtras);
-            }
-            if (anCheck) {
-                anCheck.checked = dadosAdicionais.noturno === true;
-                console.log('✅ Restaurou noturno:', dadosAdicionais.noturno);
-            }
-            if (perCheck) {
-                perCheck.checked = dadosAdicionais.periculosidade === true;
-                console.log('✅ Restaurou periculosidade:', dadosAdicionais.periculosidade);
-            }
-            if (insCheck) {
-                insCheck.checked = dadosAdicionais.insalubridade === true;
-                console.log('✅ Restaurou insalubridade:', dadosAdicionais.insalubridade);
-            }
-            if (heHoras && dadosAdicionais.heHoras) {
-                heHoras.value = dadosAdicionais.heHoras;
-                console.log('✅ Restaurou heHoras:', dadosAdicionais.heHoras);
-            }
-            if (anHoras && dadosAdicionais.anHoras) {
-                anHoras.value = dadosAdicionais.anHoras;
-                console.log('✅ Restaurou anHoras:', dadosAdicionais.anHoras);
-            }
+            if (heCheck) heCheck.checked = dadosAdicionais.horasExtras === true;
+            if (anCheck) anCheck.checked = dadosAdicionais.noturno === true;
+            if (perCheck) perCheck.checked = dadosAdicionais.periculosidade === true;
+            if (insCheck) insCheck.checked = dadosAdicionais.insalubridade === true;
+            if (heHoras && dadosAdicionais.heHoras) heHoras.value = dadosAdicionais.heHoras;
+            if (anHoras && dadosAdicionais.anHoras) anHoras.value = dadosAdicionais.anHoras;
             
-            // Mostrar/esconder os conteúdos
             const heConteudo = adicionaisContent.querySelector('.he-conteudo');
             const anConteudo = adicionaisContent.querySelector('.an-conteudo');
             const perConteudo = adicionaisContent.querySelector('.per-conteudo');
@@ -2985,7 +2962,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (insConteudo) insConteudo.classList.toggle('hidden', !dadosAdicionais.insalubridade);
         }
         
-        // Primeira atualização dos resultados (já com os adicionais restaurados)
         atualizarResultados();
         
         return item;
