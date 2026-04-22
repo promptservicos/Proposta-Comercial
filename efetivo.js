@@ -17,6 +17,14 @@ const analytics = firebase.analytics();
 // ================== CONSTANTES ==================
 const DRAFT_KEY = 'proposta_efetivo_draft';
 
+// ========== FUNÇÃO AUXILIAR ESCAPE HTML ==========
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 // ================== INICIALIZAÇÃO ==================
 document.addEventListener('DOMContentLoaded', async function() {
     const container = document.getElementById('cargos-container');
@@ -187,12 +195,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         linha.appendChild(taxaDiv);
         item.appendChild(linha);
 
-        // ========== CONTAINER RECOLHÍVEL (apenas as seções internas – neste caso, vazio, mas mantemos para consistência) ==========
+        // ========== CONTAINER RECOLHÍVEL (para futuras expansões) ==========
         const innerContainer = document.createElement('div');
         innerContainer.className = 'cargo-inner-container';
-        // No sistema efetivo não há seções expansíveis, então deixamos vazio. 
-        // Se quiser, pode manter vazio ou remover – mas o container existe para futuras expansões.
-        // Para manter o padrão, deixamos vazio e oculto.
+        // Como não há seções expansíveis, deixamos vazio.
         item.appendChild(innerContainer);
 
         // Área de resultados (sempre visível)
@@ -335,19 +341,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         const btnTema = document.getElementById('btn-tema');
         const iconTema = btnTema?.querySelector('i');
         
-        // Se NÃO houver tema salvo, ou se o tema salvo for 'light', aplica o tema claro
         if (!temaSalvo || temaSalvo === 'light') {
             document.body.classList.add('light-mode');
             if (iconTema) {
                 iconTema.classList.remove('fa-moon');
                 iconTema.classList.add('fa-sun');
             }
-            // Salvar como 'light' se não houver tema salvo
             if (!temaSalvo) {
                 localStorage.setItem('tema_efetivo', 'light');
             }
         } else if (temaSalvo === 'dark') {
-            // Apenas se o tema salvo for 'dark', aplica o tema escuro
             document.body.classList.remove('light-mode');
             if (iconTema) {
                 iconTema.classList.remove('fa-sun');
