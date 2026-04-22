@@ -17,14 +17,6 @@ const analytics = firebase.analytics();
 // ================== CONSTANTES ==================
 const DRAFT_KEY = 'proposta_efetivo_draft';
 
-// ========== FUNÇÃO AUXILIAR ESCAPE HTML ==========
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
 // ================== INICIALIZAÇÃO ==================
 document.addEventListener('DOMContentLoaded', async function() {
     const container = document.getElementById('cargos-container');
@@ -130,10 +122,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     function criarCargoItem(cargo = '', quantidade = 1, salario = 0, taxa = 0.5) {
         const item = document.createElement('div');
         item.className = 'cargo-item';
-        
-        let isExpanded = true;
 
-        // Cabeçalho com botão toggle e botão remover
+        // Cabeçalho
         const header = document.createElement('div');
         header.className = 'cargo-header';
         header.innerHTML = `
@@ -141,18 +131,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <i class="fas fa-briefcase"></i>
                 <span>Cargo</span>
             </div>
-            <div class="cargo-header-buttons">
-                <button type="button" class="btn-toggle-cargo" title="Expandir/Retrair">
-                    <i class="fas fa-chevron-up"></i>
-                </button>
-                <button type="button" class="btn-remover" title="Remover cargo">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
-            </div>
+            <button type="button" class="btn-remover" title="Remover cargo">
+                <i class="fas fa-trash-alt"></i>
+            </button>
         `;
         item.appendChild(header);
 
-        // ========== LINHA DE CAMPOS BÁSICOS (sempre visível) ==========
+        // Linha de campos
         const linha = document.createElement('div');
         linha.className = 'cargo-linha';
 
@@ -160,7 +145,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         cargoDiv.className = 'campo-pequeno';
         cargoDiv.innerHTML = `
             <label><i class="fas fa-briefcase"></i> Cargo</label>
-            <input type="text" class="input-moderno cargo-nome" placeholder="Ex: Assistente" value="${escapeHtml(cargo)}">
+            <input type="text" class="input-moderno cargo-nome" placeholder="Ex: Assistente" value="${cargo}">
         `;
 
         const qtdDiv = document.createElement('div');
@@ -195,40 +180,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         linha.appendChild(taxaDiv);
         item.appendChild(linha);
 
-        // ========== CONTAINER RECOLHÍVEL (para futuras expansões) ==========
-        const innerContainer = document.createElement('div');
-        innerContainer.className = 'cargo-inner-container';
-        // Como não há seções expansíveis, deixamos vazio.
-        item.appendChild(innerContainer);
-
-        // Área de resultados (sempre visível)
+        // Área de resultados
         const resultadosDiv = document.createElement('div');
         resultadosDiv.className = 'cargo-resultados';
         item.appendChild(resultadosDiv);
 
-        // ========== FUNÇÃO DE TOGGLE ==========
-        const btnToggle = header.querySelector('.btn-toggle-cargo');
-        const toggleIcon = btnToggle.querySelector('i');
-
-        function toggleCargo() {
-            isExpanded = !isExpanded;
-            if (isExpanded) {
-                innerContainer.style.display = 'block';
-                toggleIcon.classList.remove('fa-chevron-down');
-                toggleIcon.classList.add('fa-chevron-up');
-            } else {
-                innerContainer.style.display = 'none';
-                toggleIcon.classList.remove('fa-chevron-up');
-                toggleIcon.classList.add('fa-chevron-down');
-            }
-        }
-
-        btnToggle.addEventListener('click', (e) => {
-            e.stopPropagation();
-            toggleCargo();
-        });
-
-        // ========== FUNÇÃO DE ATUALIZAÇÃO DOS RESULTADOS ==========
         function atualizarResultados() {
             const nome = item.querySelector('.cargo-nome').value.trim() || 'Cargo sem nome';
             const qtd = parseInt(item.querySelector('.cargo-quantidade').value) || 1;
@@ -254,7 +210,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             salvarRascunho();
         }
 
-        // ========== EVENT LISTENERS ==========
+        // Event listeners
         item.querySelector('.cargo-nome').addEventListener('input', atualizarResultados);
         item.querySelector('.cargo-quantidade').addEventListener('input', atualizarResultados);
         item.querySelector('.cargo-salario').addEventListener('input', function(e) {
@@ -341,16 +297,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         const btnTema = document.getElementById('btn-tema');
         const iconTema = btnTema?.querySelector('i');
         
+        // Se NÃO houver tema salvo, ou se o tema salvo for 'light', aplica o tema claro
         if (!temaSalvo || temaSalvo === 'light') {
             document.body.classList.add('light-mode');
             if (iconTema) {
                 iconTema.classList.remove('fa-moon');
                 iconTema.classList.add('fa-sun');
             }
+            // Salvar como 'light' se não houver tema salvo
             if (!temaSalvo) {
                 localStorage.setItem('tema_efetivo', 'light');
             }
         } else if (temaSalvo === 'dark') {
+            // Apenas se o tema salvo for 'dark', aplica o tema escuro
             document.body.classList.remove('light-mode');
             if (iconTema) {
                 iconTema.classList.remove('fa-sun');
