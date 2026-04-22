@@ -107,143 +107,498 @@ function formatarMoeda(valor) {
 
 // ========== FUNÇÃO PARA GERAR IMAGEM DA PROPOSTA DIRETAMENTE ==========
 async function gerarImagemProposta() {
-    // Mostrar indicador de carregamento
+// ========== FUNÇÃO PARA GERAR IMAGENS POR CARGO E TOTAL (ZIP) ==========
+async function gerarImagemProposta() {
     const btnBaixar = document.getElementById('btn-baixar-proposta');
     const textoOriginal = btnBaixar ? btnBaixar.innerHTML : '';
+    
     if (btnBaixar) {
-        btnBaixar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando imagem...';
+        btnBaixar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando imagens...';
         btnBaixar.disabled = true;
     }
     
     try {
-        // Criar um elemento temporário para a visualização
-        const elementoVisualizacao = document.createElement('div');
-        elementoVisualizacao.className = 'visualizacao-temporaria';
-        elementoVisualizacao.style.position = 'fixed';
-        elementoVisualizacao.style.left = '-9999px';
-        elementoVisualizacao.style.top = '-9999px';
-        elementoVisualizacao.style.backgroundColor = '#ffffff';
-        elementoVisualizacao.style.padding = '2rem';
-        elementoVisualizacao.style.borderRadius = '16px';
-        elementoVisualizacao.style.width = '800px';
-        elementoVisualizacao.style.maxWidth = '800px';
-        elementoVisualizacao.style.fontFamily = "'Inter', sans-serif";
-        
-        // Coletar dados da proposta atual
         const cliente = document.getElementById('cliente-nome').value || 'Não informado';
         const vendedor = document.getElementById('vendedor-nome').textContent || 'Não informado';
         const dataAtual = new Date().toLocaleDateString('pt-BR');
+        const cargos = document.querySelectorAll('.cargo-item');
         
-        // Coletar dados dos cargos
-        let cargosHTML = '';
-        let cargoIndex = 0;
-        let totalGeralProposta = 0;
+        console.log(`Total de cargos encontrados: ${cargos.length}`);
         
-        document.querySelectorAll('.cargo-item').forEach(item => {
-            cargoIndex++;
-            const nomeCargo = item.querySelector('.cargo-nome').value.trim() || 'Cargo sem nome';
-            const qtdVagas = parseInt(item.querySelector('.cargo-quantidade').value) || 1;
+        // Mapa para contar nomes de cargos repetidos
+        const nomeCount = new Map();
+        const nomesBase = [];
+        
+        for (let i = 0; i < cargos.length; i++) {
+            const cargo = cargos[i];
+            const cargoNomeBase = cargo.querySelector('.cargo-nome').value.trim() || `Cargo_${i + 1}`;
+            nomesBase.push(cargoNomeBase);
+            const count = nomeCount.get(cargoNomeBase) || 0;
+            nomeCount.set(cargoNomeBase, count + 1);
+        }
+        
+        // Função para obter os adicionais ativos de um cargo
+        function getAdicionaisAtivos(cargoItem) {
+            const adicionais = [];
+            const adicionaisContent = cargoItem.querySelector('.expandable-section:first-child .section-content');
             
-            // Pegar o TOTAL FINAL DA VAGA (já com multiplicação e acúmulo)
-            const totalVagaElem = item.querySelector('.total-prestacao .valor');
-            let totalVaga = 0;
+            if (adicionaisContent) {
+                const heCheck = adicionaisContent.querySelector('.he-check');
+                const anCheck = adicionaisContent.querySelector('.an-check');
+                const perCheck = adicionaisContent.querySelector('.per-check');
+                const insCheck = adicionaisContent.querySelector('.ins-check');
+                const acumuloCheck = adicionaisContent.querySelector('.acumulo-check');
+                
+                if (heCheck && heCheck.checked) {
+                    const horas = parseFloat(adicionaisContent.querySelector('.he-horas')?.value) || 0;
+                    if (horas > 0) adicionais.push('HORA EXTRA');
+                }
+                if (anCheck && anCheck.checked) {
+                    const horas = parseFloat(adicionaisContent.querySelector('.an-horas')?.value) || 0;
+                    if (horas > 0) adicionais.push('NOTURNO');
+                }
+                if (perCheck && perCheck.checked) adicionais.push('PERICULOSIDADE');
+                if (insCheck && insCheck.checked) adicionais.push('INSALUBRIDADE');
+                if (acumuloCheck && acumuloCheck.checked) {
+                    const qtd = parseInt(adicionaisContent.querySelector('.acumulo-quantidade')?.value) || 0;
+                    if (qtd > 0) adicionais.push(`ACÚMULO (${qtd} func.)`);
+                }
+            }
+            return adicionais;
+        }
+        
+        // Função melhorada para verificar se uma seção tem valores > 0
+        function secaoTemValores(secaoElement) {
+            if (!secaoElement) return false;
+            
+            // Verifica inputs de valores (text/number)
+            const inputs = secaoElement.querySelectorAll('input[type="text"], input[type="number"]');
+            for (const input of inputs) {
+                // Ignora inputs de quantidade/depreciação de uniformes/EPIs (já tratados pelos totais)
+                if (input.classList.contains('quantidade-uniforme') || 
+                    input.classList.contains('depreciacao-uniforme') ||
+                    input.classList.contains('quantidade-epi') ||
+                    input.classList.contains('depreciacao-epi')) {
+                    continue;
+                }
+                
+                let valor = 0;
+                if (input.type === 'text') {
+                    valor = parseFloat(input.value.replace(/\./g, '').replace(',', '.')) || 0;
+                } else if (input.type === 'number') {
+                    valor = parseFloat(input.value) || 0;
+                }
+                if (valor > 0) return true;
+            }
+            
+            // Verifica checkboxes marcados
+            const checkboxes = secaoElement.querySelectorAll('input[type="checkbox"]');
+            for (const cb of checkboxes) {
+                if (cb.checked) return true;
+            }
+            
+            // Verifica totais de uniformes/EPIs/exames
+            const uniformesTotal = secaoElement.querySelector('.uniformes-total span');
+            const episTotal = secaoElement.querySelector('.epis-total span');
+            const examesTotal = secaoElement.querySelector('.exames-total span');
+            const insumosTotal = secaoElement.querySelector('.insumos-total span');
+            
+            if (uniformesTotal) {
+                const valor = parseFloat(uniformesTotal.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
+                if (valor > 0) return true;
+            }
+            if (episTotal) {
+                const valor = parseFloat(episTotal.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
+                if (valor > 0) return true;
+            }
+            if (examesTotal) {
+                const valor = parseFloat(examesTotal.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
+                if (valor > 0) return true;
+            }
+            if (insumosTotal) {
+                const valor = parseFloat(insumosTotal.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
+                if (valor > 0) return true;
+            }
+            
+            // Verifica se existe algum benefício personalizado ou exame personalizado com valor
+            const customItems = secaoElement.querySelectorAll('.beneficio-custom-card, .exame-custom-item');
+            for (const item of customItems) {
+                const valorInput = item.querySelector('.beneficio-custom-valor, .exame-custom-preco-input');
+                if (valorInput) {
+                    const valor = parseFloat(valorInput.value.replace(/\./g, '').replace(',', '.')) || 0;
+                    if (valor > 0) return true;
+                }
+                const checkbox = item.querySelector('.exame-custom-checkbox');
+                if (checkbox && checkbox.checked) return true;
+            }
+            
+            return false;
+        }
+        
+        // Função para clonar e limpar seções vazias
+        function cloneCargoLimpo(cargoOriginal) {
+            const clone = cargoOriginal.cloneNode(true);
+            
+            // Índices das seções: 0: Adicionais, 1: Uniformes/EPIs, 2: Benefícios, 3: Segurança, 4: Exames, 5: Insumos, 6: Despesas
+            const secoes = [
+                { selector: '.expandable-section:nth-child(2)', nome: 'Uniformes e EPIs' },
+                { selector: '.expandable-section:nth-child(3)', nome: 'Benefícios' },
+                { selector: '.expandable-section:nth-child(4)', nome: 'Segurança' },
+                { selector: '.exames-section', nome: 'Exames' },
+                { selector: '.expandable-section:nth-child(6)', nome: 'Insumos' },
+                { selector: '.despesas-section', nome: 'Despesas' }
+            ];
+            
+            secoes.forEach(secao => {
+                const elemento = clone.querySelector(secao.selector);
+                if (elemento && !secaoTemValores(elemento)) {
+                    elemento.style.display = 'none';
+                }
+            });
+            
+            // Seção de adicionais (primeira)
+            const adicionaisSection = clone.querySelector('.expandable-section:first-child');
+            if (adicionaisSection && !secaoTemValores(adicionaisSection)) {
+                adicionaisSection.style.display = 'none';
+            }
+            
+            return clone;
+        }
+        
+        // Calcular total geral da proposta
+        let totalGeralProposta = 0;
+        cargos.forEach(cargo => {
+            const totalVagaElem = cargo.querySelector('.total-prestacao .valor');
             if (totalVagaElem) {
                 const totalText = totalVagaElem.textContent;
-                totalVaga = parseFloat(totalText.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
+                const totalValor = parseFloat(totalText.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
+                totalGeralProposta += totalValor;
             }
-            
-            totalGeralProposta += totalVaga;
-            
-            // Calcular valor por vaga (sem multiplicação)
-            let valorPorVaga = totalVaga;
-            if (qtdVagas > 1) {
-                valorPorVaga = totalVaga / qtdVagas;
-            }
-            
-            cargosHTML += `
-                <div class="vis-cargo" style="background: #fff; border: 1px solid #e0e0e0; border-radius: 16px; margin-bottom: 1.5rem; overflow: hidden;">
-                    <div class="vis-cargo-header" style="background: #f8f8f8; padding: 1rem; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center;">
-                        <h3 style="color: #c10404; margin: 0; font-size: 1.1rem;">${cargoIndex}. ${escapeHtml(nomeCargo)}</h3>
-                        <span class="vis-quantidade" style="background: #c10404; color: #fff; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem;">${qtdVagas} vaga${qtdVagas > 1 ? 's' : ''}</span>
-                    </div>
-                    <div class="vis-resumo" style="padding: 1rem;">
-                        <div class="vis-resumo-item" style="padding: 0.5rem 0; display: flex; justify-content: space-between; border-bottom: 1px dashed #eee;">
-                            <strong>Valor por vaga:</strong>
-                            <span>${formatarMoeda(valorPorVaga)}</span>
-                        </div>
-                        <div class="vis-resumo-item vis-destaque" style="padding: 0.5rem 0; display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: bold; color: #c10404; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid #ddd;">
-                            <strong>Total (${qtdVagas} vaga${qtdVagas > 1 ? 's' : ''}):</strong>
-                            <span>${formatarMoeda(totalVaga)}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
         });
         
-        // Construir HTML da visualização
-        elementoVisualizacao.innerHTML = `
-            <div class="visualizacao-resumida" style="max-width: 800px; margin: 0 auto;">
-                <div class="vis-header" style="text-align: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #c10404;">
-                    <i class="fas fa-chart-line" style="font-size: 2rem; color: #c10404;"></i>
-                    <h2 style="color: #c10404; margin: 0.5rem 0;">Proposta Comercial</h2>
-                    <p class="vis-subtitle" style="color: #666; font-size: 0.9rem;">Prompt Serviços - Contrato Terceirizado</p>
+        const wasLightMode = document.body.classList.contains('light-mode');
+        if (!wasLightMode) {
+            document.body.classList.add('light-mode');
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        const zip = new JSZip();
+        const clienteNome = cliente.replace(/[^a-zA-Z0-9]/g, '_');
+        const nomeContador = new Map();
+        
+        // ========== 1. GERAR IMAGEM DO TOTAL DA PROPOSTA ==========
+        console.log('Gerando imagem do total da proposta...');
+        const totalElemento = document.createElement('div');
+        totalElemento.style.position = 'fixed';
+        totalElemento.style.left = '-9999px';
+        totalElemento.style.top = '-9999px';
+        totalElemento.style.backgroundColor = '#ffffff';
+        totalElemento.style.padding = '30px';
+        totalElemento.style.borderRadius = '16px';
+        totalElemento.style.width = '600px';
+        totalElemento.style.fontFamily = "'Inter', 'Segoe UI', sans-serif";
+        
+        totalElemento.innerHTML = `
+            <div style="text-align: center;">
+                <div style="margin-bottom: 30px;">
+                    <div style="background: #c10404; width: 60px; height: 60px; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto;">
+                        <i class="fas fa-chart-line" style="font-size: 30px; color: #fff;"></i>
+                    </div>
+                    <h1 style="color: #c10404; margin: 0; font-size: 28px;">Prompt Serviços</h1>
+                    <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">Proposta de Contrato Terceirizado</p>
                 </div>
                 
-                <div class="vis-info" style="background: #f5f5f5; padding: 1rem; border-radius: 12px; margin-bottom: 2rem;">
-                    <div class="vis-info-item" style="display: flex; justify-content: space-between; padding: 0.3rem 0;">
-                        <span class="vis-label" style="font-weight: 600; color: #666;">Cliente:</span>
-                        <span class="vis-value" style="color: #333;">${escapeHtml(cliente)}</span>
+                <div style="background: #f5f5f5; padding: 15px; border-radius: 12px; margin-bottom: 30px; text-align: left;">
+                    <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e0e0e0;">
+                        <span style="font-weight: 600; color: #666;">Cliente:</span>
+                        <span style="color: #333; font-weight: 500;">${escapeHtml(cliente)}</span>
                     </div>
-                    <div class="vis-info-item" style="display: flex; justify-content: space-between; padding: 0.3rem 0;">
-                        <span class="vis-label" style="font-weight: 600; color: #666;">Vendedor:</span>
-                        <span class="vis-value" style="color: #333;">${escapeHtml(vendedor)}</span>
+                    <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e0e0e0;">
+                        <span style="font-weight: 600; color: #666;">Vendedor:</span>
+                        <span style="color: #333;">${escapeHtml(vendedor)}</span>
                     </div>
-                    <div class="vis-info-item" style="display: flex; justify-content: space-between; padding: 0.3rem 0;">
-                        <span class="vis-label" style="font-weight: 600; color: #666;">Data:</span>
-                        <span class="vis-value" style="color: #333;">${escapeHtml(dataAtual)}</span>
+                    <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+                        <span style="font-weight: 600; color: #666;">Data de Emissão:</span>
+                        <span style="color: #333;">${escapeHtml(dataAtual)}</span>
                     </div>
                 </div>
                 
-                ${cargosHTML}
-                
-                <div class="vis-total-geral" style="background: linear-gradient(135deg, #c10404 0%, #a00303 100%); color: #fff; padding: 1.5rem; border-radius: 16px; text-align: center; margin: 2rem 0; display: flex; justify-content: space-between; align-items: center; font-size: 1.2rem;">
-                    <strong>TOTAL DA PROPOSTA:</strong>
-                    <span style="font-size: 1.8rem; font-weight: bold;">${formatarMoeda(totalGeralProposta)}</span>
+                <div style="background: linear-gradient(135deg, #c10404 0%, #8b0303 100%); color: #fff; padding: 25px; border-radius: 16px; margin-bottom: 30px;">
+                    <div style="font-size: 16px; opacity: 0.9; margin-bottom: 10px;">TOTAL DA PROPOSTA</div>
+                    <div style="font-size: 48px; font-weight: bold;">${formatarMoeda(totalGeralProposta)}</div>
                 </div>
                 
-                <div class="vis-footer" style="text-align: center; padding: 1rem; color: #888; font-size: 0.8rem; border-top: 1px solid #e0e0e0; margin-top: 1rem;">
-                    <p>Documento gerado em ${escapeHtml(dataAtual)}</p>
+                <div style="border-top: 1px solid #e0e0e0; padding-top: 20px; margin-top: 20px;">
+                    <div style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: #c10404;">${cargos.length}</div>
+                            <div style="font-size: 11px; color: #888;">Cargo(s)</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: #c10404;">${Array.from(cargos).reduce((total, cargo) => {
+                                const qtd = parseInt(cargo.querySelector('.cargo-quantidade')?.value) || 1;
+                                return total + qtd;
+                            }, 0)}</div>
+                            <div style="font-size: 11px; color: #888;">Vaga(s)</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 30px; text-align: center; padding-top: 15px; border-top: 1px solid #e0e0e0; font-size: 9px; color: #888;">
+                    Documento gerado em ${dataAtual} - Proposta válida por 30 dias
                 </div>
             </div>
         `;
         
-        document.body.appendChild(elementoVisualizacao);
-        
-        // Usar html2canvas para gerar a imagem
-        const canvas = await html2canvas(elementoVisualizacao, {
+        document.body.appendChild(totalElemento);
+        const totalCanvas = await html2canvas(totalElemento, {
             scale: 2,
             backgroundColor: '#ffffff',
             logging: false,
             useCORS: true,
             allowTaint: false
         });
+        document.body.removeChild(totalElemento);
         
-        // Remover o elemento temporário
-        document.body.removeChild(elementoVisualizacao);
+        const totalBlob = await new Promise(resolve => totalCanvas.toBlob(resolve, 'image/png'));
+        zip.file(`${clienteNome}_TOTAL_DA_PROPOSTA.png`, totalBlob);
         
-        // Criar link para download
+        // ========== 2. GERAR IMAGEM PARA CADA CARGO ==========
+        const promessasImagens = [];
+        
+        for (let i = 0; i < cargos.length; i++) {
+            const cargo = cargos[i];
+            const cargoNomeBase = cargo.querySelector('.cargo-nome').value.trim() || `Cargo_${i + 1}`;
+            
+            const ocorrenciaAtual = (nomeContador.get(cargoNomeBase) || 0) + 1;
+            nomeContador.set(cargoNomeBase, ocorrenciaAtual);
+            const totalOcorrencias = nomeCount.get(cargoNomeBase) || 1;
+            const numeroSufixo = totalOcorrencias > 1 ? ` (${ocorrenciaAtual})` : '';
+            
+            const adicionais = getAdicionaisAtivos(cargo);
+            const adicionaisSufixo = adicionais.length > 0 ? ` + ${adicionais.join(' + ')}` : '';
+            
+            const nomeCompleto = `${cargoNomeBase}${numeroSufixo}${adicionaisSufixo}`;
+            const nomeArquivo = `${clienteNome}_${nomeCompleto.replace(/[^a-zA-Z0-9À-ú+()]/g, '_')}.png`;
+            
+            console.log(`Preparando imagem ${i + 1}/${cargos.length}: ${nomeCompleto}`);
+            
+            if (btnBaixar) {
+                btnBaixar.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Preparando ${i + 1}/${cargos.length}: ${nomeCompleto.substring(0, 25)}...`;
+            }
+            
+            const promise = (async () => {
+                try {
+                    const cloneCargo = cloneCargoLimpo(cargo);
+                    
+                    // ========== EXPANDIR TODAS AS SEÇÕES ==========
+                    const todasSecoes = cloneCargo.querySelectorAll('.expandable-section, .exames-section, .despesas-section');
+                    todasSecoes.forEach(secao => {
+                        const content = secao.querySelector('.section-content, .exames-content, .despesas-content');
+                        if (content) {
+                            content.classList.remove('collapsed');
+                            content.style.display = 'block';
+                        }
+                        const toggleIcon = secao.querySelector('.section-toggle, .exames-toggle, .despesas-toggle');
+                        if (toggleIcon) {
+                            toggleIcon.classList.remove('fa-chevron-down');
+                            toggleIcon.classList.add('fa-chevron-up');
+                        }
+                    });
+                    
+                    // ========== EXPANDIR BOXES DE EXAMES, UNIFORMES E EPIs (mantê-los fechados) ==========
+                    const examesBoxes = cloneCargo.querySelectorAll('.exames-box');
+                    examesBoxes.forEach(box => {
+                        const dropdownMenu = box.querySelector('.dropdown-menu');
+                        if (dropdownMenu) {
+                            dropdownMenu.classList.remove('open');
+                            dropdownMenu.style.display = 'none';
+                        }
+                        const headerIcon = box.querySelector('.box-header i');
+                        if (headerIcon) {
+                            headerIcon.classList.remove('fa-chevron-up');
+                            headerIcon.classList.add('fa-chevron-down');
+                        }
+                    });
+                    
+                    const uniformesBoxes = cloneCargo.querySelectorAll('.uniformes-box, .epis-box');
+                    uniformesBoxes.forEach(box => {
+                        const dropdownMenu = box.querySelector('.dropdown-menu');
+                        if (dropdownMenu) {
+                            dropdownMenu.classList.remove('open');
+                            dropdownMenu.style.display = 'none';
+                        }
+                        const headerIcon = box.querySelector('.box-header i');
+                        if (headerIcon) {
+                            headerIcon.classList.remove('fa-chevron-up');
+                            headerIcon.classList.add('fa-chevron-down');
+                        }
+                    });
+                    
+                    // Criar elemento para imagem
+                    const elementoImagem = document.createElement('div');
+                    elementoImagem.style.position = 'fixed';
+                    elementoImagem.style.left = '-9999px';
+                    elementoImagem.style.top = '-9999px';
+                    elementoImagem.style.backgroundColor = '#ffffff';
+                    elementoImagem.style.padding = '20px';
+                    elementoImagem.style.borderRadius = '16px';
+                    elementoImagem.style.width = '1000px';
+                    elementoImagem.style.fontFamily = "'Inter', 'Segoe UI', sans-serif";
+                    
+                    elementoImagem.innerHTML = `
+                        <div style="margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #c10404;">
+                                <div>
+                                    <h1 style="color: #c10404; margin: 0; font-size: 20px;">Prompt Serviços</h1>
+                                    <p style="color: #666; margin: 0; font-size: 11px;">Proposta de Contrato Terceirizado</p>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 10px; color: #888;">Data: ${dataAtual}</div>
+                                    <div style="font-size: 10px; color: #888;">Vendedor: ${vendedor}</div>
+                                </div>
+                            </div>
+                            <div style="background: #f5f5f5; padding: 8px 12px; border-radius: 8px;">
+                                <strong>Cliente:</strong> ${cliente}
+                            </div>
+                        </div>
+                        ${cloneCargo.outerHTML}
+                        <div style="margin-top: 20px; text-align: center; padding-top: 10px; border-top: 1px solid #e0e0e0; font-size: 9px; color: #888;">
+                            Documento gerado em ${dataAtual} - Proposta válida por 30 dias
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(elementoImagem);
+                    
+                    // Ajustar estilos
+                    const cargoCloneElem = elementoImagem.querySelector('.cargo-item');
+                    if (cargoCloneElem) {
+                        cargoCloneElem.style.margin = '0';
+                        cargoCloneElem.style.boxShadow = 'none';
+                    }
+                    
+                    // Garantir que todas as seções de conteúdo estão visíveis
+                    const allContents = elementoImagem.querySelectorAll('.section-content, .exames-content, .despesas-content');
+                    allContents.forEach(content => {
+                        if (content.parentElement?.style.display !== 'none') {
+                            content.style.display = 'block';
+                            content.classList.remove('collapsed');
+                        }
+                    });
+                    
+                    // Garantir que os totais de exames estão visíveis
+                    const examesTotals = elementoImagem.querySelectorAll('.exames-total, .exames-resumo, .exames-total-geral');
+                    examesTotals.forEach(total => {
+                        if (total) total.style.display = 'block';
+                    });
+                    
+                    // Aumentar altura dos inputs
+                    const allInputs = elementoImagem.querySelectorAll('input');
+                    allInputs.forEach(input => {
+                        input.style.minHeight = '36px';
+                        input.style.height = 'auto';
+                        input.style.padding = '8px 12px';
+                    });
+                    
+                    const smallInputs = elementoImagem.querySelectorAll('.beneficio-campo input, .seguranca-campo input, .insumo-campo input');
+                    smallInputs.forEach(input => {
+                        input.style.minHeight = '34px';
+                        input.style.height = 'auto';
+                        input.style.padding = '6px 10px';
+                    });
+                    
+                    // Esconder todos os dropdowns abertos
+                    const imagemDropdowns = elementoImagem.querySelectorAll('.dropdown-menu');
+                    imagemDropdowns.forEach(dropdown => {
+                        dropdown.style.display = 'none';
+                        dropdown.classList.remove('open');
+                    });
+                    
+                    elementoImagem.style.backgroundColor = '#ffffff';
+                    elementoImagem.style.color = '#333333';
+                    
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    
+                    const canvas = await html2canvas(elementoImagem, {
+                        scale: 1.5,
+                        backgroundColor: '#ffffff',
+                        logging: false,
+                        useCORS: true,
+                        allowTaint: false
+                    });
+                    
+                    document.body.removeChild(elementoImagem);
+                    
+                    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                    zip.file(nomeArquivo, blob);
+                    
+                    console.log(`✅ Imagem ${i + 1}/${cargos.length} adicionada ao ZIP: ${nomeArquivo}`);
+                    return { success: true, index: i, nome: nomeCompleto };
+                    
+                } catch (cargoError) {
+                    console.error(`❌ Erro no cargo ${i + 1}: ${cargoNomeBase}`, cargoError);
+                    return { success: false, index: i, nome: cargoNomeBase, erro: cargoError.message };
+                }
+            })();
+            
+            promessasImagens.push(promise);
+        }
+        
+        console.log('Aguardando processamento de todas as imagens...');
+        if (btnBaixar) {
+            btnBaixar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Finalizando imagens...';
+        }
+        
+        const resultados = await Promise.all(promessasImagens);
+        const sucessos = resultados.filter(r => r.success).length;
+        const falhas = resultados.filter(r => !r.success).length;
+        
+        console.log(`Processamento concluído: ${sucessos} sucessos, ${falhas} falhas`);
+        
+        if (!wasLightMode) {
+            document.body.classList.remove('light-mode');
+        }
+        
+        console.log('Gerando arquivo ZIP...');
+        if (btnBaixar) {
+            btnBaixar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Compactando arquivos...';
+        }
+        
+        const content = await zip.generateAsync({ 
+            type: "blob",
+            compression: "DEFLATE",
+            compressionOptions: { level: 1 }
+        });
+        
+        console.log(`ZIP gerado com ${Object.keys(zip.files).length} arquivos`);
+        
         const link = document.createElement('a');
-        const clienteNome = cliente.replace(/[^a-zA-Z0-9]/g, '_');
-        const dataAtualFormatada = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-        link.download = `Proposta_${clienteNome}_${dataAtualFormatada}.png`;
-        link.href = canvas.toDataURL('image/png');
+        link.download = `Propostas_${clienteNome}_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.zip`;
+        link.href = URL.createObjectURL(content);
         link.click();
+        URL.revokeObjectURL(link.href);
+        
+        let mensagem = `✅ ${sucessos + 1} imagem(ns) gerada(s) com sucesso!\n- 1 imagem com o TOTAL da proposta\n- ${sucessos} imagem(ns) com detalhes dos cargos\n\n📦 Arquivo ZIP salvo na pasta Downloads`;
+        
+        if (sucessos !== cargos.length) {
+            mensagem += `\n\n⚠️ Apenas ${sucessos} de ${cargos.length} cargos foram gerados.`;
+        }
+        
+        if (falhas > 0) {
+            mensagem += `\n\n❌ ${falhas} cargo(s) falharam:\n`;
+            resultados.filter(r => !r.success).forEach(erro => {
+                mensagem += `- Cargo ${erro.index + 1}: ${erro.nome}\n`;
+            });
+        }
+        
+        alert(mensagem);
         
     } catch (error) {
-        console.error('Erro ao gerar imagem:', error);
-        alert('Erro ao gerar imagem. Tente novamente.');
+        console.error('Erro ao gerar imagens:', error);
+        alert('Erro ao gerar imagens. Tente novamente.\n' + error.message);
     } finally {
-        // Restaurar botão
+        const btnBaixar = document.getElementById('btn-baixar-proposta');
         if (btnBaixar) {
             btnBaixar.innerHTML = textoOriginal;
             btnBaixar.disabled = false;
