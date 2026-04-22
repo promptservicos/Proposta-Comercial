@@ -2465,7 +2465,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         const item = document.createElement('div');
         item.className = 'cargo-item';
         
-        // Estado do cargo (expandido por padrão)
         let isExpanded = true;
         
         // Header do cargo com botão toggle
@@ -2487,18 +2486,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         `;
         item.appendChild(header);
         
-        // Container para as seções internas (recolhível)
-        const innerContainer = document.createElement('div');
-        innerContainer.className = 'cargo-inner-container';
-        item.appendChild(innerContainer);
-        
-        // Linha de campos básicos (sempre visível, mas dentro do container recolhível)
+        // ========== LINHA DE CAMPOS BÁSICOS (sempre visível) ==========
         const linha = document.createElement('div');
         linha.className = 'cargo-linha';
         linha.innerHTML = `
             <div class="campo-pequeno">
                 <label><i class="fas fa-briefcase"></i> Cargo</label>
-                <input type="text" class="input-moderno cargo-nome" placeholder="Ex: Assistente" value="${cargo}">
+                <input type="text" class="input-moderno cargo-nome" placeholder="Ex: Assistente" value="${escapeHtml(cargo)}">
             </div>
             <div class="campo-pequeno">
                 <label><i class="fas fa-hashtag"></i> Quant.</label>
@@ -2516,7 +2510,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </div>
             </div>
         `;
-        innerContainer.appendChild(linha);
+        item.appendChild(linha);
+        
+        // ========== CONTAINER RECOLHÍVEL (apenas as seções internas) ==========
+        const innerContainer = document.createElement('div');
+        innerContainer.className = 'cargo-inner-container';
+        item.appendChild(innerContainer);
         
         // Seção Adicionais
         const adicionaisHtml = `
@@ -2622,12 +2621,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         const { section: despesasSection, calcularDespesas, getDados: getDespesasDados } = criarDespesasSection(item, dadosDespesas);
         innerContainer.appendChild(despesasSection);
         
-        // Resultados (sempre visível, fora do container recolhível)
+        // Resultados (sempre visível)
         const resultadosDiv = document.createElement('div');
         resultadosDiv.className = 'cargo-resultados';
         item.appendChild(resultadosDiv);
         
-        // Armazenar referências
+        // Armazenar referências para uso nas funções
         item.__getUniformesDados = getUniformesDados;
         item.__getBeneficiosDados = getBeneficiosDados;
         item.__getSegurancaDados = getSegurancaDados;
@@ -2635,7 +2634,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         item.__getInsumosDados = getInsumosDados;
         item.__getDespesasDados = getDespesasDados;
         
-        // ========== FUNÇÃO DE TOGGLE ==========
+        // ========== FUNÇÃO DE TOGGLE (afeta apenas o innerContainer) ==========
         const btnToggle = header.querySelector('.btn-toggle-cargo');
         const toggleIcon = btnToggle.querySelector('i');
         
@@ -2657,7 +2656,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             toggleCargo();
         });
         
-        // ========== FUNÇÃO DE ATUALIZAÇÃO DOS RESULTADOS (cópia fiel da sua lógica existente) ==========
+        // ========== FUNÇÃO DE ATUALIZAÇÃO DOS RESULTADOS ==========
         function atualizarResultados() {
             const qtdTotalFuncionarios = parseInt(item.querySelector('.cargo-quantidade').value) || 1;
             const salarioInput = item.querySelector('.cargo-salario').value;
@@ -2742,7 +2741,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             if (insConteudo) insConteudo.classList.toggle('hidden', !(insCheck && insCheck.checked));
             
-            // Acúmulo
+            // Acúmulo de Função
             const acumuloCheck = adicionaisContent.querySelector('.acumulo-check');
             const acumuloConteudo = adicionaisContent.querySelector('.acumulo-conteudo');
             const acumuloResultado = adicionaisContent.querySelector('.acumulo-resultado');

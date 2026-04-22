@@ -3006,3 +3006,11 @@ body.light-mode .btn-toggle-cargo {
 body.light-mode .btn-toggle-cargo:hover {
     background: rgba(193, 4, 4, 0.1);
 }
+
+.cargo-linha {
+    margin-bottom: 1rem;
+}
+
+.cargo-inner-container {
+    transition: all 0.3s ease;
+}
