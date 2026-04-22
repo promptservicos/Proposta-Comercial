@@ -105,8 +105,6 @@ function formatarMoeda(valor) {
     return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-// ========== FUNÇÃO PARA GERAR IMAGEM DA PROPOSTA DIRETAMENTE ==========
-async function gerarImagemProposta() {
 // ========== FUNÇÃO PARA GERAR IMAGENS POR CARGO E TOTAL (ZIP) ==========
 async function gerarImagemProposta() {
     const btnBaixar = document.getElementById('btn-baixar-proposta');
