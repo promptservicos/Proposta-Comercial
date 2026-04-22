@@ -122,8 +122,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     function criarCargoItem(cargo = '', quantidade = 1, salario = 0, taxa = 0.5) {
         const item = document.createElement('div');
         item.className = 'cargo-item';
+        
+        let isExpanded = true;
 
-        // Cabeçalho
+        // Cabeçalho com botão toggle e botão remover
         const header = document.createElement('div');
         header.className = 'cargo-header';
         header.innerHTML = `
@@ -131,13 +133,18 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <i class="fas fa-briefcase"></i>
                 <span>Cargo</span>
             </div>
-            <button type="button" class="btn-remover" title="Remover cargo">
-                <i class="fas fa-trash-alt"></i>
-            </button>
+            <div class="cargo-header-buttons">
+                <button type="button" class="btn-toggle-cargo" title="Expandir/Retrair">
+                    <i class="fas fa-chevron-up"></i>
+                </button>
+                <button type="button" class="btn-remover" title="Remover cargo">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
         `;
         item.appendChild(header);
 
-        // Linha de campos
+        // ========== LINHA DE CAMPOS BÁSICOS (sempre visível) ==========
         const linha = document.createElement('div');
         linha.className = 'cargo-linha';
 
@@ -145,7 +152,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         cargoDiv.className = 'campo-pequeno';
         cargoDiv.innerHTML = `
             <label><i class="fas fa-briefcase"></i> Cargo</label>
-            <input type="text" class="input-moderno cargo-nome" placeholder="Ex: Assistente" value="${cargo}">
+            <input type="text" class="input-moderno cargo-nome" placeholder="Ex: Assistente" value="${escapeHtml(cargo)}">
         `;
 
         const qtdDiv = document.createElement('div');
@@ -180,11 +187,42 @@ document.addEventListener('DOMContentLoaded', async function() {
         linha.appendChild(taxaDiv);
         item.appendChild(linha);
 
-        // Área de resultados
+        // ========== CONTAINER RECOLHÍVEL (apenas as seções internas – neste caso, vazio, mas mantemos para consistência) ==========
+        const innerContainer = document.createElement('div');
+        innerContainer.className = 'cargo-inner-container';
+        // No sistema efetivo não há seções expansíveis, então deixamos vazio. 
+        // Se quiser, pode manter vazio ou remover – mas o container existe para futuras expansões.
+        // Para manter o padrão, deixamos vazio e oculto.
+        item.appendChild(innerContainer);
+
+        // Área de resultados (sempre visível)
         const resultadosDiv = document.createElement('div');
         resultadosDiv.className = 'cargo-resultados';
         item.appendChild(resultadosDiv);
 
+        // ========== FUNÇÃO DE TOGGLE ==========
+        const btnToggle = header.querySelector('.btn-toggle-cargo');
+        const toggleIcon = btnToggle.querySelector('i');
+
+        function toggleCargo() {
+            isExpanded = !isExpanded;
+            if (isExpanded) {
+                innerContainer.style.display = 'block';
+                toggleIcon.classList.remove('fa-chevron-down');
+                toggleIcon.classList.add('fa-chevron-up');
+            } else {
+                innerContainer.style.display = 'none';
+                toggleIcon.classList.remove('fa-chevron-up');
+                toggleIcon.classList.add('fa-chevron-down');
+            }
+        }
+
+        btnToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleCargo();
+        });
+
+        // ========== FUNÇÃO DE ATUALIZAÇÃO DOS RESULTADOS ==========
         function atualizarResultados() {
             const nome = item.querySelector('.cargo-nome').value.trim() || 'Cargo sem nome';
             const qtd = parseInt(item.querySelector('.cargo-quantidade').value) || 1;
@@ -210,7 +248,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             salvarRascunho();
         }
 
-        // Event listeners
+        // ========== EVENT LISTENERS ==========
         item.querySelector('.cargo-nome').addEventListener('input', atualizarResultados);
         item.querySelector('.cargo-quantidade').addEventListener('input', atualizarResultados);
         item.querySelector('.cargo-salario').addEventListener('input', function(e) {
