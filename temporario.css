@@ -2935,3 +2935,47 @@ input[type="checkbox"] {
     min-height: 18px !important;
     height: 18px !important;
 }
+
+/* Botão toggle do cargo */
+.cargo-header-buttons {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.btn-toggle-cargo {
+    background: rgba(30, 30, 30, 0.8);
+    border: 1px solid rgba(193, 4, 4, 0.3);
+    color: #c10404;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 1rem;
+}
+
+.btn-toggle-cargo:hover {
+    border-color: #c10404;
+    background-color: rgba(193, 4, 4, 0.2);
+    transform: scale(1.05);
+}
+
+/* Container interno que pode ser recolhido */
+.cargo-inner-container {
+    transition: all 0.3s ease;
+}
+
+/* Modo claro */
+body.light-mode .btn-toggle-cargo {
+    background: #f0f0f0;
+    border: 1px solid rgba(193, 4, 4, 0.4);
+    color: #c10404;
+}
+
+body.light-mode .btn-toggle-cargo:hover {
+    background: rgba(193, 4, 4, 0.1);
+}

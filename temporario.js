@@ -2555,6 +2555,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         const item = document.createElement('div');
         item.className = 'cargo-item';
         
+        let isExpanded = true;
+        
+        // Header do cargo com botão toggle
         const header = document.createElement('div');
         header.className = 'cargo-header';
         header.innerHTML = `
@@ -2562,18 +2565,24 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <i class="fas fa-briefcase"></i>
                 <span>Cargo</span>
             </div>
-            <button type="button" class="btn-remover" title="Remover cargo">
-                <i class="fas fa-trash-alt"></i>
-            </button>
+            <div class="cargo-header-buttons">
+                <button type="button" class="btn-toggle-cargo" title="Expandir/Retrair">
+                    <i class="fas fa-chevron-up"></i>
+                </button>
+                <button type="button" class="btn-remover" title="Remover cargo">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
         `;
         item.appendChild(header);
         
+        // ========== LINHA DE CAMPOS BÁSICOS (sempre visível) ==========
         const linha = document.createElement('div');
         linha.className = 'cargo-linha';
         linha.innerHTML = `
             <div class="campo-pequeno">
                 <label><i class="fas fa-briefcase"></i> Cargo</label>
-                <input type="text" class="input-moderno cargo-nome" placeholder="Ex: Assistente" value="${cargo}">
+                <input type="text" class="input-moderno cargo-nome" placeholder="Ex: Assistente" value="${escapeHtml(cargo)}">
             </div>
             <div class="campo-pequeno">
                 <label><i class="fas fa-hashtag"></i> Quant.</label>
@@ -2593,6 +2602,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         `;
         item.appendChild(linha);
         
+        // ========== CONTAINER RECOLHÍVEL (apenas as seções internas) ==========
+        const innerContainer = document.createElement('div');
+        innerContainer.className = 'cargo-inner-container';
+        item.appendChild(innerContainer);
+        
+        // Seção Adicionais
         const adicionaisHtml = `
             <div class="adicionais-grid">
                 <div class="adicional-card">
@@ -2653,32 +2668,39 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </div>
             </div>
         `;
-        
         const { section: adicionaisSection, updateSummary: updateAdicionaisSummary, content: adicionaisContent } = criarSecaoExpansivel('Adicionais', 'fa-bolt', adicionaisHtml, true);
-        item.appendChild(adicionaisSection);
+        innerContainer.appendChild(adicionaisSection);
         
+        // Seção Uniformes e EPIs
         const { section: uniformesSection, atualizarTotais: atualizarUniformesTotais, getDados: getUniformesDados } = criarUniformesEpisSection(item, dadosUniformes, dadosEpis);
-        item.appendChild(uniformesSection);
+        innerContainer.appendChild(uniformesSection);
         
+        // Seção Benefícios
         const { section: beneficiosSection, calcularTotal: calcularBeneficios, getDados: getBeneficiosDados } = criarBeneficiosSection(item, dadosBeneficios, dadosBeneficiosPersonalizados || []);
-        item.appendChild(beneficiosSection);
+        innerContainer.appendChild(beneficiosSection);
         
+        // Seção Segurança
         const { section: segurancaSection, calcularTotal: calcularSeguranca, getDados: getSegurancaDados } = criarSegurancaSection(item, dadosSeguranca);
-        item.appendChild(segurancaSection);
+        innerContainer.appendChild(segurancaSection);
         
+        // Seção Insumos
         const { section: insumosSection, calcularTotal: calcularInsumos, getDados: getInsumosDados } = criarInsumosSection(item, dadosInsumos);
-        item.appendChild(insumosSection);
+        innerContainer.appendChild(insumosSection);
         
+        // Seção Despesas
         const { section: despesasSection, calcularDespesas, getDados: getDespesasDados } = criarDespesasSection(item, dadosDespesas);
-        item.appendChild(despesasSection);
+        innerContainer.appendChild(despesasSection);
         
+        // Seção Exames
         const { section: examesSection, calcularTotal: calcularExames, getDados: getExamesDados } = criarExamesSection(item, dadosExames, treinamentoValor);
-        item.appendChild(examesSection);
+        innerContainer.appendChild(examesSection);
         
+        // Resultados (sempre visível)
         const resultadosDiv = document.createElement('div');
         resultadosDiv.className = 'cargo-resultados';
         item.appendChild(resultadosDiv);
         
+        // Armazenar referências
         item.__getUniformesDados = getUniformesDados;
         item.__getBeneficiosDados = getBeneficiosDados;
         item.__getSegurancaDados = getSegurancaDados;
@@ -2686,6 +2708,29 @@ document.addEventListener('DOMContentLoaded', async function() {
         item.__getDespesasDados = getDespesasDados;
         item.__getExamesDados = getExamesDados;
         
+        // ========== FUNÇÃO DE TOGGLE (afeta apenas o innerContainer) ==========
+        const btnToggle = header.querySelector('.btn-toggle-cargo');
+        const toggleIcon = btnToggle.querySelector('i');
+        
+        function toggleCargo() {
+            isExpanded = !isExpanded;
+            if (isExpanded) {
+                innerContainer.style.display = 'block';
+                toggleIcon.classList.remove('fa-chevron-down');
+                toggleIcon.classList.add('fa-chevron-up');
+            } else {
+                innerContainer.style.display = 'none';
+                toggleIcon.classList.remove('fa-chevron-up');
+                toggleIcon.classList.add('fa-chevron-down');
+            }
+        }
+        
+        btnToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleCargo();
+        });
+        
+        // ========== FUNÇÃO DE ATUALIZAÇÃO DOS RESULTADOS ==========
         function atualizarResultados() {
             const qtd = parseInt(item.querySelector('.cargo-quantidade').value) || 1;
             const salarioInput = item.querySelector('.cargo-salario').value;
@@ -2696,7 +2741,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             let taxaEncargos = parseFloat(encargosPercentualInput.value.replace(/\./g, '').replace(',', '.')) || 55.83;
             taxaEncargos = taxaEncargos / 100;
             
-            // ========== CALCULAR ADICIONAIS EM VALOR BRUTO (SEM ENCARGOS) ==========
             let totalAdicionaisBrutos = 0;
             
             const heCheck = adicionaisContent.querySelector('.he-check');
@@ -2763,17 +2807,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             if (insConteudo) insConteudo.classList.toggle('hidden', !(insCheck && insCheck.checked));
             
-            // Atualiza o subtotal da seção "Adicionais"
             updateAdicionaisSummary(totalAdicionaisBrutos);
             
-            // ========== NOVA LÓGICA: ENCARGOS INCIDEM SOBRE (SALÁRIO + ADICIONAIS BRUTOS) ==========
-            const baseParaEncargos = salario + totalAdicionaisBrutos;   // 1000 + 500 = 1500
-            const valorEncargos = baseParaEncargos * taxaEncargos;      // 1500 × 50% = 750
+            const baseParaEncargos = salario + totalAdicionaisBrutos;
+            const valorEncargos = baseParaEncargos * taxaEncargos;
+            const subtotalSalarioEncargosAdicionais = baseParaEncargos + valorEncargos;
             
-            // Total de salário + adicionais + encargos (SEA)
-            const subtotalSalarioEncargosAdicionais = baseParaEncargos + valorEncargos; // 1500 + 750 = 2250
-            
-            // ========== DEMAIS CÁLCULOS (Uniformes, Benefícios, etc.) ==========
             const uniformesData = atualizarUniformesTotais();
             const totalUniformeEpi = uniformesData?.totalGeral || 0;
             const totalBeneficios = calcularBeneficios();
@@ -2782,23 +2821,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             const subtotalInsumosBeneficios = totalUniformeEpi + totalBeneficios + totalSeguranca + totalInsumos;
             
-            // Despesas (Taxa Adm e Encargos Fiscais) – usa o novo subtotal
             const despesasResult = calcularDespesas(subtotalSalarioEncargosAdicionais, subtotalInsumosBeneficios);
             
             const totalExames = calcularExames();
             const totalFinalVaga = despesasResult.totalPrestacao + totalExames;
             
-            // Base para encargos fiscais (apenas para exibição)
             const baseEncargosFiscais = subtotalSalarioEncargosAdicionais + subtotalInsumosBeneficios + despesasResult.taxaAdm;
             
-            // ========== MONTAR HTML DOS RESULTADOS ==========
             let resultadosHTML = `
                 <div class="resultado-bloco">
                     <span class="rotulo"><i class="fas fa-calculator"></i> Encargos (${(taxaEncargos * 100).toFixed(2)}%)</span>
                     <span class="valor">${formatarMoeda(valorEncargos)}</span>
                 </div>
             `;
-            
             if (totalAdicionaisBrutos > 0) {
                 resultadosHTML += `
                     <div class="resultado-bloco">
@@ -2807,7 +2842,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     </div>
                 `;
             }
-            
             resultadosHTML += `
                 <div class="resultado-bloco subtotal-cargo">
                     <span class="rotulo"><i class="fas fa-file-invoice"></i> BASE (Salário + Adicionais)</span>
@@ -2818,43 +2852,18 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <span class="valor">${formatarMoeda(subtotalSalarioEncargosAdicionais)}</span>
                 </div>
             `;
-            
             if (totalUniformeEpi > 0) {
-                resultadosHTML += `
-                    <div class="resultado-bloco">
-                        <span class="rotulo"><i class="fas fa-tshirt"></i> Uniformes/EPIs</span>
-                        <span class="valor">${formatarMoeda(totalUniformeEpi)}</span>
-                    </div>
-                `;
+                resultadosHTML += `<div class="resultado-bloco"><span class="rotulo"><i class="fas fa-tshirt"></i> Uniformes/EPIs</span><span class="valor">${formatarMoeda(totalUniformeEpi)}</span></div>`;
             }
-            
             if (totalBeneficios > 0) {
-                resultadosHTML += `
-                    <div class="resultado-bloco">
-                        <span class="rotulo"><i class="fas fa-gift"></i> Benefícios</span>
-                        <span class="valor">${formatarMoeda(totalBeneficios)}</span>
-                    </div>
-                `;
+                resultadosHTML += `<div class="resultado-bloco"><span class="rotulo"><i class="fas fa-gift"></i> Benefícios</span><span class="valor">${formatarMoeda(totalBeneficios)}</span></div>`;
             }
-            
             if (totalSeguranca > 0) {
-                resultadosHTML += `
-                    <div class="resultado-bloco">
-                        <span class="rotulo"><i class="fas fa-shield-alt"></i> SST + Seguro</span>
-                        <span class="valor">${formatarMoeda(totalSeguranca)}</span>
-                    </div>
-                `;
+                resultadosHTML += `<div class="resultado-bloco"><span class="rotulo"><i class="fas fa-shield-alt"></i> SST + Seguro</span><span class="valor">${formatarMoeda(totalSeguranca)}</span></div>`;
             }
-            
             if (totalInsumos > 0) {
-                resultadosHTML += `
-                    <div class="resultado-bloco">
-                        <span class="rotulo"><i class="fas fa-boxes"></i> Insumos</span>
-                        <span class="valor">${formatarMoeda(totalInsumos)}</span>
-                    </div>
-                `;
+                resultadosHTML += `<div class="resultado-bloco"><span class="rotulo"><i class="fas fa-boxes"></i> Insumos</span><span class="valor">${formatarMoeda(totalInsumos)}</span></div>`;
             }
-            
             resultadosHTML += `
                 <div class="resultado-bloco subtotal-insumos">
                     <span class="rotulo"><i class="fas fa-boxes"></i> INSUMOS + BENEFÍCIOS</span>
@@ -2881,7 +2890,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <span class="valor" style="color: #c10404; font-size: 1.2rem;">${formatarMoeda(totalFinalVaga)}</span>
                 </div>
             `;
-            
             resultadosDiv.innerHTML = resultadosHTML;
             calcularTotalGeral();
         }
@@ -2963,7 +2971,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         atualizarResultados();
-        
         return item;
     }
     
