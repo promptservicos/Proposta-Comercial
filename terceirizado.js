@@ -2465,7 +2465,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         const item = document.createElement('div');
         item.className = 'cargo-item';
         
-        // Header do cargo
+        // Estado do cargo (expandido por padrão)
+        let isExpanded = true;
+        
+        // Header do cargo com botão toggle
         const header = document.createElement('div');
         header.className = 'cargo-header';
         header.innerHTML = `
@@ -2473,13 +2476,23 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <i class="fas fa-briefcase"></i>
                 <span>Cargo</span>
             </div>
-            <button type="button" class="btn-remover" title="Remover cargo">
-                <i class="fas fa-trash-alt"></i>
-            </button>
+            <div class="cargo-header-buttons">
+                <button type="button" class="btn-toggle-cargo" title="Expandir/Retrair">
+                    <i class="fas fa-chevron-up"></i>
+                </button>
+                <button type="button" class="btn-remover" title="Remover cargo">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
         `;
         item.appendChild(header);
         
-        // Linha de campos básicos
+        // Container para as seções internas (recolhível)
+        const innerContainer = document.createElement('div');
+        innerContainer.className = 'cargo-inner-container';
+        item.appendChild(innerContainer);
+        
+        // Linha de campos básicos (sempre visível, mas dentro do container recolhível)
         const linha = document.createElement('div');
         linha.className = 'cargo-linha';
         linha.innerHTML = `
@@ -2503,9 +2516,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </div>
             </div>
         `;
-        item.appendChild(linha);
+        innerContainer.appendChild(linha);
         
-        // Seção Adicionais (atualizada com Acúmulo de Função)
+        // Seção Adicionais
         const adicionaisHtml = `
             <div class="adicionais-grid">
                 <div class="adicional-card">
@@ -2564,7 +2577,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                         <div class="adicional-valor ins-resultado"></div>
                     </div>
                 </div>
-                <!-- NOVO ADICIONAL: ACÚMULO DE FUNÇÃO -->
                 <div class="adicional-card">
                     <div class="adicional-header">
                         <label class="checkbox-label">
@@ -2583,40 +2595,39 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </div>
             </div>
         `;
-        
         const { section: adicionaisSection, updateSummary: updateAdicionaisSummary, content: adicionaisContent } = criarSecaoExpansivel('Adicionais', 'fa-bolt', adicionaisHtml, true);
-        item.appendChild(adicionaisSection);
+        innerContainer.appendChild(adicionaisSection);
         
         // Seção Uniformes e EPIs
         const { section: uniformesSection, atualizarTotais: atualizarUniformesTotais, getDados: getUniformesDados } = criarUniformesEpisSection(item, dadosUniformes, dadosEpis);
-        item.appendChild(uniformesSection);
+        innerContainer.appendChild(uniformesSection);
         
         // Seção Benefícios
         const { section: beneficiosSection, calcularTotal: calcularBeneficios, getDados: getBeneficiosDados } = criarBeneficiosSection(item, dadosBeneficios, beneficiosPersonalizados);
-        item.appendChild(beneficiosSection);
+        innerContainer.appendChild(beneficiosSection);
         
         // Seção Segurança
         const { section: segurancaSection, calcularTotal: calcularSeguranca, getDados: getSegurancaDados } = criarSegurancaSection(item, dadosSeguranca);
-        item.appendChild(segurancaSection);
+        innerContainer.appendChild(segurancaSection);
         
-        // Seção Exames e Treinamentos
+        // Seção Exames
         const { section: examesSection, calcularTotal: calcularExames, getDados: getExamesDados } = criarExamesSection(item, dadosExames, treinamentoValor);
-        item.appendChild(examesSection);
+        innerContainer.appendChild(examesSection);
         
         // Seção Insumos
         const { section: insumosSection, calcularTotal: calcularInsumos, getDados: getInsumosDados } = criarInsumosSection(item, dadosInsumos);
-        item.appendChild(insumosSection);
+        innerContainer.appendChild(insumosSection);
         
-        // Seção Despesas (Encargos Fiscais)
+        // Seção Despesas
         const { section: despesasSection, calcularDespesas, getDados: getDespesasDados } = criarDespesasSection(item, dadosDespesas);
-        item.appendChild(despesasSection);
+        innerContainer.appendChild(despesasSection);
         
-        // Resultados
+        // Resultados (sempre visível, fora do container recolhível)
         const resultadosDiv = document.createElement('div');
         resultadosDiv.className = 'cargo-resultados';
         item.appendChild(resultadosDiv);
         
-        // Armazenar referências para uso nas funções
+        // Armazenar referências
         item.__getUniformesDados = getUniformesDados;
         item.__getBeneficiosDados = getBeneficiosDados;
         item.__getSegurancaDados = getSegurancaDados;
@@ -2624,22 +2635,43 @@ document.addEventListener('DOMContentLoaded', async function() {
         item.__getInsumosDados = getInsumosDados;
         item.__getDespesasDados = getDespesasDados;
         
+        // ========== FUNÇÃO DE TOGGLE ==========
+        const btnToggle = header.querySelector('.btn-toggle-cargo');
+        const toggleIcon = btnToggle.querySelector('i');
+        
+        function toggleCargo() {
+            isExpanded = !isExpanded;
+            if (isExpanded) {
+                innerContainer.style.display = 'block';
+                toggleIcon.classList.remove('fa-chevron-down');
+                toggleIcon.classList.add('fa-chevron-up');
+            } else {
+                innerContainer.style.display = 'none';
+                toggleIcon.classList.remove('fa-chevron-up');
+                toggleIcon.classList.add('fa-chevron-down');
+            }
+        }
+        
+        btnToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleCargo();
+        });
+        
+        // ========== FUNÇÃO DE ATUALIZAÇÃO DOS RESULTADOS (cópia fiel da sua lógica existente) ==========
         function atualizarResultados() {
-            // Quantidade TOTAL de funcionários no cargo (usada para uniformes, benefícios, etc.)
             const qtdTotalFuncionarios = parseInt(item.querySelector('.cargo-quantidade').value) || 1;
             const salarioInput = item.querySelector('.cargo-salario').value;
             let salario = parseFloat(salarioInput.replace(/\./g, '').replace(',', '.')) || 0;
             const valorHora = salario / HORAS_MENSAL;
             
-            // Obter porcentagem de encargos do campo (valor em %)
             const encargosPercentualInput = item.querySelector('.encargos-percentual');
             let taxaEncargos = parseFloat(encargosPercentualInput.value.replace(/\./g, '').replace(',', '.')) || 113.00;
-            taxaEncargos = taxaEncargos / 100; // Converter para decimal
+            taxaEncargos = taxaEncargos / 100;
             
             let totalAdicionais = 0;
-            let totalAcumulo = 0; // Valor do acúmulo (independente, NÃO multiplica pela quantidade de vagas)
+            let totalAcumulo = 0;
             
-            // ========== HORAS EXTRAS ==========
+            // Horas Extras
             const heCheck = adicionaisContent.querySelector('.he-check');
             const heConteudo = adicionaisContent.querySelector('.he-conteudo');
             const heResultado = adicionaisContent.querySelector('.he-resultado');
@@ -2660,7 +2692,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             if (heConteudo) heConteudo.classList.toggle('hidden', !(heCheck && heCheck.checked));
             
-            // ========== ADICIONAL NOTURNO ==========
+            // Adicional Noturno
             const anCheck = adicionaisContent.querySelector('.an-check');
             const anConteudo = adicionaisContent.querySelector('.an-conteudo');
             const anResultado = adicionaisContent.querySelector('.an-resultado');
@@ -2680,7 +2712,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             if (anConteudo) anConteudo.classList.toggle('hidden', !(anCheck && anCheck.checked));
             
-            // ========== PERICULOSIDADE ==========
+            // Periculosidade
             const perCheck = adicionaisContent.querySelector('.per-check');
             const perConteudo = adicionaisContent.querySelector('.per-conteudo');
             const perResultado = adicionaisContent.querySelector('.per-resultado');
@@ -2695,7 +2727,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             if (perConteudo) perConteudo.classList.toggle('hidden', !(perCheck && perCheck.checked));
             
-            // ========== INSALUBRIDADE ==========
+            // Insalubridade
             const insCheck = adicionaisContent.querySelector('.ins-check');
             const insConteudo = adicionaisContent.querySelector('.ins-conteudo');
             const insResultado = adicionaisContent.querySelector('.ins-resultado');
@@ -2710,31 +2742,20 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             if (insConteudo) insConteudo.classList.toggle('hidden', !(insCheck && insCheck.checked));
             
-            // ========== ACÚMULO DE FUNÇÃO ==========
+            // Acúmulo
             const acumuloCheck = adicionaisContent.querySelector('.acumulo-check');
             const acumuloConteudo = adicionaisContent.querySelector('.acumulo-conteudo');
             const acumuloResultado = adicionaisContent.querySelector('.acumulo-resultado');
-            const acumuloQuantidade = adicionaisContent.querySelector('.acumulo-quantidade');
-            
+            const acumuloQuantidadeElem = adicionaisContent.querySelector('.acumulo-quantidade');
             if (acumuloCheck && acumuloCheck.checked) {
-                // Quantidade ESPECÍFICA de funcionários que terão acúmulo
-                const qtdAcumulo = parseInt(acumuloQuantidade?.value) || 0;
-                
+                const qtdAcumulo = parseInt(acumuloQuantidadeElem?.value) || 0;
                 if (qtdAcumulo > 0) {
-                    // Cálculo: Valor por funcionário = Salário × 20% + encargos sobre esse valor
                     const valorBaseAcumulo = salario * 0.20;
                     const encargosAcumulo = valorBaseAcumulo * taxaEncargos;
                     const valorPorFuncionario = valorBaseAcumulo + encargosAcumulo;
-                    
-                    // Total do acúmulo = Valor por funcionário × quantidade de funcionários com acúmulo
-                    // IMPORTANTE: Este valor NÃO será multiplicado pela quantidade total de vagas
                     totalAcumulo = valorPorFuncionario * qtdAcumulo;
-                    
                     if (acumuloResultado) {
-                        acumuloResultado.innerHTML = `
-                            <span class="valor-label">Total Acúmulo (${qtdAcumulo} funcionário${qtdAcumulo > 1 ? 's' : ''})</span>
-                            <span class="valor-number">${formatarMoeda(totalAcumulo)}</span>
-                        `;
+                        acumuloResultado.innerHTML = `<span class="valor-label">Total Acúmulo (${qtdAcumulo} funcionário${qtdAcumulo > 1 ? 's' : ''})</span><span class="valor-number">${formatarMoeda(totalAcumulo)}</span>`;
                     }
                 } else {
                     if (acumuloResultado) acumuloResultado.innerHTML = '';
@@ -2744,67 +2765,42 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (acumuloResultado) acumuloResultado.innerHTML = '';
                 totalAcumulo = 0;
             }
-            
-            // Mostrar/esconder o conteúdo do acúmulo baseado no checkbox
-            if (acumuloConteudo) {
-                acumuloConteudo.classList.toggle('hidden', !(acumuloCheck && acumuloCheck.checked));
-            }
+            if (acumuloConteudo) acumuloConteudo.classList.toggle('hidden', !(acumuloCheck && acumuloCheck.checked));
             
             updateAdicionaisSummary(totalAdicionais);
             
-            // ========== UNIFORMES E EPIS ==========
+            // Uniformes e EPIs
             let totalUniformeEpi = 0;
             if (typeof atualizarUniformesTotais === 'function') {
                 const uniformesData = atualizarUniformesTotais();
                 totalUniformeEpi = uniformesData?.totalGeral || 0;
             }
             
-            // ========== BENEFÍCIOS ==========
             const totalBeneficios = typeof calcularBeneficios === 'function' ? calcularBeneficios() : 0;
-            
-            // ========== SEGURANÇA ==========
             const totalSeguranca = typeof calcularSeguranca === 'function' ? calcularSeguranca() : 0;
-            
-            // ========== EXAMES E TREINAMENTOS ==========
             const totalExames = typeof calcularExames === 'function' ? calcularExames() : 0;
-            
-            // ========== INSUMOS ==========
             const totalInsumos = typeof calcularInsumos === 'function' ? calcularInsumos() : 0;
             
-            // ========== CÁLCULOS TERCEIRIZADO ==========
-            // SUB TOTAL SALARIO + ENCARGOS (NÃO inclui o acúmulo)
             const valorEncargos = salario * taxaEncargos;
             const subtotalSalarioEncargos = salario + valorEncargos + totalAdicionais;
-            
-            // SUB TOTAL DOS INSUMOS E BENEFICIOS (todos já são valores mensais)
             const subtotalInsumosBeneficios = totalUniformeEpi + totalBeneficios + totalSeguranca + totalExames + totalInsumos;
             
-            // Calcular Encargos Fiscais (13,75% sobre subtotalInsumosBeneficios)
             let despesasResult = 0;
             if (typeof calcularDespesas === 'function') {
                 despesasResult = calcularDespesas(subtotalInsumosBeneficios);
             }
             
-            // ========== CÁLCULO DO TOTAL POR VAGA (SEM ACÚMULO) ==========
-            // Este é o valor base da vaga, sem o acúmulo
             const totalPorVaga = subtotalSalarioEncargos + subtotalInsumosBeneficios + despesasResult;
-            
-            // ========== CÁLCULO DO TOTAL COM MULTIPLICAÇÃO PELA QUANTIDADE DE VAGAS ==========
-            // Multiplica o valor por vaga pela quantidade total de funcionários
             const totalVagasMultiplicado = totalPorVaga * qtdTotalFuncionarios;
-            
-            // ========== TOTAL FINAL DA VAGA (COM ACÚMULO) ==========
-            // O acúmulo é somado APÓS a multiplicação das vagas, e NÃO é multiplicado
             const totalFinalVaga = totalVagasMultiplicado + totalAcumulo;
             
-            // ========== ATUALIZAR RESULTADOS NA TELA ==========
+            // Montar HTML dos resultados
             let resultadosHTML = `
                 <div class="resultado-bloco">
                     <span class="rotulo"><i class="fas fa-calculator"></i> Encargos (${(taxaEncargos * 100).toFixed(2)}%)</span>
                     <span class="valor">${formatarMoeda(valorEncargos)}</span>
                 </div>
             `;
-            
             if (totalAdicionais > 0) {
                 resultadosHTML += `
                     <div class="resultado-bloco">
@@ -2813,59 +2809,27 @@ document.addEventListener('DOMContentLoaded', async function() {
                     </div>
                 `;
             }
-            
             resultadosHTML += `
                 <div class="resultado-bloco subtotal-cargo">
                     <span class="rotulo"><i class="fas fa-file-invoice"></i> SUB TOTAL SALARIO + ENCARGOS</span>
                     <span class="valor">${formatarMoeda(subtotalSalarioEncargos)}</span>
                 </div>
             `;
-            
             if (totalUniformeEpi > 0) {
-                resultadosHTML += `
-                    <div class="resultado-bloco">
-                        <span class="rotulo"><i class="fas fa-tshirt"></i> Uniformes/EPIs</span>
-                        <span class="valor">${formatarMoeda(totalUniformeEpi)}</span>
-                    </div>
-                `;
+                resultadosHTML += `<div class="resultado-bloco"><span class="rotulo"><i class="fas fa-tshirt"></i> Uniformes/EPIs</span><span class="valor">${formatarMoeda(totalUniformeEpi)}</span></div>`;
             }
-            
             if (totalBeneficios > 0) {
-                resultadosHTML += `
-                    <div class="resultado-bloco">
-                        <span class="rotulo"><i class="fas fa-gift"></i> Benefícios</span>
-                        <span class="valor">${formatarMoeda(totalBeneficios)}</span>
-                    </div>
-                `;
+                resultadosHTML += `<div class="resultado-bloco"><span class="rotulo"><i class="fas fa-gift"></i> Benefícios</span><span class="valor">${formatarMoeda(totalBeneficios)}</span></div>`;
             }
-            
             if (totalSeguranca > 0) {
-                resultadosHTML += `
-                    <div class="resultado-bloco">
-                        <span class="rotulo"><i class="fas fa-shield-alt"></i> SST + Seguro</span>
-                        <span class="valor">${formatarMoeda(totalSeguranca)}</span>
-                    </div>
-                `;
+                resultadosHTML += `<div class="resultado-bloco"><span class="rotulo"><i class="fas fa-shield-alt"></i> SST + Seguro</span><span class="valor">${formatarMoeda(totalSeguranca)}</span></div>`;
             }
-            
             if (totalExames > 0) {
-                resultadosHTML += `
-                    <div class="resultado-bloco">
-                        <span class="rotulo"><i class="fas fa-stethoscope"></i> Exames e Treinamentos</span>
-                        <span class="valor">${formatarMoeda(totalExames)}</span>
-                    </div>
-                `;
+                resultadosHTML += `<div class="resultado-bloco"><span class="rotulo"><i class="fas fa-stethoscope"></i> Exames e Treinamentos</span><span class="valor">${formatarMoeda(totalExames)}</span></div>`;
             }
-            
             if (totalInsumos > 0) {
-                resultadosHTML += `
-                    <div class="resultado-bloco">
-                        <span class="rotulo"><i class="fas fa-boxes"></i> Insumos</span>
-                        <span class="valor">${formatarMoeda(totalInsumos)}</span>
-                    </div>
-                `;
+                resultadosHTML += `<div class="resultado-bloco"><span class="rotulo"><i class="fas fa-boxes"></i> Insumos</span><span class="valor">${formatarMoeda(totalInsumos)}</span></div>`;
             }
-            
             resultadosHTML += `
                 <div class="resultado-bloco subtotal-insumos">
                     <span class="rotulo"><i class="fas fa-boxes"></i> SUB TOTAL DOS INSUMOS E BENEFICIOS</span>
@@ -2880,41 +2844,23 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <span class="valor">${formatarMoeda(totalPorVaga)}</span>
                 </div>
             `;
-            
-            // Mostrar acúmulo se houver (como valor separado)
             if (totalAcumulo > 0) {
-                resultadosHTML += `
-                    <div class="resultado-bloco">
-                        <span class="rotulo"><i class="fas fa-chart-line"></i> Acúmulo de Função</span>
-                        <span class="valor">${formatarMoeda(totalAcumulo)}</span>
-                    </div>
-                `;
+                resultadosHTML += `<div class="resultado-bloco"><span class="rotulo"><i class="fas fa-chart-line"></i> Acúmulo de Função</span><span class="valor">${formatarMoeda(totalAcumulo)}</span></div>`;
             }
-            
-            // Mostrar total das vagas multiplicado
             if (qtdTotalFuncionarios > 1) {
-                resultadosHTML += `
-                    <div class="resultado-bloco">
-                        <span class="rotulo"><i class="fas fa-times"></i> Total (${qtdTotalFuncionarios} vaga${qtdTotalFuncionarios > 1 ? 's' : ''})</span>
-                        <span class="valor">${formatarMoeda(totalVagasMultiplicado)}</span>
-                    </div>
-                `;
+                resultadosHTML += `<div class="resultado-bloco"><span class="rotulo"><i class="fas fa-times"></i> Total (${qtdTotalFuncionarios} vaga${qtdTotalFuncionarios > 1 ? 's' : ''})</span><span class="valor">${formatarMoeda(totalVagasMultiplicado)}</span></div>`;
             }
-            
             resultadosHTML += `
                 <div class="resultado-bloco total-prestacao">
                     <span class="rotulo"><i class="fas fa-calculator"></i> TOTAL FINAL DA VAGA</span>
                     <span class="valor" style="color: #c10404; font-size: 1.2rem;">${formatarMoeda(totalFinalVaga)}</span>
                 </div>
             `;
-            
             resultadosDiv.innerHTML = resultadosHTML;
             calcularTotalGeral();
         }
         
         // ========== EVENT LISTENERS ==========
-        
-        // Event listeners para campos básicos
         item.querySelector('.cargo-nome').addEventListener('input', () => { atualizarResultados(); salvarRascunho(); });
         item.querySelector('.cargo-quantidade').addEventListener('input', () => { atualizarResultados(); salvarRascunho(); });
         item.querySelector('.cargo-salario').addEventListener('input', function(e) {
@@ -2923,8 +2869,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             atualizarResultados();
             salvarRascunho();
         });
-        
-        // Event listeners para encargos
         const encargosInput = item.querySelector('.encargos-percentual');
         if (encargosInput) {
             encargosInput.addEventListener('input', function(e) {
@@ -2934,39 +2878,23 @@ document.addEventListener('DOMContentLoaded', async function() {
                 salvarRascunho();
             });
         }
-        
-        // Event listeners para adicionais existentes
         adicionaisContent.querySelectorAll('.he-check, .an-check, .per-check, .ins-check').forEach(chk => {
             chk.addEventListener('change', () => { atualizarResultados(); salvarRascunho(); });
         });
         adicionaisContent.querySelectorAll('.he-horas, .an-horas').forEach(input => {
             input.addEventListener('input', () => { atualizarResultados(); salvarRascunho(); });
         });
-        
-        // ========== NOVOS EVENT LISTENERS PARA ACÚMULO DE FUNÇÃO ==========
         const acumuloCheck = adicionaisContent.querySelector('.acumulo-check');
-        const acumuloQuantidade = adicionaisContent.querySelector('.acumulo-quantidade');
-        
+        const acumuloQuantidadeElem = adicionaisContent.querySelector('.acumulo-quantidade');
         if (acumuloCheck) {
-            acumuloCheck.addEventListener('change', () => { 
-                atualizarResultados(); 
-                salvarRascunho(); 
-            });
+            acumuloCheck.addEventListener('change', () => { atualizarResultados(); salvarRascunho(); });
         }
-        
-        if (acumuloQuantidade) {
-            acumuloQuantidade.addEventListener('input', () => { 
-                atualizarResultados(); 
-                salvarRascunho(); 
-            });
+        if (acumuloQuantidadeElem) {
+            acumuloQuantidadeElem.addEventListener('input', () => { atualizarResultados(); salvarRascunho(); });
         }
-        
-        // Event listeners para eventos personalizados
         item.addEventListener('recalcular', atualizarResultados);
         item.addEventListener('recalcular-despesas', atualizarResultados);
         item.addEventListener('recalcular-exames', atualizarResultados);
-        
-        // Botão remover cargo
         item.querySelector('.btn-remover').addEventListener('click', function() {
             item.remove();
             calcularTotalGeral();
@@ -2974,13 +2902,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
         
         // ========== PREENCHER DADOS EXISTENTES ==========
-        
-        // Preencher dados adicionais existentes
-        // ========== PREENCHER DADOS EXISTENTES ==========
-
-        // Preencher dados adicionais existentes
         if (dadosAdicionais) {
-            // Adicionais existentes
             if (dadosAdicionais.horasExtras && adicionaisContent.querySelector('.he-check')) 
                 adicionaisContent.querySelector('.he-check').checked = true;
             if (dadosAdicionais.noturno && adicionaisContent.querySelector('.an-check')) 
@@ -2993,24 +2915,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                 adicionaisContent.querySelector('.he-horas').value = dadosAdicionais.heHoras;
             if (dadosAdicionais.anHoras && adicionaisContent.querySelector('.an-horas')) 
                 adicionaisContent.querySelector('.an-horas').value = dadosAdicionais.anHoras;
-            
-            // ========== PREENCHER DADOS DO ACÚMULO ==========
             if (dadosAdicionais.acumulo !== undefined && adicionaisContent.querySelector('.acumulo-check')) {
                 adicionaisContent.querySelector('.acumulo-check').checked = dadosAdicionais.acumulo;
-                
-                // Mostrar/esconder o conteúdo baseado no checkbox
-                const acumuloConteudo = adicionaisContent.querySelector('.acumulo-conteudo');
-                if (acumuloConteudo) {
-                    acumuloConteudo.classList.toggle('hidden', !dadosAdicionais.acumulo);
+                const acumuloConteudoElem = adicionaisContent.querySelector('.acumulo-conteudo');
+                if (acumuloConteudoElem) {
+                    acumuloConteudoElem.classList.toggle('hidden', !dadosAdicionais.acumulo);
                 }
             }
-            
             if (dadosAdicionais.acumuloQuantidade !== undefined && adicionaisContent.querySelector('.acumulo-quantidade')) {
                 adicionaisContent.querySelector('.acumulo-quantidade').value = dadosAdicionais.acumuloQuantidade;
             }
         }
-        
-        // Preencher porcentagem de encargos
         if (dadosAdicionais && dadosAdicionais.encargosPercentual) {
             const encargosInputElem = item.querySelector('.encargos-percentual');
             if (encargosInputElem) {
@@ -3018,37 +2933,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
         
-        // ========== PREENCHER DADOS DO ACÚMULO ==========
-        console.log('PREENCHENDO ACÚMULO - dadosAdicionais:', dadosAdicionais);
-
-        if (dadosAdicionais) {
-            const acumuloCheckElem = adicionaisContent.querySelector('.acumulo-check');
-            const acumuloQuantidadeElem = adicionaisContent.querySelector('.acumulo-quantidade');
-            const acumuloConteudoElem = adicionaisContent.querySelector('.acumulo-conteudo');
-            
-            console.log('Elementos encontrados - checkbox:', !!acumuloCheckElem, 'quantidade:', !!acumuloQuantidadeElem);
-            
-            // Preencher checkbox
-            if (acumuloCheckElem && dadosAdicionais.acumulo !== undefined) {
-                acumuloCheckElem.checked = dadosAdicionais.acumulo;
-                console.log('Checkbox preenchido com:', dadosAdicionais.acumulo);
-                
-                // Mostrar/esconder o conteúdo
-                if (acumuloConteudoElem) {
-                    acumuloConteudoElem.classList.toggle('hidden', !dadosAdicionais.acumulo);
-                }
-            }
-            
-            // Preencher quantidade
-            if (acumuloQuantidadeElem && dadosAdicionais.acumuloQuantidade !== undefined) {
-                acumuloQuantidadeElem.value = dadosAdicionais.acumuloQuantidade;
-                console.log('Quantidade preenchida com:', dadosAdicionais.acumuloQuantidade);
-            }
-        }
-
-        // Executar atualização inicial
         atualizarResultados();
-        
         return item;
     }
     
