@@ -24,17 +24,19 @@ const emailToName = {
     'fabiomansur@promptservicos.com.br': 'Fabio',
     'comercial1@promptservicos.com.br': 'Leila',
     'comercial3@promptservicos.com.br': 'Ricardo',
-    'ass.comercial@promptservicos.com.br': 'Moriela'
+    'ass.comercial@promptservicos.com.br': 'Moriela',
+    'promptcoordenacao@gmail.com': 'Val'
 };
 
 // Lista de admins (que veem todas as propostas)
 const ADMIN_EMAILS = [
     'marketing@promptservicos.com.br',  // Luca - admin mas não aparece na lista
-    'fabiomansur@promptservicos.com.br'  // Fabio - admin
+    'fabiomansur@promptservicos.com.br', // Fabio - admin
+    'promptcoordenacao@gmail.com'
 ];
 
-// Lista de vendedores disponíveis para filtro (apenas os vendedores comuns)
-const VENDEDORES = ['Ricardo', 'Leila', 'Moriela'];
+// Lista de vendedores disponíveis para filtro 
+const VENDEDORES = ['Ricardo', 'Leila', 'Moriela', 'Val', 'Fabio'];
 
 // ================== DADOS DO USUÁRIO ==================
 let usuarioAtual = null;
