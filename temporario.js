@@ -109,7 +109,7 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// ========== FUNÇÃO PARA GERAR IMAGEM POR CARGO E IMAGEM DO TOTAL ==========
+// ========== FUNÇÃO PARA GERAR IMAGEM POR CARGO E DO TOTAL (DIRETO, SEM ZIP) ==========
 async function gerarImagemPorCargo() {
     const btnCompartilhar = document.getElementById('btn-compartilhar');
     const textoOriginal = btnCompartilhar ? btnCompartilhar.innerHTML : '';
@@ -129,14 +129,9 @@ async function gerarImagemPorCargo() {
         
         // Mapa para contar nomes de cargos repetidos
         const nomeCount = new Map();
-        
-        // Primeiro, coletar todos os nomes base para contar
-        const nomesBase = [];
         for (let i = 0; i < cargos.length; i++) {
             const cargo = cargos[i];
             const cargoNomeBase = cargo.querySelector('.cargo-nome').value.trim() || `Cargo_${i + 1}`;
-            nomesBase.push(cargoNomeBase);
-            
             const count = nomeCount.get(cargoNomeBase) || 0;
             nomeCount.set(cargoNomeBase, count + 1);
         }
@@ -167,12 +162,11 @@ async function gerarImagemPorCargo() {
             return adicionais;
         }
         
-        // Função melhorada para verificar se uma seção tem valores > 0
+        // Função para verificar se uma seção tem valores > 0
         function secaoTemValores(secaoElement) {
             if (!secaoElement) return false;
             
             const cards = secaoElement.querySelectorAll('.beneficio-card, .seguranca-item, .insumo-card, .despesa-card, .adicional-card, .exames-item');
-            
             for (const card of cards) {
                 const valorInputs = card.querySelectorAll('input[type="text"], input[type="number"]');
                 for (const input of valorInputs) {
@@ -182,14 +176,12 @@ async function gerarImagemPorCargo() {
                         input.classList.contains('depreciacao-epi')) {
                         continue;
                     }
-                    
                     let valor = 0;
                     if (input.type === 'text') {
                         valor = parseFloat(input.value.replace(/\./g, '').replace(',', '.')) || 0;
                     } else if (input.type === 'number') {
                         valor = parseFloat(input.value) || 0;
                     }
-                    
                     if (valor > 0) return true;
                 }
                 
@@ -206,7 +198,6 @@ async function gerarImagemPorCargo() {
                     const valor = parseFloat(qtdInput.value.replace(/\./g, '').replace(',', '.')) || 0;
                     if (valor > 0) return true;
                 }
-                
                 const checkbox = item.querySelector('.exame-custom-checkbox');
                 if (checkbox && checkbox.checked) return true;
             }
@@ -277,11 +268,10 @@ async function gerarImagemPorCargo() {
         
         await new Promise(resolve => setTimeout(resolve, 300));
         
-        const zip = new JSZip();
         const clienteNome = cliente.replace(/[^a-zA-Z0-9]/g, '_');
         const nomeContador = new Map();
         
-        // ========== 1. GERAR IMAGEM DO TOTAL DA PROPOSTA ==========
+        // ========== 1. GERAR E BAIXAR IMAGEM DO TOTAL DA PROPOSTA ==========
         console.log('Gerando imagem do total da proposta...');
         const totalElemento = document.createElement('div');
         totalElemento.style.position = 'fixed';
@@ -357,11 +347,18 @@ async function gerarImagemPorCargo() {
         
         document.body.removeChild(totalElemento);
         
+        // Download da imagem total
         const totalBlob = await new Promise(resolve => totalCanvas.toBlob(resolve, 'image/png'));
-        zip.file(`${clienteNome}_TOTAL_DA_PROPOSTA.png`, totalBlob);
+        const totalLink = document.createElement('a');
+        totalLink.download = `${clienteNome}_TOTAL_DA_PROPOSTA.png`;
+        totalLink.href = URL.createObjectURL(totalBlob);
+        totalLink.click();
+        URL.revokeObjectURL(totalLink.href);
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        // ========== 2. GERAR IMAGEM PARA CADA CARGO ==========
-        const promessasImagens = [];
+        // ========== 2. GERAR E BAIXAR IMAGEM PARA CADA CARGO ==========
+        let imagensGeradas = 0;
+        let imagensFalhas = 0;
         
         for (let i = 0; i < cargos.length; i++) {
             const cargo = cargos[i];
@@ -382,216 +379,179 @@ async function gerarImagemPorCargo() {
             console.log(`Preparando imagem ${i + 1}/${cargos.length}: ${nomeCompleto}`);
             
             if (btnCompartilhar) {
-                btnCompartilhar.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Preparando ${i + 1}/${cargos.length}: ${nomeCompleto.substring(0, 25)}...`;
+                btnCompartilhar.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Baixando ${i + 1}/${cargos.length}: ${nomeCompleto.substring(0, 25)}...`;
             }
             
-            const promise = (async () => {
-                try {
-                    const cloneCargo = cloneCargoLimpo(cargo);
-                    
-                    // ========== EXPANDIR TODAS AS SEÇÕES ==========
-                    const todasSecoes = cloneCargo.querySelectorAll('.expandable-section, .exames-section, .despesas-section');
-                    todasSecoes.forEach(secao => {
-                        // Expandir conteúdo
-                        const content = secao.querySelector('.section-content, .exames-content, .despesas-content');
-                        if (content) {
-                            content.classList.remove('collapsed');
-                            content.style.display = 'block';
-                        }
-                        
-                        // Mudar ícone para cima
-                        const toggleIcon = secao.querySelector('.section-toggle, .exames-toggle, .despesas-toggle');
-                        if (toggleIcon) {
-                            toggleIcon.classList.remove('fa-chevron-down');
-                            toggleIcon.classList.add('fa-chevron-up');
-                        }
-                    });
-                    
-                    // ========== EXPANDIR BOXES DE EXAMES ==========
-                    const examesBoxes = cloneCargo.querySelectorAll('.exames-box');
-                    examesBoxes.forEach(box => {
-                        const dropdownMenu = box.querySelector('.dropdown-menu');
-                        if (dropdownMenu) {
-                            dropdownMenu.classList.remove('open');
-                            dropdownMenu.style.display = 'none';
-                        }
-                        const headerIcon = box.querySelector('.box-header i');
-                        if (headerIcon) {
-                            headerIcon.classList.remove('fa-chevron-up');
-                            headerIcon.classList.add('fa-chevron-down');
-                        }
-                    });
-                    
-                    // ========== EXPANDIR BOXES DE UNIFORMES/EPIs ==========
-                    const uniformesBoxes = cloneCargo.querySelectorAll('.uniformes-box, .epis-box');
-                    uniformesBoxes.forEach(box => {
-                        const dropdownMenu = box.querySelector('.dropdown-menu');
-                        if (dropdownMenu) {
-                            dropdownMenu.classList.remove('open');
-                            dropdownMenu.style.display = 'none';
-                        }
-                        const headerIcon = box.querySelector('.box-header i');
-                        if (headerIcon) {
-                            headerIcon.classList.remove('fa-chevron-up');
-                            headerIcon.classList.add('fa-chevron-down');
-                        }
-                    });
-                    
-                    // Criar elemento para imagem
-                    const elementoImagem = document.createElement('div');
-                    elementoImagem.style.position = 'fixed';
-                    elementoImagem.style.left = '-9999px';
-                    elementoImagem.style.top = '-9999px';
-                    elementoImagem.style.backgroundColor = '#ffffff';
-                    elementoImagem.style.padding = '20px';
-                    elementoImagem.style.borderRadius = '16px';
-                    elementoImagem.style.width = '1000px';
-                    elementoImagem.style.fontFamily = "'Inter', 'Segoe UI', sans-serif";
-                    
-                    elementoImagem.innerHTML = `
-                        <div style="margin-bottom: 20px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #c10404;">
-                                <div>
-                                    <h1 style="color: #c10404; margin: 0; font-size: 20px;">Prompt Serviços</h1>
-                                    <p style="color: #666; margin: 0; font-size: 11px;">Proposta de Contrato Temporário</p>
-                                </div>
-                                <div style="text-align: right;">
-                                    <div style="font-size: 10px; color: #888;">Data: ${dataAtual}</div>
-                                    <div style="font-size: 10px; color: #888;">Vendedor: ${vendedor}</div>
-                                </div>
-                            </div>
-                            <div style="background: #f5f5f5; padding: 8px 12px; border-radius: 8px;">
-                                <strong>Cliente:</strong> ${cliente}
-                            </div>
-                        </div>
-                        ${cloneCargo.outerHTML}
-                        <div style="margin-top: 20px; text-align: center; padding-top: 10px; border-top: 1px solid #e0e0e0; font-size: 9px; color: #888;">
-                            Documento gerado em ${dataAtual} - Proposta válida por 30 dias
-                        </div>
-                    `;
-                    
-                    document.body.appendChild(elementoImagem);
-                    
-                    // Ajustar estilos
-                    const cargoCloneElem = elementoImagem.querySelector('.cargo-item');
-                    if (cargoCloneElem) {
-                        cargoCloneElem.style.margin = '0';
-                        cargoCloneElem.style.boxShadow = 'none';
+            try {
+                const cloneCargo = cloneCargoLimpo(cargo);
+                
+                // Expandir todas as seções
+                const todasSecoes = cloneCargo.querySelectorAll('.expandable-section, .exames-section, .despesas-section');
+                todasSecoes.forEach(secao => {
+                    const content = secao.querySelector('.section-content, .exames-content, .despesas-content');
+                    if (content) {
+                        content.classList.remove('collapsed');
+                        content.style.display = 'block';
                     }
-                    
-                    // Garantir que todas as seções de conteúdo estão visíveis
-                    const allContents = elementoImagem.querySelectorAll('.section-content, .exames-content, .despesas-content');
-                    allContents.forEach(content => {
-                        if (content.parentElement?.style.display !== 'none') {
-                            content.style.display = 'block';
-                            content.classList.remove('collapsed');
-                        }
-                    });
-                    
-                    // Garantir que os totais de exames estão visíveis
-                    const examesTotals = elementoImagem.querySelectorAll('.exames-total, .exames-resumo, .exames-total-geral');
-                    examesTotals.forEach(total => {
-                        if (total) total.style.display = 'block';
-                    });
-                    
-                    // Aumentar altura dos inputs
-                    const allInputs = elementoImagem.querySelectorAll('input');
-                    allInputs.forEach(input => {
-                        input.style.minHeight = '36px';
-                        input.style.height = 'auto';
-                        input.style.padding = '8px 12px';
-                    });
-                    
-                    const smallInputs = elementoImagem.querySelectorAll('.beneficio-campo input, .seguranca-campo input, .insumo-campo input, .despesa-campo input');
-                    smallInputs.forEach(input => {
-                        input.style.minHeight = '34px';
-                        input.style.height = 'auto';
-                        input.style.padding = '6px 10px';
-                    });
-                    
-                    // Esconder todos os dropdowns abertos
-                    const imagemDropdowns = elementoImagem.querySelectorAll('.dropdown-menu');
-                    imagemDropdowns.forEach(dropdown => {
-                        dropdown.style.display = 'none';
-                        dropdown.classList.remove('open');
-                    });
-                    
-                    elementoImagem.style.backgroundColor = '#ffffff';
-                    elementoImagem.style.color = '#333333';
-                    
-                    await new Promise(resolve => setTimeout(resolve, 300));
-                    
-                    const canvas = await html2canvas(elementoImagem, {
-                        scale: 1.5,
-                        backgroundColor: '#ffffff',
-                        logging: false,
-                        useCORS: true,
-                        allowTaint: false
-                    });
-                    
-                    document.body.removeChild(elementoImagem);
-                    
-                    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-                    zip.file(nomeArquivo, blob);
-                    
-                    console.log(`✅ Imagem ${i + 1}/${cargos.length} adicionada ao ZIP: ${nomeArquivo}`);
-                    return { success: true, index: i, nome: nomeCompleto };
-                    
-                } catch (cargoError) {
-                    console.error(`❌ Erro no cargo ${i + 1}: ${cargoNomeBase}`, cargoError);
-                    return { success: false, index: i, nome: cargoNomeBase, erro: cargoError.message };
+                    const toggleIcon = secao.querySelector('.section-toggle, .exames-toggle, .despesas-toggle');
+                    if (toggleIcon) {
+                        toggleIcon.classList.remove('fa-chevron-down');
+                        toggleIcon.classList.add('fa-chevron-up');
+                    }
+                });
+                
+                // Fechar dropdowns de exames, uniformes e EPIs
+                const examesBoxes = cloneCargo.querySelectorAll('.exames-box');
+                examesBoxes.forEach(box => {
+                    const dropdownMenu = box.querySelector('.dropdown-menu');
+                    if (dropdownMenu) {
+                        dropdownMenu.classList.remove('open');
+                        dropdownMenu.style.display = 'none';
+                    }
+                    const headerIcon = box.querySelector('.box-header i');
+                    if (headerIcon) {
+                        headerIcon.classList.remove('fa-chevron-up');
+                        headerIcon.classList.add('fa-chevron-down');
+                    }
+                });
+                
+                const uniformesBoxes = cloneCargo.querySelectorAll('.uniformes-box, .epis-box');
+                uniformesBoxes.forEach(box => {
+                    const dropdownMenu = box.querySelector('.dropdown-menu');
+                    if (dropdownMenu) {
+                        dropdownMenu.classList.remove('open');
+                        dropdownMenu.style.display = 'none';
+                    }
+                    const headerIcon = box.querySelector('.box-header i');
+                    if (headerIcon) {
+                        headerIcon.classList.remove('fa-chevron-up');
+                        headerIcon.classList.add('fa-chevron-down');
+                    }
+                });
+                
+                // Criar elemento para imagem
+                const elementoImagem = document.createElement('div');
+                elementoImagem.style.position = 'fixed';
+                elementoImagem.style.left = '-9999px';
+                elementoImagem.style.top = '-9999px';
+                elementoImagem.style.backgroundColor = '#ffffff';
+                elementoImagem.style.padding = '20px';
+                elementoImagem.style.borderRadius = '16px';
+                elementoImagem.style.width = '1000px';
+                elementoImagem.style.fontFamily = "'Inter', 'Segoe UI', sans-serif";
+                
+                elementoImagem.innerHTML = `
+                    <div style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #c10404;">
+                            <div>
+                                <h1 style="color: #c10404; margin: 0; font-size: 20px;">Prompt Serviços</h1>
+                                <p style="color: #666; margin: 0; font-size: 11px;">Proposta de Contrato Temporário</p>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 10px; color: #888;">Data: ${dataAtual}</div>
+                                <div style="font-size: 10px; color: #888;">Vendedor: ${vendedor}</div>
+                            </div>
+                        </div>
+                        <div style="background: #f5f5f5; padding: 8px 12px; border-radius: 8px;">
+                            <strong>Cliente:</strong> ${cliente}
+                        </div>
+                    </div>
+                    ${cloneCargo.outerHTML}
+                    <div style="margin-top: 20px; text-align: center; padding-top: 10px; border-top: 1px solid #e0e0e0; font-size: 9px; color: #888;">
+                        Documento gerado em ${dataAtual} - Proposta válida por 30 dias
+                    </div>
+                `;
+                
+                document.body.appendChild(elementoImagem);
+                
+                // Ajustes de estilo
+                const cargoCloneElem = elementoImagem.querySelector('.cargo-item');
+                if (cargoCloneElem) {
+                    cargoCloneElem.style.margin = '0';
+                    cargoCloneElem.style.boxShadow = 'none';
                 }
-            })();
-            
-            promessasImagens.push(promise);
+                
+                const allContents = elementoImagem.querySelectorAll('.section-content, .exames-content, .despesas-content');
+                allContents.forEach(content => {
+                    if (content.parentElement?.style.display !== 'none') {
+                        content.style.display = 'block';
+                        content.classList.remove('collapsed');
+                    }
+                });
+                
+                const examesTotals = elementoImagem.querySelectorAll('.exames-total, .exames-resumo, .exames-total-geral');
+                examesTotals.forEach(total => {
+                    if (total) total.style.display = 'block';
+                });
+                
+                const allInputs = elementoImagem.querySelectorAll('input');
+                allInputs.forEach(input => {
+                    input.style.minHeight = '36px';
+                    input.style.height = 'auto';
+                    input.style.padding = '8px 12px';
+                });
+                
+                const smallInputs = elementoImagem.querySelectorAll('.beneficio-campo input, .seguranca-campo input, .insumo-campo input, .despesa-campo input');
+                smallInputs.forEach(input => {
+                    input.style.minHeight = '34px';
+                    input.style.height = 'auto';
+                    input.style.padding = '6px 10px';
+                });
+                
+                const imagemDropdowns = elementoImagem.querySelectorAll('.dropdown-menu');
+                imagemDropdowns.forEach(dropdown => {
+                    dropdown.style.display = 'none';
+                    dropdown.classList.remove('open');
+                });
+                
+                elementoImagem.style.backgroundColor = '#ffffff';
+                elementoImagem.style.color = '#333333';
+                
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                const canvas = await html2canvas(elementoImagem, {
+                    scale: 1.5,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    useCORS: true,
+                    allowTaint: false
+                });
+                
+                document.body.removeChild(elementoImagem);
+                
+                // Download da imagem do cargo
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                const link = document.createElement('a');
+                link.download = nomeArquivo;
+                link.href = URL.createObjectURL(blob);
+                link.click();
+                URL.revokeObjectURL(link.href);
+                
+                imagensGeradas++;
+                console.log(`✅ Imagem ${i + 1}/${cargos.length} baixada: ${nomeArquivo}`);
+                
+                // Pequena pausa entre downloads
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+            } catch (cargoError) {
+                console.error(`❌ Erro no cargo ${i + 1}: ${cargoNomeBase}`, cargoError);
+                imagensFalhas++;
+            }
         }
         
-        console.log('Aguardando processamento de todas as imagens...');
-        if (btnCompartilhar) {
-            btnCompartilhar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Finalizando imagens...';
-        }
-        
-        const resultados = await Promise.all(promessasImagens);
-        
-        const sucessos = resultados.filter(r => r.success).length;
-        const falhas = resultados.filter(r => !r.success).length;
-        
-        console.log(`Processamento concluído: ${sucessos} sucessos, ${falhas} falhas`);
-        
+        // Restaurar tema original
         if (!wasLightMode) {
             document.body.classList.remove('light-mode');
         }
         
-        console.log('Gerando arquivo ZIP...');
-        if (btnCompartilhar) {
-            btnCompartilhar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Compactando arquivos...';
+        let mensagem = `✅ ${imagensGeradas + 1} imagem(ns) baixada(s) com sucesso!\n- 1 imagem com o TOTAL da proposta\n- ${imagensGeradas} imagem(ns) com detalhes dos cargos`;
+        
+        if (imagensGeradas !== cargos.length) {
+            mensagem += `\n\n⚠️ Apenas ${imagensGeradas} de ${cargos.length} cargos foram gerados.`;
         }
         
-        const content = await zip.generateAsync({ 
-            type: "blob",
-            compression: "DEFLATE",
-            compressionOptions: { level: 1 }
-        });
-        
-        console.log(`ZIP gerado com ${Object.keys(zip.files).length} arquivos`);
-        
-        const link = document.createElement('a');
-        link.download = `Propostas_${clienteNome}_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.zip`;
-        link.href = URL.createObjectURL(content);
-        link.click();
-        URL.revokeObjectURL(link.href);
-        
-        let mensagem = `✅ ${sucessos + 1} imagem(ns) gerada(s) com sucesso!\n- 1 imagem com o TOTAL da proposta\n- ${sucessos} imagem(ns) com detalhes dos cargos\n\n📦 Arquivo ZIP salvo na pasta Downloads`;
-        
-        if (sucessos !== cargos.length) {
-            mensagem += `\n\n⚠️ Apenas ${sucessos} de ${cargos.length} cargos foram gerados.`;
-        }
-        
-        if (falhas > 0) {
-            mensagem += `\n\n❌ ${falhas} cargo(s) falharam:\n`;
-            resultados.filter(r => !r.success).forEach(erro => {
-                mensagem += `- Cargo ${erro.index + 1}: ${erro.nome}\n`;
-            });
+        if (imagensFalhas > 0) {
+            mensagem += `\n\n❌ ${imagensFalhas} cargo(s) falharam. Verifique o console.`;
         }
         
         alert(mensagem);
