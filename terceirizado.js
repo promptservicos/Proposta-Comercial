@@ -105,7 +105,7 @@ function formatarMoeda(valor) {
     return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-// ========== FUNÇÃO PARA GERAR IMAGEM POR CARGO E IMAGEM DO TOTAL (DIRETO, SEM ZIP) ==========
+// ========== FUNÇÃO PARA GERAR IMAGEM POR CARGO E DO TOTAL (DIRETO, SEM ZIP) ==========
 async function gerarImagemPorCargo() {
     const btnCompartilhar = document.getElementById('btn-compartilhar');
     const textoOriginal = btnCompartilhar ? btnCompartilhar.innerHTML : '';
@@ -128,7 +128,6 @@ async function gerarImagemPorCargo() {
         for (let i = 0; i < cargos.length; i++) {
             const cargo = cargos[i];
             const cargoNomeBase = cargo.querySelector('.cargo-nome').value.trim() || `Cargo_${i + 1}`;
-            
             const count = nomeCount.get(cargoNomeBase) || 0;
             nomeCount.set(cargoNomeBase, count + 1);
         }
@@ -159,12 +158,11 @@ async function gerarImagemPorCargo() {
             return adicionais;
         }
         
-        // Função melhorada para verificar se uma seção tem valores > 0
+        // Função para verificar se uma seção tem valores > 0
         function secaoTemValores(secaoElement) {
             if (!secaoElement) return false;
             
             const cards = secaoElement.querySelectorAll('.beneficio-card, .seguranca-item, .insumo-card, .despesa-card, .adicional-card, .exames-item');
-            
             for (const card of cards) {
                 const valorInputs = card.querySelectorAll('input[type="text"], input[type="number"]');
                 for (const input of valorInputs) {
@@ -174,14 +172,12 @@ async function gerarImagemPorCargo() {
                         input.classList.contains('depreciacao-epi')) {
                         continue;
                     }
-                    
                     let valor = 0;
                     if (input.type === 'text') {
                         valor = parseFloat(input.value.replace(/\./g, '').replace(',', '.')) || 0;
                     } else if (input.type === 'number') {
                         valor = parseFloat(input.value) || 0;
                     }
-                    
                     if (valor > 0) return true;
                 }
                 
@@ -198,7 +194,6 @@ async function gerarImagemPorCargo() {
                     const valor = parseFloat(qtdInput.value.replace(/\./g, '').replace(',', '.')) || 0;
                     if (valor > 0) return true;
                 }
-                
                 const checkbox = item.querySelector('.exame-custom-checkbox');
                 if (checkbox && checkbox.checked) return true;
             }
@@ -348,6 +343,7 @@ async function gerarImagemPorCargo() {
         
         document.body.removeChild(totalElemento);
         
+        // Download da imagem total
         const totalBlob = await new Promise(resolve => totalCanvas.toBlob(resolve, 'image/png'));
         const totalLink = document.createElement('a');
         totalLink.download = `${clienteNome}_TOTAL_DA_PROPOSTA.png`;
@@ -530,7 +526,7 @@ async function gerarImagemPorCargo() {
                 imagensGeradas++;
                 console.log(`✅ Imagem ${i + 1}/${cargos.length} baixada: ${nomeArquivo}`);
                 
-                // Aguardar um pouco antes do próximo download
+                // Pequena pausa entre downloads
                 await new Promise(resolve => setTimeout(resolve, 500));
                 
             } catch (cargoError) {
