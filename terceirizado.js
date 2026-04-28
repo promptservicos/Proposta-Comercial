@@ -106,7 +106,7 @@ function formatarMoeda(valor) {
 }
 
 // ========== FUNÇÃO PARA GERAR IMAGEM POR CARGO E DO TOTAL (DIRETO, SEM ZIP) ==========
-async function gerarImagemPorCargo() {
+async function gerarImagemProposta() {
     const btnCompartilhar = document.getElementById('btn-compartilhar');
     const textoOriginal = btnCompartilhar ? btnCompartilhar.innerHTML : '';
     
