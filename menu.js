@@ -32,7 +32,6 @@ const emailToName = {
 const ADMIN_EMAILS = [
     'marketing@promptservicos.com.br',  // Luca - admin mas não aparece na lista
     'fabiomansur@promptservicos.com.br', // Fabio - admin
-    'promptcoordenacao@gmail.com'
 ];
 
 // Lista de vendedores disponíveis para filtro 

@@ -105,14 +105,14 @@ function formatarMoeda(valor) {
     return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-// ========== FUNÇÃO PARA GERAR IMAGENS POR CARGO E TOTAL (DIRETO, SEM ZIP) ==========
-async function gerarImagemProposta() {
-    const btnBaixar = document.getElementById('btn-baixar-proposta');
-    const textoOriginal = btnBaixar ? btnBaixar.innerHTML : '';
+// ========== FUNÇÃO PARA GERAR IMAGEM POR CARGO E IMAGEM DO TOTAL (DIRETO, SEM ZIP) ==========
+async function gerarImagemPorCargo() {
+    const btnCompartilhar = document.getElementById('btn-compartilhar');
+    const textoOriginal = btnCompartilhar ? btnCompartilhar.innerHTML : '';
     
-    if (btnBaixar) {
-        btnBaixar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando imagens...';
-        btnBaixar.disabled = true;
+    if (btnCompartilhar) {
+        btnCompartilhar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando imagens...';
+        btnCompartilhar.disabled = true;
     }
     
     try {
@@ -128,6 +128,7 @@ async function gerarImagemProposta() {
         for (let i = 0; i < cargos.length; i++) {
             const cargo = cargos[i];
             const cargoNomeBase = cargo.querySelector('.cargo-nome').value.trim() || `Cargo_${i + 1}`;
+            
             const count = nomeCount.get(cargoNomeBase) || 0;
             nomeCount.set(cargoNomeBase, count + 1);
         }
@@ -142,7 +143,6 @@ async function gerarImagemProposta() {
                 const anCheck = adicionaisContent.querySelector('.an-check');
                 const perCheck = adicionaisContent.querySelector('.per-check');
                 const insCheck = adicionaisContent.querySelector('.ins-check');
-                const acumuloCheck = adicionaisContent.querySelector('.acumulo-check');
                 
                 if (heCheck && heCheck.checked) {
                     const horas = parseFloat(adicionaisContent.querySelector('.he-horas')?.value) || 0;
@@ -154,44 +154,58 @@ async function gerarImagemProposta() {
                 }
                 if (perCheck && perCheck.checked) adicionais.push('PERICULOSIDADE');
                 if (insCheck && insCheck.checked) adicionais.push('INSALUBRIDADE');
-                if (acumuloCheck && acumuloCheck.checked) {
-                    const qtd = parseInt(adicionaisContent.querySelector('.acumulo-quantidade')?.value) || 0;
-                    if (qtd > 0) adicionais.push(`ACÚMULO (${qtd} func.)`);
-                }
             }
+            
             return adicionais;
         }
         
-        // Função para verificar se uma seção tem valores > 0
+        // Função melhorada para verificar se uma seção tem valores > 0
         function secaoTemValores(secaoElement) {
             if (!secaoElement) return false;
             
-            const inputs = secaoElement.querySelectorAll('input[type="text"], input[type="number"]');
-            for (const input of inputs) {
-                if (input.classList.contains('quantidade-uniforme') || 
-                    input.classList.contains('depreciacao-uniforme') ||
-                    input.classList.contains('quantidade-epi') ||
-                    input.classList.contains('depreciacao-epi')) {
-                    continue;
+            const cards = secaoElement.querySelectorAll('.beneficio-card, .seguranca-item, .insumo-card, .despesa-card, .adicional-card, .exames-item');
+            
+            for (const card of cards) {
+                const valorInputs = card.querySelectorAll('input[type="text"], input[type="number"]');
+                for (const input of valorInputs) {
+                    if (input.classList.contains('quantidade-uniforme') || 
+                        input.classList.contains('quantidade-epi') ||
+                        input.classList.contains('depreciacao-uniforme') ||
+                        input.classList.contains('depreciacao-epi')) {
+                        continue;
+                    }
+                    
+                    let valor = 0;
+                    if (input.type === 'text') {
+                        valor = parseFloat(input.value.replace(/\./g, '').replace(',', '.')) || 0;
+                    } else if (input.type === 'number') {
+                        valor = parseFloat(input.value) || 0;
+                    }
+                    
+                    if (valor > 0) return true;
                 }
-                let valor = 0;
-                if (input.type === 'text') {
-                    valor = parseFloat(input.value.replace(/\./g, '').replace(',', '.')) || 0;
-                } else if (input.type === 'number') {
-                    valor = parseFloat(input.value) || 0;
+                
+                const checkboxes = card.querySelectorAll('input[type="checkbox"]');
+                for (const cb of checkboxes) {
+                    if (cb.checked) return true;
                 }
-                if (valor > 0) return true;
             }
             
-            const checkboxes = secaoElement.querySelectorAll('input[type="checkbox"]');
-            for (const cb of checkboxes) {
-                if (cb.checked) return true;
+            const customItems = secaoElement.querySelectorAll('.item-custom, .beneficio-custom-card, .exame-custom-item');
+            for (const item of customItems) {
+                const qtdInput = item.querySelector('.item-custom-quantidade-input, .beneficio-custom-valor');
+                if (qtdInput) {
+                    const valor = parseFloat(qtdInput.value.replace(/\./g, '').replace(',', '.')) || 0;
+                    if (valor > 0) return true;
+                }
+                
+                const checkbox = item.querySelector('.exame-custom-checkbox');
+                if (checkbox && checkbox.checked) return true;
             }
             
-            const uniformesTotal = secaoElement.querySelector('.uniformes-total span');
-            const episTotal = secaoElement.querySelector('.epis-total span');
-            const examesTotal = secaoElement.querySelector('.exames-total span');
-            const insumosTotal = secaoElement.querySelector('.insumos-total span');
+            const uniformesTotal = secaoElement.querySelector('.uniformes-total span:last-child');
+            const episTotal = secaoElement.querySelector('.epis-total span:last-child');
+            const examesTotal = secaoElement.querySelector('.exames-total span:last-child');
             
             if (uniformesTotal) {
                 const valor = parseFloat(uniformesTotal.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
@@ -205,21 +219,6 @@ async function gerarImagemProposta() {
                 const valor = parseFloat(examesTotal.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
                 if (valor > 0) return true;
             }
-            if (insumosTotal) {
-                const valor = parseFloat(insumosTotal.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
-                if (valor > 0) return true;
-            }
-            
-            const customItems = secaoElement.querySelectorAll('.beneficio-custom-card, .exame-custom-item');
-            for (const item of customItems) {
-                const valorInput = item.querySelector('.beneficio-custom-valor, .exame-custom-preco-input');
-                if (valorInput) {
-                    const valor = parseFloat(valorInput.value.replace(/\./g, '').replace(',', '.')) || 0;
-                    if (valor > 0) return true;
-                }
-                const checkbox = item.querySelector('.exame-custom-checkbox');
-                if (checkbox && checkbox.checked) return true;
-            }
             
             return false;
         }
@@ -232,9 +231,9 @@ async function gerarImagemProposta() {
                 { selector: '.expandable-section:nth-child(2)', nome: 'Uniformes e EPIs' },
                 { selector: '.expandable-section:nth-child(3)', nome: 'Benefícios' },
                 { selector: '.expandable-section:nth-child(4)', nome: 'Segurança' },
-                { selector: '.exames-section', nome: 'Exames' },
-                { selector: '.expandable-section:nth-child(6)', nome: 'Insumos' },
-                { selector: '.despesas-section', nome: 'Despesas' }
+                { selector: '.expandable-section:nth-child(5)', nome: 'Insumos' },
+                { selector: '.despesas-section', nome: 'Despesas' },
+                { selector: '.exames-section', nome: 'Exames' }
             ];
             
             secoes.forEach(secao => {
@@ -292,7 +291,7 @@ async function gerarImagemProposta() {
                         <i class="fas fa-chart-line" style="font-size: 30px; color: #fff;"></i>
                     </div>
                     <h1 style="color: #c10404; margin: 0; font-size: 28px;">Prompt Serviços</h1>
-                    <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">Proposta de Contrato Terceirizado</p>
+                    <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">Proposta de Contrato Temporário</p>
                 </div>
                 
                 <div style="background: #f5f5f5; padding: 15px; border-radius: 12px; margin-bottom: 30px; text-align: left;">
@@ -338,6 +337,7 @@ async function gerarImagemProposta() {
         `;
         
         document.body.appendChild(totalElemento);
+        
         const totalCanvas = await html2canvas(totalElemento, {
             scale: 2,
             backgroundColor: '#ffffff',
@@ -345,9 +345,9 @@ async function gerarImagemProposta() {
             useCORS: true,
             allowTaint: false
         });
+        
         document.body.removeChild(totalElemento);
         
-        // Download da imagem total
         const totalBlob = await new Promise(resolve => totalCanvas.toBlob(resolve, 'image/png'));
         const totalLink = document.createElement('a');
         totalLink.download = `${clienteNome}_TOTAL_DA_PROPOSTA.png`;
@@ -366,6 +366,7 @@ async function gerarImagemProposta() {
             
             const ocorrenciaAtual = (nomeContador.get(cargoNomeBase) || 0) + 1;
             nomeContador.set(cargoNomeBase, ocorrenciaAtual);
+            
             const totalOcorrencias = nomeCount.get(cargoNomeBase) || 1;
             const numeroSufixo = totalOcorrencias > 1 ? ` (${ocorrenciaAtual})` : '';
             
@@ -377,8 +378,8 @@ async function gerarImagemProposta() {
             
             console.log(`Preparando imagem ${i + 1}/${cargos.length}: ${nomeCompleto}`);
             
-            if (btnBaixar) {
-                btnBaixar.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Baixando ${i + 1}/${cargos.length}: ${nomeCompleto.substring(0, 25)}...`;
+            if (btnCompartilhar) {
+                btnCompartilhar.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Baixando ${i + 1}/${cargos.length}: ${nomeCompleto.substring(0, 25)}...`;
             }
             
             try {
@@ -444,7 +445,7 @@ async function gerarImagemProposta() {
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #c10404;">
                             <div>
                                 <h1 style="color: #c10404; margin: 0; font-size: 20px;">Prompt Serviços</h1>
-                                <p style="color: #666; margin: 0; font-size: 11px;">Proposta de Contrato Terceirizado</p>
+                                <p style="color: #666; margin: 0; font-size: 11px;">Proposta de Contrato Temporário</p>
                             </div>
                             <div style="text-align: right;">
                                 <div style="font-size: 10px; color: #888;">Data: ${dataAtual}</div>
@@ -490,7 +491,7 @@ async function gerarImagemProposta() {
                     input.style.padding = '8px 12px';
                 });
                 
-                const smallInputs = elementoImagem.querySelectorAll('.beneficio-campo input, .seguranca-campo input, .insumo-campo input');
+                const smallInputs = elementoImagem.querySelectorAll('.beneficio-campo input, .seguranca-campo input, .insumo-campo input, .despesa-campo input');
                 smallInputs.forEach(input => {
                     input.style.minHeight = '34px';
                     input.style.height = 'auto';
@@ -529,7 +530,7 @@ async function gerarImagemProposta() {
                 imagensGeradas++;
                 console.log(`✅ Imagem ${i + 1}/${cargos.length} baixada: ${nomeArquivo}`);
                 
-                // Aguardar um pouco antes do próximo download para evitar bloqueio do navegador
+                // Aguardar um pouco antes do próximo download
                 await new Promise(resolve => setTimeout(resolve, 500));
                 
             } catch (cargoError) {
@@ -559,10 +560,10 @@ async function gerarImagemProposta() {
         console.error('Erro ao gerar imagens:', error);
         alert('Erro ao gerar imagens. Tente novamente.\n' + error.message);
     } finally {
-        const btnBaixar = document.getElementById('btn-baixar-proposta');
-        if (btnBaixar) {
-            btnBaixar.innerHTML = textoOriginal;
-            btnBaixar.disabled = false;
+        const btnCompartilhar = document.getElementById('btn-compartilhar');
+        if (btnCompartilhar) {
+            btnCompartilhar.innerHTML = textoOriginal;
+            btnCompartilhar.disabled = false;
         }
     }
 }
