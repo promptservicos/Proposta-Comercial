@@ -16,7 +16,7 @@ const analytics = firebase.analytics();
 // ================== CONSTANTES ==================
 const SALARIO_MINIMO = 1621.00;
 const HORAS_MENSAL = 220;
-const TAXA_ENCARGOS_FISCAIS = 0.1375; // 13.75% fixo sobre subtotal dos insumos e benefícios
+// A constante TAXA_ENCARGOS_FISCAIS foi removida - agora a taxa é definida pelo usuário
 
 const UNIFORMES = [
     { nome: "KIT DE UNIFORMES", preco: 389.00 },
@@ -780,6 +780,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                     });
                 }
                 
+                // ========== CAPTURAR DESPESAS (incluindo a taxa de encargos) ==========
+                cargo.despesas = {};
+                const despesasSection = item.querySelector('.despesas-section');
+                if (despesasSection) {
+                    const taxaInput = despesasSection.querySelector('.despesa-taxa');
+                    if (taxaInput) {
+                        let taxaStr = taxaInput.value.replace('%', '').replace(',', '.');
+                        let taxaNum = parseFloat(taxaStr);
+                        if (!isNaN(taxaNum)) {
+                            cargo.despesas.encargos_fiscais = { porcentagem: taxaNum };
+                        } else {
+                            cargo.despesas.encargos_fiscais = { porcentagem: 13.75 }; // fallback
+                        }
+                    }
+                }
+                
                 dados.cargos.push(cargo);
             });
             
@@ -804,7 +820,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                     container.innerHTML = '';
                     dadosRascunho.cargos.forEach(c => {
                         const examesObj = c.exames || {};
-                        
+                        // Garantir que c.despesas exista e tenha a taxa
+                        const despesasComTaxa = c.despesas || {};
+                        if (!despesasComTaxa.encargos_fiscais) {
+                            despesasComTaxa.encargos_fiscais = { porcentagem: 13.75 };
+                        }
                         container.appendChild(criarCargoItem(
                             c.nome,
                             c.quantidade,
@@ -816,7 +836,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                             c.seguranca || {},
                             examesObj,
                             c.insumos || {},
-                            { encargos_fiscais: { porcentagem: 13.75 } },
+                            despesasComTaxa,
                             c.treinamento || 0,
                             c.beneficiosPersonalizados || []
                         ));
@@ -846,7 +866,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             <div class="section-summary">
                 <span class="summary-label">Subtotal:</span>
                 <span class="summary-value">R$ 0,00</span>
-                <i class="fas fa-chevron-down section-toggle"></i>  <!-- Mudado: sempre começa com chevron-down -->
+                <i class="fas fa-chevron-down section-toggle"></i>
             </div>
         `;
         
@@ -857,15 +877,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         section.appendChild(header);
         section.appendChild(content);
         
-        let isExpanded = !iniciarRetraido;  // Se iniciar retraído, isExpanded = false
+        let isExpanded = !iniciarRetraido;
         
         if (iniciarRetraido) {
             content.classList.add('collapsed');
-            // Quando fechado (retraído), seta pra BAIXO (chevron-down)
             header.querySelector('.section-toggle').classList.remove('fa-chevron-up');
             header.querySelector('.section-toggle').classList.add('fa-chevron-down');
         } else {
-            // Quando aberto, seta pra CIMA (chevron-up)
             header.querySelector('.section-toggle').classList.remove('fa-chevron-down');
             header.querySelector('.section-toggle').classList.add('fa-chevron-up');
         }
@@ -875,12 +893,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             isExpanded = !isExpanded;
             if (isExpanded) {
                 content.classList.remove('collapsed');
-                // ABERTO: seta pra CIMA
                 header.querySelector('.section-toggle').classList.remove('fa-chevron-down');
                 header.querySelector('.section-toggle').classList.add('fa-chevron-up');
             } else {
                 content.classList.add('collapsed');
-                // FECHADO: seta pra BAIXO
                 header.querySelector('.section-toggle').classList.remove('fa-chevron-up');
                 header.querySelector('.section-toggle').classList.add('fa-chevron-down');
             }
@@ -2374,6 +2390,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         } };
     }
 
+    // ========== SEÇÃO DESPESAS MODIFICADA (TAXA EDITÁVEL) ==========
     function criarDespesasSection(cargoItem, dadosDespesas = {}) {
         const section = document.createElement('div');
         section.className = 'despesas-section';
@@ -2392,6 +2409,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             </div>
         `;
         
+        // Valor inicial da taxa: vindo de dadosDespesas (padrão 13.75)
+        let taxaInicial = 13.75;
+        if (dadosDespesas && dadosDespesas.encargos_fiscais && dadosDespesas.encargos_fiscais.porcentagem) {
+            taxaInicial = dadosDespesas.encargos_fiscais.porcentagem;
+        }
+        const taxaInicialFormatada = taxaInicial.toFixed(2).replace('.', ',');
+        
         const content = document.createElement('div');
         content.className = 'despesas-content';
         content.innerHTML = `
@@ -2400,8 +2424,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <div class="despesa-nome">Encargos Fiscais (Benefícios)</div>
                     <div class="despesa-campos">
                         <div class="despesa-campo">
-                            <label>Taxa</label>
-                            <input type="text" class="despesa-taxa" value="13,75%" disabled>
+                            <label>Taxa (%)</label>
+                            <input type="text" class="despesa-taxa" value="${taxaInicialFormatada}%">
                         </div>
                     </div>
                     <div class="despesa-valor">R$ 0,00</div>
@@ -2419,7 +2443,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         let isExpanded = false;
         content.classList.add('collapsed');
-        // Quando fechado, seta pra BAIXO
         header.querySelector('.despesas-toggle').classList.remove('fa-chevron-up');
         header.querySelector('.despesas-toggle').classList.add('fa-chevron-down');
         
@@ -2428,12 +2451,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             isExpanded = !isExpanded;
             if (isExpanded) {
                 content.classList.remove('collapsed');
-                // ABERTO: seta pra CIMA
                 header.querySelector('.despesas-toggle').classList.remove('fa-chevron-down');
                 header.querySelector('.despesas-toggle').classList.add('fa-chevron-up');
             } else {
                 content.classList.add('collapsed');
-                // FECHADO: seta pra BAIXO
                 header.querySelector('.despesas-toggle').classList.remove('fa-chevron-up');
                 header.querySelector('.despesas-toggle').classList.add('fa-chevron-down');
             }
@@ -2442,22 +2463,47 @@ document.addEventListener('DOMContentLoaded', async function() {
         const totalSpan = content.querySelector('.despesas-total span:last-child');
         const valorSpan = content.querySelector('.despesa-valor');
         const calculoSpan = content.querySelector('.despesa-calculo');
+        const taxaInput = content.querySelector('.despesa-taxa');
         
+        // Função que calcula os encargos fiscais com base no subtotal e na taxa atual
         function calcularDespesas(subtotalInsumosBeneficios) {
-            const taxa = TAXA_ENCARGOS_FISCAIS;
-            const valorEncargos = subtotalInsumosBeneficios * taxa;
+            let taxaStr = taxaInput.value.replace('%', '').replace(',', '.');
+            let taxa = parseFloat(taxaStr);
+            if (isNaN(taxa)) taxa = 13.75;
+            const taxaDecimal = taxa / 100;
+            const valorEncargos = subtotalInsumosBeneficios * taxaDecimal;
             
             valorSpan.textContent = formatarMoeda(valorEncargos);
-            calculoSpan.textContent = `(${formatarMoeda(subtotalInsumosBeneficios)} × ${(taxa * 100).toFixed(2)}%)`;
+            calculoSpan.textContent = `(${formatarMoeda(subtotalInsumosBeneficios)} × ${taxa.toFixed(2)}%)`;
             totalSpan.textContent = formatarMoeda(valorEncargos);
             header.querySelector('.summary-value').textContent = formatarMoeda(valorEncargos);
             
             return valorEncargos;
         }
         
-        return { section, calcularDespesas, getDados: () => {
-            return { encargos_fiscais: { porcentagem: TAXA_ENCARGOS_FISCAIS * 100 } };
-        } };
+        // Atualiza o cálculo quando a taxa for alterada
+        taxaInput.addEventListener('input', function(e) {
+            let valor = e.target.value.replace(/\D/g, '');
+            let valorNum = valor ? parseInt(valor) / 100 : 0;
+            if (valorNum > 100) valorNum = 100; // limite de 100%
+            e.target.value = valorNum.toFixed(2).replace('.', ',') + '%';
+            // Dispara um evento para que o cargo inteiro recalcule
+            if (cargoItem && cargoItem.dispatchEvent) {
+                cargoItem.dispatchEvent(new Event('recalcular-despesas'));
+            }
+            salvarRascunho();
+        });
+        
+        return { 
+            section, 
+            calcularDespesas, 
+            getDados: () => {
+                let taxaStr = taxaInput.value.replace('%', '').replace(',', '.');
+                let taxa = parseFloat(taxaStr);
+                if (isNaN(taxa)) taxa = 13.75;
+                return { encargos_fiscais: { porcentagem: taxa } };
+            } 
+        };
     }
 
     // ========== CRIAÇÃO DO CARGO ==========
@@ -2617,7 +2663,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const { section: insumosSection, calcularTotal: calcularInsumos, getDados: getInsumosDados } = criarInsumosSection(item, dadosInsumos);
         innerContainer.appendChild(insumosSection);
         
-        // Seção Despesas
+        // Seção Despesas (com taxa editável)
         const { section: despesasSection, calcularDespesas, getDados: getDespesasDados } = criarDespesasSection(item, dadosDespesas);
         innerContainer.appendChild(despesasSection);
         
@@ -2962,14 +3008,18 @@ document.addEventListener('DOMContentLoaded', async function() {
                             let examesObj = {};
                             if (c.exames) {
                                 if (Array.isArray(c.exames)) {
-                                    // Se for array, converte para objeto
                                     c.exames.forEach(nomeExame => {
                                         examesObj[nomeExame] = true;
                                     });
                                 } else {
-                                    // Já é objeto
                                     examesObj = c.exames;
                                 }
+                            }
+                            
+                            // Garantir que despesas exista e tenha a taxa
+                            let despesasComTaxa = c.despesas || {};
+                            if (!despesasComTaxa.encargos_fiscais) {
+                                despesasComTaxa.encargos_fiscais = { porcentagem: 13.75 };
                             }
                             
                             container.appendChild(criarCargoItem(
@@ -2983,39 +3033,45 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 c.seguranca || {},
                                 examesObj,
                                 c.insumos || {},
-                                c.despesas || {},
+                                despesasComTaxa,
                                 c.treinamento || 0,
                                 c.beneficiosPersonalizados || []
                             ));
                         });
                     } else {
-                        container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, {}, 0, []));
+                        // Criar pelo menos um cargo vazio com despesas padrão
+                        const despesasPadrao = { encargos_fiscais: { porcentagem: 13.75 } };
+                        container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, despesasPadrao, 0, []));
                     }
                     calcularTotalGeral();
                     localStorage.removeItem(DRAFT_KEY);
                 } else {
                     if (!carregarRascunho()) {
-                        container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, {}, 0, []));
+                        const despesasPadrao = { encargos_fiscais: { porcentagem: 13.75 } };
+                        container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, despesasPadrao, 0, []));
                     }
                 }
             } catch (error) {
                 console.error('Erro ao carregar proposta:', error);
                 if (!carregarRascunho()) {
-                    container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, {}, 0, []));
+                    const despesasPadrao = { encargos_fiscais: { porcentagem: 13.75 } };
+                    container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, despesasPadrao, 0, []));
                 }
             }
         } else {
             if (!carregarRascunho()) {
-                container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, {}, 0, []));
+                const despesasPadrao = { encargos_fiscais: { porcentagem: 13.75 } };
+                container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, despesasPadrao, 0, []));
             }
         }
     }
     
     await carregarPropostaExistente();
     
-    // Botão adicionar cargo
+    // Botão adicionar cargo (já com despesas padrão)
     btnAdicionar.addEventListener('click', function() {
-        const novoCargo = criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, {}, 0, []);
+        const despesasPadrao = { encargos_fiscais: { porcentagem: 13.75 } };
+        const novoCargo = criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, despesasPadrao, 0, []);
         container.appendChild(novoCargo);
         calcularTotalGeral();
         salvarRascunho();
@@ -3027,19 +3083,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         const btnTema = document.getElementById('btn-tema');
         const iconTema = btnTema?.querySelector('i');
         
-        // Se NÃO houver tema salvo, ou se o tema salvo for 'light', aplica o tema claro
         if (!temaSalvo || temaSalvo === 'light') {
             document.body.classList.add('light-mode');
             if (iconTema) {
                 iconTema.classList.remove('fa-moon');
                 iconTema.classList.add('fa-sun');
             }
-            // Salvar como 'light' se não houver tema salvo
             if (!temaSalvo) {
                 localStorage.setItem('tema_terceirizado', 'light');
             }
         } else if (temaSalvo === 'dark') {
-            // Apenas se o tema salvo for 'dark', aplica o tema escuro
             document.body.classList.remove('light-mode');
             if (iconTema) {
                 iconTema.classList.remove('fa-sun');
@@ -3073,7 +3126,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (!btnBaixar) return;
         
         btnBaixar.addEventListener('click', async () => {
-            // Verificar se há dados para baixar
             const cargos = document.querySelectorAll('.cargo-item');
             if (cargos.length === 0) {
                 mostrarModal('Adicione pelo menos um cargo antes de baixar a proposta.');
@@ -3098,7 +3150,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
         
-        // Mostrar indicador de carregamento
         const btnCapture = document.getElementById('btn-capturar-imagem');
         const textoOriginal = btnCapture ? btnCapture.innerHTML : '';
         if (btnCapture) {
@@ -3107,7 +3158,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         try {
-            // Clonar o elemento para não afetar o original
             const cloneElement = elemento.cloneNode(true);
             cloneElement.style.position = 'absolute';
             cloneElement.style.left = '-9999px';
@@ -3115,19 +3165,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             cloneElement.style.backgroundColor = '#ffffff';
             cloneElement.style.padding = '2rem';
             cloneElement.style.borderRadius = '16px';
-            
-            // Garantir que os estilos sejam aplicados corretamente
             cloneElement.style.width = '800px';
             cloneElement.style.maxWidth = '800px';
             cloneElement.style.margin = '0';
             
-            // Remover o botão de captura do clone para não aparecer na imagem
             const btnClone = cloneElement.querySelector('#btn-capturar-imagem');
             if (btnClone) btnClone.remove();
             
             document.body.appendChild(cloneElement);
             
-            // Usar html2canvas para gerar a imagem
             const canvas = await html2canvas(cloneElement, {
                 scale: 2,
                 backgroundColor: '#ffffff',
@@ -3136,10 +3182,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 allowTaint: false
             });
             
-            // Remover o clone
             document.body.removeChild(cloneElement);
             
-            // Criar link para download
             const link = document.createElement('a');
             const clienteNome = document.querySelector('.vis-value')?.textContent || 'proposta';
             const dataAtual = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
@@ -3151,7 +3195,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             console.error('Erro ao gerar imagem:', error);
             alert('Erro ao gerar imagem. Tente novamente.');
         } finally {
-            // Restaurar botão
             if (btnCapture) {
                 btnCapture.innerHTML = textoOriginal;
                 btnCapture.disabled = false;
@@ -3159,12 +3202,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // ========== VISUALIZAÇÃO RESUMIDA PARA CLIENTE ==========
     function carregarVisualizacaoResumida(proposta) {
         const container = document.getElementById('cargos-container');
         if (!container) return;
         
-        // Usar a função formatarMoeda que já existe no escopo global
         const formatMoney = (valor) => {
             return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         };
@@ -3193,7 +3234,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </div>
         `;
         
-        // Para cada cargo, mostrar apenas valores resumidos
         let cargoIndex = 0;
         let totalGeralProposta = 0;
         
@@ -3244,7 +3284,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         container.innerHTML = html;
         
-        // Adicionar CSS específico para visualização resumida
         const styleId = 'vis-resumida-style';
         if (!document.getElementById(styleId)) {
             const style = document.createElement('style');
@@ -3423,14 +3462,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             document.head.appendChild(style);
         }
         
-        // Adicionar evento ao botão de capturar imagem
         const btnCapturar = document.getElementById('btn-capturar-imagem');
         if (btnCapturar) {
             btnCapturar.addEventListener('click', capturarImagemProposta);
         }
     }
     
-    // ========== VERIFICAR MODO VISUALIZAÇÃO ==========
     function checkVisualizacao() {
         const urlParams = new URLSearchParams(window.location.search);
         const isVisualizacao = urlParams.get('visualizacao') === 'true';
@@ -3439,15 +3476,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             const propostaId = urlParams.get('id');
             if (!propostaId) return;
             
-            // Buscar a proposta no Firebase para exibir a versão resumida
             db.collection('propostas').doc(propostaId).get()
                 .then((doc) => {
                     if (doc.exists) {
                         const proposta = doc.data();
-                        // Exibir versão resumida
                         carregarVisualizacaoResumida(proposta);
                         
-                        // Esconder elementos de edição
                         const btnAdicionar = document.getElementById('adicionar-cargo');
                         const btnSalvar = document.getElementById('btn-salvar');
                         const btnGerarPDF = document.getElementById('btn-gerar-pdf');
@@ -3463,83 +3497,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                             clienteInput.value = proposta.cliente || '';
                         }
                         
-                        // Esconder todas as seções expansíveis originais
                         document.querySelectorAll('.expandable-section, .exames-section, .despesas-section, .cargo-linha, .cargo-header, .cargo-resultados').forEach(el => {
                             if (el) el.style.display = 'none';
                         });
                         
-                        // Esconder botões de remover
                         document.querySelectorAll('.btn-remover, .btn-remover-beneficio, .btn-add-beneficio').forEach(btn => {
                             if (btn) btn.style.display = 'none';
                         });
                         
-                        // Adicionar aviso de visualização
-                        const aviso = document.createElement('div');
-                        aviso.className = 'aviso-visualizacao';
-                        aviso.innerHTML = `
-                            <div style="background: #c10404; color: #fff; text-align: center; padding: 0.8rem; border-radius: 8px; margin-bottom: 1rem;">
-                                <i class="fas fa-eye"></i> <strong>Modo de visualização</strong> - Versão resumida da proposta
-                            </div>
-                        `;
-                        const containerDiv = document.querySelector('.container');
-                        if (containerDiv && !containerDiv.querySelector('.aviso-visualizacao')) {
-                            containerDiv.insertBefore(aviso, containerDiv.firstChild);
-                        }
-                    } else {
-                        document.getElementById('cargos-container').innerHTML = '<p style="text-align:center;padding:2rem;">Proposta não encontrada.</p>';
-                    }
-                })
-                .catch((error) => {
-                    console.error('Erro ao carregar proposta:', error);
-                    document.getElementById('cargos-container').innerHTML = '<p style="text-align:center;padding:2rem;">Erro ao carregar proposta.</p>';
-                });
-        }
-    }
-    
-    // ========== VERIFICAR MODO VISUALIZAÇÃO ==========
-    function checkVisualizacao() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const isVisualizacao = urlParams.get('visualizacao') === 'true';
-        
-        if (isVisualizacao) {
-            const propostaId = urlParams.get('id');
-            if (!propostaId) return;
-            
-            // Buscar a proposta no Firebase para exibir a versão resumida
-            db.collection('propostas').doc(propostaId).get()
-                .then((doc) => {
-                    if (doc.exists) {
-                        const proposta = doc.data();
-                        // Exibir versão resumida
-                        carregarVisualizacaoResumida(proposta);
-                        
-                        // Esconder elementos de edição
-                        const btnAdicionar = document.getElementById('adicionar-cargo');
-                        const btnSalvar = document.getElementById('btn-salvar');
-                        const btnGerarPDF = document.getElementById('btn-gerar-pdf');
-                        const btnCompartilhar = document.getElementById('btn-compartilhar');
-                        const clienteInput = document.getElementById('cliente-nome');
-                        
-                        if (btnAdicionar) btnAdicionar.style.display = 'none';
-                        if (btnSalvar) btnSalvar.style.display = 'none';
-                        if (btnGerarPDF) btnGerarPDF.style.display = 'none';
-                        if (btnCompartilhar) btnCompartilhar.style.display = 'none';
-                        if (clienteInput) {
-                            clienteInput.disabled = true;
-                            clienteInput.value = proposta.cliente || '';
-                        }
-                        
-                        // Esconder todas as seções expansíveis originais
-                        document.querySelectorAll('.expandable-section, .exames-section, .despesas-section, .cargo-linha, .cargo-header, .cargo-resultados').forEach(el => {
-                            if (el) el.style.display = 'none';
-                        });
-                        
-                        // Esconder botões de remover
-                        document.querySelectorAll('.btn-remover, .btn-remover-beneficio, .btn-add-beneficio').forEach(btn => {
-                            if (btn) btn.style.display = 'none';
-                        });
-                        
-                        // Adicionar aviso de visualização
                         const aviso = document.createElement('div');
                         aviso.className = 'aviso-visualizacao';
                         aviso.innerHTML = `
@@ -3579,22 +3544,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             const encargosPercentualInput = item.querySelector('.encargos-percentual');
             const encargosPercentual = parseFloat(encargosPercentualInput?.value.replace(/\./g, '').replace(',', '.')) || 113.00;
             
-            // ========== CAPTURAR DADOS DOS ADICIONAIS ==========
-            // Procura a seção de adicionais de forma mais robusta
             const adicionaisSection = item.querySelector('.expandable-section .adicionais-grid')?.closest('.expandable-section') 
                 || item.querySelector('.expandable-section:first-child');
 
-            if (!adicionaisSection) {
-                console.error('Seção de adicionais não encontrada!');
-            }
-
-            // Busca os elementos dentro da seção
             const adicionaisContent = adicionaisSection?.querySelector('.section-content');
-            if (!adicionaisContent) {
-                console.error('Conteúdo da seção de adicionais não encontrado!');
-            }
-
-            // Adicionais existentes
             const heCheck = adicionaisContent?.querySelector('.he-check');
             const anCheck = adicionaisContent?.querySelector('.an-check');
             const perCheck = adicionaisContent?.querySelector('.per-check');
@@ -3602,15 +3555,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             const heHoras = parseFloat(adicionaisContent?.querySelector('.he-horas')?.value) || 0;
             const anHoras = parseFloat(adicionaisContent?.querySelector('.an-horas')?.value) || 0;
 
-            // NOVOS CAMPOS: ACÚMULO DE FUNÇÃO - Busca de forma mais específica
             const acumuloCheck = adicionaisContent?.querySelector('.acumulo-check');
             const acumuloQuantidade = parseInt(adicionaisContent?.querySelector('.acumulo-quantidade')?.value) || 0;
-
-            console.log('ACÚMULO - Checkbox encontrado:', !!acumuloCheck);
-            console.log('ACÚMULO - Checkbox checked:', acumuloCheck?.checked);
-            console.log('ACÚMULO - Quantidade:', acumuloQuantidade);
             
-            // ========== UNIFORMES E EPIS ==========
             let uniformes = {}, epis = {};
             const uniformesSection = item.querySelectorAll('.expandable-section')[1];
             if (uniformesSection && uniformesSection.__getUniformesDados) {
@@ -3648,7 +3595,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
             
-            // ========== BENEFÍCIOS ==========
             let beneficios = {};
             let beneficiosPersonalizados = [];
             const beneficiosSection = item.querySelectorAll('.expandable-section')[2];
@@ -3680,7 +3626,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
             
-            // ========== SEGURANÇA ==========
             let seguranca = {};
             const segurancaSection = item.querySelectorAll('.expandable-section')[3];
             if (segurancaSection && segurancaSection.__getSegurancaDados) {
@@ -3698,7 +3643,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
             
-            // ========== EXAMES E TREINAMENTOS ==========
             const examesSection = item.querySelector('.exames-section');
             let exames = {};
             let treinamento = 0;
@@ -3716,7 +3660,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
             
-            // ========== INSUMOS ==========
             let insumos = {};
             const insumosSection = item.querySelectorAll('.expandable-section')[5];
             if (insumosSection && insumosSection.__getInsumosDados) {
@@ -3732,18 +3675,26 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
             
-            // ========== DESPESAS ==========
-            const despesasSection = item.querySelector('.despesas-section');
+            // Capturar despesas (incluindo a taxa)
             let despesas = {};
+            const despesasSection = item.querySelector('.despesas-section');
             if (despesasSection && despesasSection.__getDespesasDados) {
                 despesas = despesasSection.__getDespesasDados();
+            } else {
+                const taxaInput = item.querySelector('.despesa-taxa');
+                if (taxaInput) {
+                    let taxaStr = taxaInput.value.replace('%', '').replace(',', '.');
+                    let taxaNum = parseFloat(taxaStr);
+                    if (isNaN(taxaNum)) taxaNum = 13.75;
+                    despesas = { encargos_fiscais: { porcentagem: taxaNum } };
+                } else {
+                    despesas = { encargos_fiscais: { porcentagem: 13.75 } };
+                }
             }
             
-            // ========== TOTAL DA VAGA ==========
             const totalVagaElem = item.querySelector('.total-prestacao .valor');
             const totalVaga = totalVagaElem ? parseFloat(totalVagaElem.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0 : 0;
             
-            // ========== MONTAR OBJETO DO CARGO ==========
             cargos.push({
                 nome,
                 quantidade: qtd,
@@ -3755,7 +3706,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     insalubridade: insCheck?.checked || false,
                     heHoras: heHoras,
                     anHoras: anHoras,
-                    // NOVOS CAMPOS: ACÚMULO DE FUNÇÃO
                     acumulo: acumuloCheck?.checked || false,
                     acumuloQuantidade: acumuloQuantidade,
                     encargosPercentual: encargosPercentual
