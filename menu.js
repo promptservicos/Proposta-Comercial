@@ -352,9 +352,10 @@ function aplicarFiltros() {
         }
 
         html += `
-            <div class="proposta-card" data-id="${p.id}" data-tipo="${p.tipo || 'efetivo'}">
-                <div class="card-header">
-                    <span class="cliente-nome">${escapeHtml(p.cliente || 'Sem cliente')}</span>
+        <div class="proposta-card" data-id="${p.id}" data-tipo="${p.tipo || 'efetivo'}">
+            <div class="card-header">
+                <span class="cliente-nome">${escapeHtml(p.cliente || 'Sem cliente')}</span>
+                <div class="right-group">
                     <div class="card-badges">
                         <span class="vendedor-badge">${escapeHtml(p.vendedor)}</span>
                         <span class="tipo-badge">${escapeHtml(tipoContrato)}</span>
@@ -368,14 +369,15 @@ function aplicarFiltros() {
                         </button>
                     </div>
                 </div>
-                <div class="card-body">
-                    <span><i class="fas fa-calendar"></i> ${dataStr}</span>
-                    <span><i class="fas fa-briefcase"></i> ${totalCargos} cargo(s)</span>
-                </div>
-                ${nomesCargos ? `<div class="card-cargos"><i class="fas fa-user-tie"></i> ${escapeHtml(nomesCargos)}</div>` : ''}
-                <div class="card-footer">R$ ${totalGeral}</div>
             </div>
-        `;
+            <div class="card-body">
+                <span><i class="fas fa-calendar"></i> ${dataStr}</span>
+                <span><i class="fas fa-briefcase"></i> ${totalCargos} cargo(s)</span>
+            </div>
+            ${nomesCargos ? `<div class="card-cargos"><i class="fas fa-user-tie"></i> ${escapeHtml(nomesCargos)}</div>` : ''}
+            <div class="card-footer">R$ ${totalGeral}</div>
+        </div>
+    `;
     });
     cardsContainer.innerHTML = html;
 

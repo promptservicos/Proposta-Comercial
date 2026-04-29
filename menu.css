@@ -387,6 +387,8 @@ select option:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 
 .cliente-nome {
@@ -399,8 +401,6 @@ select option:hover {
     display: flex;
     gap: 0.5rem;
     align-items: center;
-    margin-left: auto;   /* empurra as badges para a direita */
-    margin-right: 1rem;  /* dá um espaço entre badges e botões */
 }
 
 .tipo-badge {
@@ -582,6 +582,11 @@ select option:hover {
     .toggle-btn {
         font-size: 0.85rem;
         padding: 0.6rem 0.8rem;
+    }
+    .right-group {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 0.5rem;
     }
 }
 
@@ -1109,7 +1114,6 @@ body.light-mode .card-cargos i {
     display: flex;
     gap: 0.5rem;
     align-items: center;
-    margin-left: auto;
 }
 
 .btn-duplicar, .btn-excluir {
@@ -1140,4 +1144,11 @@ body.light-mode .btn-excluir:hover {
 }
 body.light-mode .btn-excluir:hover {
     color: #ff4444;
+}
+
+.right-group {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-left: auto;
 }
