@@ -356,12 +356,17 @@ function aplicarFiltros() {
                 <div class="card-header">
                     <span class="cliente-nome">${escapeHtml(p.cliente || 'Sem cliente')}</span>
                     <div class="card-badges">
-                        <span class="tipo-badge">${escapeHtml(tipoContrato)}</span>
                         <span class="vendedor-badge">${escapeHtml(p.vendedor)}</span>
+                        <span class="tipo-badge">${escapeHtml(tipoContrato)}</span>
                     </div>
-                    <button class="btn-duplicar" data-id="${p.id}" data-tipo="${p.tipo || 'efetivo'}" title="Duplicar proposta">
-                        <i class="fas fa-copy"></i>
-                    </button>
+                    <div class="card-actions">
+                        <button class="btn-duplicar" data-id="${p.id}" data-tipo="${p.tipo || 'efetivo'}" title="Duplicar proposta">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <button class="btn-excluir" data-id="${p.id}" title="Excluir proposta">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
                     <span><i class="fas fa-calendar"></i> ${dataStr}</span>
@@ -377,7 +382,7 @@ function aplicarFiltros() {
     // Clique no card para abrir
     document.querySelectorAll('.proposta-card').forEach(card => {
         card.addEventListener('click', (e) => {
-            if (e.target.closest('.btn-duplicar')) return;
+            if (e.target.closest('.btn-duplicar') || e.target.closest('.btn-excluir')) return;
             propostaSelecionada = { id: card.dataset.id, tipo: card.dataset.tipo || 'efetivo' };
             if (modalOverlay) modalOverlay.classList.remove('hidden');
         });
@@ -399,7 +404,7 @@ function aplicarFiltros() {
     // Clique no botão excluir
     document.querySelectorAll('.btn-excluir').forEach(btn => {
         btn.addEventListener('click', async (e) => {
-            e.stopPropagation(); // impede que o clique no card seja disparado
+            e.stopPropagation();
             const id = btn.dataset.id;
             if (!id) return;
             if (confirm('Excluir esta proposta permanentemente? Esta ação não pode ser desfeita.')) {
