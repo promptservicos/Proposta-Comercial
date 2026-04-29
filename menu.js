@@ -24,7 +24,7 @@ const emailToName = {
     'fabiomansur@promptservicos.com.br': 'Fabio',
     'comercial1@promptservicos.com.br': 'Leila',
     'comercial3@promptservicos.com.br': 'Ricardo',
-    'ass.comercial@promptservicos.com.br': 'Moriela',
+    'ass.comercial@promptservicos.com.br': 'Gabriella',
     'promptcoordenacao@gmail.com': 'Val'
 };
 
@@ -290,7 +290,6 @@ function aplicarFiltros() {
         const cliente = p.cliente || '';
         const clienteMatch = cliente.toLowerCase().includes(filtroClienteVal);
         const vendedorMatch = !isAdmin ? true : (filtroVendedorVal === '' || p.vendedor === filtroVendedorVal);
-
         let dataMatch = true;
         if (p.data) {
             const dataProposta = new Date(p.data);
@@ -315,15 +314,11 @@ function aplicarFiltros() {
         const totalGeral = p.totalGeral ? p.totalGeral.toFixed(2).replace('.', ',') : '0,00';
         const tipoContrato = formatarTipoContrato(p.tipo);
         
-        // Extrair os nomes dos cargos
         let nomesCargos = '';
         if (p.cargos && p.cargos.length > 0) {
-            // Pegar os primeiros 2 cargos para não poluir o card
             const cargosExibicao = p.cargos.slice(0, 2);
             nomesCargos = cargosExibicao.map(cargo => cargo.nome || 'Cargo sem nome').join(', ');
-            if (p.cargos.length > 2) {
-                nomesCargos += ` +${p.cargos.length - 2}`;
-            }
+            if (p.cargos.length > 2) nomesCargos += ` +${p.cargos.length - 2}`;
         }
 
         html += `
@@ -334,42 +329,37 @@ function aplicarFiltros() {
                         <span class="tipo-badge">${escapeHtml(tipoContrato)}</span>
                         <span class="vendedor-badge">${escapeHtml(p.vendedor)}</span>
                     </div>
+                    <button class="btn-duplicar" data-id="${p.id}" data-tipo="${p.tipo || 'efetivo'}" title="Duplicar proposta">
+                        <i class="fas fa-copy"></i>
+                    </button>
                 </div>
                 <div class="card-body">
                     <span><i class="fas fa-calendar"></i> ${dataStr}</span>
                     <span><i class="fas fa-briefcase"></i> ${totalCargos} cargo(s)</span>
                 </div>
-                ${nomesCargos ? `
-                <div class="card-cargos">
-                    <i class="fas fa-user-tie"></i> ${escapeHtml(nomesCargos)}
-                </div>
-                ` : ''}
-                <div class="card-footer">
-                    R$ ${totalGeral}
-                </div>
+                ${nomesCargos ? `<div class="card-cargos"><i class="fas fa-user-tie"></i> ${escapeHtml(nomesCargos)}</div>` : ''}
+                <div class="card-footer">R$ ${totalGeral}</div>
             </div>
         `;
     });
     cardsContainer.innerHTML = html;
 
+    // Clique no card para abrir
     document.querySelectorAll('.proposta-card').forEach(card => {
-        // Evento de clique no card (abrir proposta)
         card.addEventListener('click', (e) => {
-            // Impede que o clique no botão duplicar dispare o modal
             if (e.target.closest('.btn-duplicar')) return;
             propostaSelecionada = { id: card.dataset.id, tipo: card.dataset.tipo || 'efetivo' };
             if (modalOverlay) modalOverlay.classList.remove('hidden');
         });
     });
 
-    // Evento específico para cada botão de duplicar
+    // Clique no botão duplicar
     document.querySelectorAll('.btn-duplicar').forEach(btn => {
         btn.addEventListener('click', async (e) => {
-            e.stopPropagation();   // impede que o clique chegue ao card
+            e.stopPropagation();
             const id = btn.dataset.id;
             const tipo = btn.dataset.tipo;
             if (!id || !tipo) return;
-            // Confirmação antes de duplicar (opcional)
             if (confirm('Deseja realmente duplicar esta proposta? Uma nova cópia será criada com a data atual.')) {
                 await duplicarProposta(id, tipo);
             }
