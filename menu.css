@@ -1102,8 +1102,15 @@ body.light-mode .card-cargos i {
     color: #c10404;
 }
 
-/* Botão duplicar no card */
-.btn-duplicar {
+/* Ações do card (botões) */
+.card-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-left: auto;
+}
+
+.btn-duplicar, .btn-excluir {
     background: transparent;
     border: none;
     color: #c10404;
@@ -1112,15 +1119,23 @@ body.light-mode .card-cargos i {
     padding: 4px 8px;
     border-radius: 20px;
     transition: all 0.2s;
-    margin-left: auto;
 }
-.btn-duplicar:hover {
+.btn-duplicar:hover, .btn-excluir:hover {
     background: rgba(193, 4, 4, 0.2);
     transform: scale(1.05);
 }
-body.light-mode .btn-duplicar {
+.btn-excluir:hover {
+    color: #ff4444;
+    background: rgba(255, 68, 68, 0.1);
+}
+body.light-mode .btn-duplicar,
+body.light-mode .btn-excluir {
     color: #c10404;
 }
-body.light-mode .btn-duplicar:hover {
+body.light-mode .btn-duplicar:hover,
+body.light-mode .btn-excluir:hover {
     background: rgba(193, 4, 4, 0.1);
+}
+body.light-mode .btn-excluir:hover {
+    color: #ff4444;
 }

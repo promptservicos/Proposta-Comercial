@@ -278,6 +278,36 @@ async function duplicarProposta(originalId, tipoProposta) {
     }
 }
 
+// ================== EXCLUIR PROPOSTA ==================
+async function excluirProposta(propostaId) {
+    // Confirmação adicional (já teremos no clique, mas pode ser redundante)
+    if (!confirm('Tem certeza que deseja excluir esta proposta permanentemente? Esta ação não pode ser desfeita.')) {
+        return false;
+    }
+    
+    try {
+        // Mostrar feedback visual
+        const loadingMsg = document.createElement('div');
+        loadingMsg.textContent = 'Excluindo proposta...';
+        loadingMsg.style.cssText = 'position:fixed; bottom:20px; right:20px; background:#c10404; color:#fff; padding:8px 16px; border-radius:30px; z-index:9999;';
+        document.body.appendChild(loadingMsg);
+        
+        // Excluir do Firestore
+        await db.collection('propostas').doc(propostaId).delete();
+        
+        loadingMsg.remove();
+        // Recarregar a lista de propostas
+        await carregarPropostas();
+        return true;
+    } catch (error) {
+        console.error('Erro ao excluir proposta:', error);
+        alert('Erro ao excluir proposta. Tente novamente.');
+        const msg = document.querySelector('div[style*="Excluindo proposta"]');
+        if (msg) msg.remove();
+        return false;
+    }
+}
+
 // ================== APLICAR FILTROS ==================
 function aplicarFiltros() {
     const filtroClienteVal = filtroCliente ? filtroCliente.value.toLowerCase().trim() : '';
@@ -362,6 +392,18 @@ function aplicarFiltros() {
             if (!id || !tipo) return;
             if (confirm('Deseja realmente duplicar esta proposta? Uma nova cópia será criada com a data atual.')) {
                 await duplicarProposta(id, tipo);
+            }
+        });
+    });
+
+    // Clique no botão excluir
+    document.querySelectorAll('.btn-excluir').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation(); // impede que o clique no card seja disparado
+            const id = btn.dataset.id;
+            if (!id) return;
+            if (confirm('Excluir esta proposta permanentemente? Esta ação não pode ser desfeita.')) {
+                await excluirProposta(id);
             }
         });
     });
