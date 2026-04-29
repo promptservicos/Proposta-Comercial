@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Firebase SDKs - TODOS OS SDKs NECESSÁRIOS -->
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -33,13 +33,11 @@
         </div>
         <p class="subtitle">gestão de propostas</p>
 
-        <!-- Botões toggle -->
         <div class="toggle-container">
             <button class="toggle-btn" id="btn-criar">Criar proposta</button>
             <button class="toggle-btn" id="btn-ver">Ver proposta</button>
         </div>
 
-        <!-- Painel Criar Proposta -->
         <div id="criar-panel" class="panel hidden">
             <div class="field">
                 <label for="contrato-criar"><i class="fas fa-file-contract"></i> contrato</label>
@@ -56,9 +54,7 @@
             <button class="btn" id="btn-continuar">continuar <i class="fas fa-arrow-right"></i></button>
         </div>
 
-        <!-- Painel Ver Proposta -->
         <div id="ver-panel" class="panel hidden">
-            <!-- Filtros -->
             <div class="filtros">
                 <div class="filtro-item">
                     <label><i class="fas fa-building"></i> Cliente</label>
@@ -84,14 +80,12 @@
                     </div>
                 </div>
             </div>
-
             <div id="cards-container" class="cards-container">
                 <p class="loading">Carregando propostas...</p>
             </div>
         </div>
     </div>
 
-    <!-- Modal de confirmação personalizado -->
     <div id="modal-overlay" class="modal-overlay hidden">
         <div class="modal-content">
             <i class="fas fa-file-alt modal-icon"></i>

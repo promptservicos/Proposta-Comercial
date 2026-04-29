@@ -218,6 +218,66 @@ function carregarPropostas() {
         });
 }
 
+// ================== DUPLICAR PROPOSTA ==================
+async function duplicarProposta(originalId, tipoProposta) {
+    try {
+        // Mostrar um feedback visual (opcional)
+        const loadingMsg = document.createElement('div');
+        loadingMsg.textContent = 'Duplicando proposta...';
+        loadingMsg.style.position = 'fixed';
+        loadingMsg.style.bottom = '20px';
+        loadingMsg.style.right = '20px';
+        loadingMsg.style.backgroundColor = '#c10404';
+        loadingMsg.style.color = '#fff';
+        loadingMsg.style.padding = '8px 16px';
+        loadingMsg.style.borderRadius = '30px';
+        loadingMsg.style.zIndex = '9999';
+        document.body.appendChild(loadingMsg);
+
+        // 1. Buscar o documento original
+        const docRef = db.collection('propostas').doc(originalId);
+        const docSnap = await docRef.get();
+        if (!docSnap.exists) {
+            throw new Error('Proposta original não encontrada');
+        }
+        const dadosOriginais = docSnap.data();
+
+        // 2. Preparar os dados da cópia
+        const novaData = new Date().toISOString();
+
+        // (Opcional) Adicionar "(cópia)" ao nome do cliente
+        let clienteCopia = dadosOriginais.cliente || '';
+        if (clienteCopia && !clienteCopia.toLowerCase().includes('(cópia)')) {
+            clienteCopia = clienteCopia + ' (cópia)';
+        }
+
+        const dadosCopia = {
+            ...dadosOriginais,               // mantém cargos, totalGeral, etc.
+            cliente: clienteCopia,
+            data: novaData,
+            vendedor: usuarioNome,            // força o vendedor atual
+            criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
+            originalId: originalId            // opcional: referência à proposta original
+        };
+
+        // Remover campos que não devem ser copiados (se houver ID)
+        delete dadosCopia.id;
+
+        // 3. Salvar novo documento no Firestore
+        const novaRef = await db.collection('propostas').add(dadosCopia);
+
+        // 4. Remover mensagem de loading e redirecionar para edição
+        loadingMsg.remove();
+        window.location.href = `${tipoProposta}.html?id=${novaRef.id}`;
+    } catch (error) {
+        console.error('Erro ao duplicar proposta:', error);
+        alert('Erro ao duplicar proposta. Tente novamente.');
+        // Remover mensagem de loading se existir
+        const msg = document.querySelector('div[style*="Duplicando proposta"]');
+        if (msg) msg.remove();
+    }
+}
+
 // ================== APLICAR FILTROS ==================
 function aplicarFiltros() {
     const filtroClienteVal = filtroCliente ? filtroCliente.value.toLowerCase().trim() : '';
@@ -293,9 +353,26 @@ function aplicarFiltros() {
     cardsContainer.innerHTML = html;
 
     document.querySelectorAll('.proposta-card').forEach(card => {
-        card.addEventListener('click', () => {
+        // Evento de clique no card (abrir proposta)
+        card.addEventListener('click', (e) => {
+            // Impede que o clique no botão duplicar dispare o modal
+            if (e.target.closest('.btn-duplicar')) return;
             propostaSelecionada = { id: card.dataset.id, tipo: card.dataset.tipo || 'efetivo' };
             if (modalOverlay) modalOverlay.classList.remove('hidden');
+        });
+    });
+
+    // Evento específico para cada botão de duplicar
+    document.querySelectorAll('.btn-duplicar').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();   // impede que o clique chegue ao card
+            const id = btn.dataset.id;
+            const tipo = btn.dataset.tipo;
+            if (!id || !tipo) return;
+            // Confirmação antes de duplicar (opcional)
+            if (confirm('Deseja realmente duplicar esta proposta? Uma nova cópia será criada com a data atual.')) {
+                await duplicarProposta(id, tipo);
+            }
         });
     });
 }

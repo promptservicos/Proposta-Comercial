@@ -1101,3 +1101,26 @@ body.light-mode .card-cargos {
 body.light-mode .card-cargos i {
     color: #c10404;
 }
+
+/* Botão duplicar no card */
+.btn-duplicar {
+    background: transparent;
+    border: none;
+    color: #c10404;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 20px;
+    transition: all 0.2s;
+    margin-left: auto;
+}
+.btn-duplicar:hover {
+    background: rgba(193, 4, 4, 0.2);
+    transform: scale(1.05);
+}
+body.light-mode .btn-duplicar {
+    color: #c10404;
+}
+body.light-mode .btn-duplicar:hover {
+    background: rgba(193, 4, 4, 0.1);
+}
