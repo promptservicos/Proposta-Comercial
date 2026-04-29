@@ -399,6 +399,8 @@ select option:hover {
     display: flex;
     gap: 0.5rem;
     align-items: center;
+    margin-left: auto;   /* empurra as badges para a direita */
+    margin-right: 1rem;  /* dá um espaço entre badges e botões */
 }
 
 .tipo-badge {
