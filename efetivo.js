@@ -118,6 +118,309 @@ document.addEventListener('DOMContentLoaded', async function() {
         return false;
     }
 
+    // ========== FUNÇÃO ESCAPE HTML ==========
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // ========== FUNÇÃO PARA GERAR IMAGENS ==========
+    async function gerarImagemPorCargo() {
+        const btnCompartilhar = document.getElementById('btn-compartilhar');
+        const textoOriginal = btnCompartilhar ? btnCompartilhar.innerHTML : '';
+        
+        if (btnCompartilhar) {
+            btnCompartilhar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando imagens...';
+            btnCompartilhar.disabled = true;
+        }
+        
+        try {
+            const cliente = clienteInput.value || 'Não informado';
+            const vendedor = document.getElementById('vendedor-nome').textContent || 'Não informado';
+            const dataAtual = new Date().toLocaleDateString('pt-BR');
+            const cargos = document.querySelectorAll('.cargo-item');
+            
+            console.log(`Total de cargos encontrados: ${cargos.length}`);
+            
+            // Mapa para contar nomes de cargos repetidos
+            const nomeCount = new Map();
+            for (let i = 0; i < cargos.length; i++) {
+                const cargo = cargos[i];
+                const cargoNomeBase = cargo.querySelector('.cargo-nome').value.trim() || `Cargo_${i + 1}`;
+                const count = nomeCount.get(cargoNomeBase) || 0;
+                nomeCount.set(cargoNomeBase, count + 1);
+            }
+            
+            // Calcular total geral da proposta
+            let totalGeralProposta = 0;
+            cargos.forEach(cargo => {
+                const qtd = parseInt(cargo.querySelector('.cargo-quantidade').value) || 1;
+                const taxaSpan = cargo.querySelector('.resultado-bloco .valor');
+                if (taxaSpan) {
+                    const taxaText = taxaSpan.textContent;
+                    const taxaValor = parseFloat(taxaText.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
+                    totalGeralProposta += taxaValor * qtd;
+                }
+            });
+            
+            // Forçar tema claro para melhor qualidade das imagens
+            const wasLightMode = document.body.classList.contains('light-mode');
+            if (!wasLightMode) {
+                document.body.classList.add('light-mode');
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            const clienteNome = cliente.replace(/[^a-zA-Z0-9]/g, '_');
+            const nomeContador = new Map();
+            
+            // ========== 1. GERAR E BAIXAR IMAGEM DO TOTAL DA PROPOSTA ==========
+            console.log('Gerando imagem do total da proposta...');
+            const totalElemento = document.createElement('div');
+            totalElemento.style.position = 'fixed';
+            totalElemento.style.left = '-9999px';
+            totalElemento.style.top = '-9999px';
+            totalElemento.style.backgroundColor = '#ffffff';
+            totalElemento.style.padding = '30px';
+            totalElemento.style.borderRadius = '16px';
+            totalElemento.style.width = '600px';
+            totalElemento.style.fontFamily = "'Inter', 'Segoe UI', sans-serif";
+            
+            totalElemento.innerHTML = `
+                <div style="text-align: center;">
+                    <div style="margin-bottom: 30px;">
+                        <div style="background: #c10404; width: 60px; height: 60px; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto;">
+                            <i class="fas fa-chart-line" style="font-size: 30px; color: #fff;"></i>
+                        </div>
+                        <h1 style="color: #c10404; margin: 0; font-size: 28px;">Prompt Serviços</h1>
+                        <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">Proposta de Contrato Efetivo</p>
+                    </div>
+                    
+                    <div style="background: #f5f5f5; padding: 15px; border-radius: 12px; margin-bottom: 30px; text-align: left;">
+                        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e0e0e0;">
+                            <span style="font-weight: 600; color: #666;">Cliente:</span>
+                            <span style="color: #333; font-weight: 500;">${escapeHtml(cliente)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e0e0e0;">
+                            <span style="font-weight: 600; color: #666;">Vendedor:</span>
+                            <span style="color: #333;">${escapeHtml(vendedor)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+                            <span style="font-weight: 600; color: #666;">Data de Emissão:</span>
+                            <span style="color: #333;">${escapeHtml(dataAtual)}</span>
+                        </div>
+                    </div>
+                    
+                    <div style="background: linear-gradient(135deg, #c10404 0%, #8b0303 100%); color: #fff; padding: 25px; border-radius: 16px; margin-bottom: 30px;">
+                        <div style="font-size: 16px; opacity: 0.9; margin-bottom: 10px;">TOTAL DA PROPOSTA</div>
+                        <div style="font-size: 48px; font-weight: bold;">${formatarMoeda(totalGeralProposta)}</div>
+                    </div>
+                    
+                    <div style="border-top: 1px solid #e0e0e0; padding-top: 20px; margin-top: 20px;">
+                        <div style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
+                            <div style="text-align: center;">
+                                <div style="font-size: 24px; font-weight: bold; color: #c10404;">${cargos.length}</div>
+                                <div style="font-size: 11px; color: #888;">Cargo(s)</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 24px; font-weight: bold; color: #c10404;">${Array.from(cargos).reduce((total, cargo) => {
+                                    const qtd = parseInt(cargo.querySelector('.cargo-quantidade')?.value) || 1;
+                                    return total + qtd;
+                                }, 0)}</div>
+                                <div style="font-size: 11px; color: #888;">Vaga(s)</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 30px; text-align: center; padding-top: 15px; border-top: 1px solid #e0e0e0; font-size: 9px; color: #888;">
+                        Documento gerado em ${dataAtual} - Proposta válida por 30 dias
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(totalElemento);
+            
+            const totalCanvas = await html2canvas(totalElemento, {
+                scale: 2,
+                backgroundColor: '#ffffff',
+                logging: false,
+                useCORS: true,
+                allowTaint: false
+            });
+            
+            document.body.removeChild(totalElemento);
+            
+            // Download da imagem total
+            const totalBlob = await new Promise(resolve => totalCanvas.toBlob(resolve, 'image/png'));
+            const totalLink = document.createElement('a');
+            totalLink.download = `${clienteNome}_TOTAL_DA_PROPOSTA.png`;
+            totalLink.href = URL.createObjectURL(totalBlob);
+            totalLink.click();
+            URL.revokeObjectURL(totalLink.href);
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // ========== 2. GERAR E BAIXAR IMAGEM PARA CADA CARGO ==========
+            let imagensGeradas = 0;
+            let imagensFalhas = 0;
+            
+            for (let i = 0; i < cargos.length; i++) {
+                const cargo = cargos[i];
+                const cargoNomeBase = cargo.querySelector('.cargo-nome').value.trim() || `Cargo_${i + 1}`;
+                
+                const ocorrenciaAtual = (nomeContador.get(cargoNomeBase) || 0) + 1;
+                nomeContador.set(cargoNomeBase, ocorrenciaAtual);
+                
+                const totalOcorrencias = nomeCount.get(cargoNomeBase) || 1;
+                const numeroSufixo = totalOcorrencias > 1 ? ` (${ocorrenciaAtual})` : '';
+                
+                const nomeCompleto = `${cargoNomeBase}${numeroSufixo}`;
+                const nomeArquivo = `${clienteNome}_${nomeCompleto.replace(/[^a-zA-Z0-9À-ú+()]/g, '_')}.png`;
+                
+                console.log(`Preparando imagem ${i + 1}/${cargos.length}: ${nomeCompleto}`);
+                
+                if (btnCompartilhar) {
+                    btnCompartilhar.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Baixando ${i + 1}/${cargos.length}: ${nomeCompleto.substring(0, 25)}...`;
+                }
+                
+                try {
+                    // Clonar o cargo e remover classes/estilos desnecessários
+                    const cloneCargo = cargo.cloneNode(true);
+                    
+                    // Criar elemento para imagem
+                    const elementoImagem = document.createElement('div');
+                    elementoImagem.style.position = 'fixed';
+                    elementoImagem.style.left = '-9999px';
+                    elementoImagem.style.top = '-9999px';
+                    elementoImagem.style.backgroundColor = '#ffffff';
+                    elementoImagem.style.padding = '20px';
+                    elementoImagem.style.borderRadius = '16px';
+                    elementoImagem.style.width = '800px';
+                    elementoImagem.style.fontFamily = "'Inter', 'Segoe UI', sans-serif";
+                    
+                    // Extrair dados para mostrar no card da imagem
+                    const nomeCargo = cloneCargo.querySelector('.cargo-nome').value;
+                    const qtd = cloneCargo.querySelector('.cargo-quantidade').value;
+                    const salarioRaw = cloneCargo.querySelector('.cargo-salario').value;
+                    const salario = parseFloat(salarioRaw.replace(/\./g, '').replace(',', '.')) || 0;
+                    const taxaSelect = cloneCargo.querySelector('.cargo-taxa');
+                    const taxa = parseFloat(taxaSelect.value);
+                    const taxaPercentual = taxa * 100;
+                    const valorTaxa = salario * taxa;
+                    const subtotal = valorTaxa * qtd;
+                    
+                    elementoImagem.innerHTML = `
+                        <div style="margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #c10404;">
+                                <div>
+                                    <h1 style="color: #c10404; margin: 0; font-size: 20px;">Prompt Serviços</h1>
+                                    <p style="color: #666; margin: 0; font-size: 11px;">Proposta de Contrato Efetivo</p>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 10px; color: #888;">Data: ${dataAtual}</div>
+                                    <div style="font-size: 10px; color: #888;">Vendedor: ${vendedor}</div>
+                                </div>
+                            </div>
+                            <div style="background: #f5f5f5; padding: 8px 12px; border-radius: 8px;">
+                                <strong>Cliente:</strong> ${cliente}
+                            </div>
+                        </div>
+                        
+                        <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <h3 style="color: #c10404; margin-top: 0; border-left: 4px solid #c10404; padding-left: 12px;">
+                                ${escapeHtml(nomeCargo)}
+                            </h3>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0;">
+                                <div style="background: #f9f9f9; padding: 12px; border-radius: 10px;">
+                                    <div style="font-size: 12px; color: #666;">Quantidade de vagas</div>
+                                    <div style="font-size: 28px; font-weight: bold; color: #c10404;">${qtd}</div>
+                                </div>
+                                <div style="background: #f9f9f9; padding: 12px; border-radius: 10px;">
+                                    <div style="font-size: 12px; color: #666;">Salário base</div>
+                                    <div style="font-size: 28px; font-weight: bold;">${formatarMoeda(salario)}</div>
+                                </div>
+                            </div>
+                            
+                            <div style="margin: 20px 0; padding: 15px; background: linear-gradient(135deg, #fff5f5 0%, #fff 100%); border-radius: 12px;">
+                                <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e0e0e0;">
+                                    <span>Taxa de administração (${taxaPercentual}%)</span>
+                                    <span style="font-weight: bold;">${formatarMoeda(valorTaxa)}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+                                    <span>Subtotal para ${qtd} vaga(s)</span>
+                                    <span style="font-weight: bold; font-size: 1.2rem; color: #c10404;">${formatarMoeda(subtotal)}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 20px; text-align: center; padding-top: 10px; border-top: 1px solid #e0e0e0; font-size: 9px; color: #888;">
+                            Documento gerado em ${dataAtual} - Proposta válida por 30 dias
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(elementoImagem);
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    
+                    const canvas = await html2canvas(elementoImagem, {
+                        scale: 1.5,
+                        backgroundColor: '#ffffff',
+                        logging: false,
+                        useCORS: true,
+                        allowTaint: false
+                    });
+                    
+                    document.body.removeChild(elementoImagem);
+                    
+                    // Download da imagem do cargo
+                    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                    const link = document.createElement('a');
+                    link.download = nomeArquivo;
+                    link.href = URL.createObjectURL(blob);
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                    
+                    imagensGeradas++;
+                    console.log(`✅ Imagem ${i + 1}/${cargos.length} baixada: ${nomeArquivo}`);
+                    
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                } catch (cargoError) {
+                    console.error(`❌ Erro no cargo ${i + 1}: ${cargoNomeBase}`, cargoError);
+                    imagensFalhas++;
+                }
+            }
+            
+            // Restaurar tema original
+            if (!wasLightMode) {
+                document.body.classList.remove('light-mode');
+            }
+            
+            let mensagem = `✅ ${imagensGeradas + 1} imagem(ns) baixada(s) com sucesso!\n- 1 imagem com o TOTAL da proposta\n- ${imagensGeradas} imagem(ns) com detalhes dos cargos`;
+            
+            if (imagensGeradas !== cargos.length) {
+                mensagem += `\n\n⚠️ Apenas ${imagensGeradas} de ${cargos.length} cargos foram gerados.`;
+            }
+            
+            if (imagensFalhas > 0) {
+                mensagem += `\n\n❌ ${imagensFalhas} cargo(s) falharam. Verifique o console.`;
+            }
+            
+            mostrarModal(mensagem);
+            
+        } catch (error) {
+            console.error('Erro ao gerar imagens:', error);
+            mostrarModal('Erro ao gerar imagens. Tente novamente.\n' + error.message);
+        } finally {
+            const btnCompartilhar = document.getElementById('btn-compartilhar');
+            if (btnCompartilhar) {
+                btnCompartilhar.innerHTML = textoOriginal;
+                btnCompartilhar.disabled = false;
+            }
+        }
+    }
+
     // ========== FUNÇÃO PARA CRIAR CARGO ==========
     function criarCargoItem(cargo = '', quantidade = 1, salario = 0, taxa = 0.5) {
         const item = document.createElement('div');
@@ -297,19 +600,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         const btnTema = document.getElementById('btn-tema');
         const iconTema = btnTema?.querySelector('i');
         
-        // Se NÃO houver tema salvo, ou se o tema salvo for 'light', aplica o tema claro
         if (!temaSalvo || temaSalvo === 'light') {
             document.body.classList.add('light-mode');
             if (iconTema) {
                 iconTema.classList.remove('fa-moon');
                 iconTema.classList.add('fa-sun');
             }
-            // Salvar como 'light' se não houver tema salvo
             if (!temaSalvo) {
                 localStorage.setItem('tema_efetivo', 'light');
             }
         } else if (temaSalvo === 'dark') {
-            // Apenas se o tema salvo for 'dark', aplica o tema escuro
             document.body.classList.remove('light-mode');
             if (iconTema) {
                 iconTema.classList.remove('fa-sun');
@@ -336,47 +636,31 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // ========== COMPARTILHAR LINK ==========
+    // ========== NOVO: COMPARTILHAR / BAIXAR IMAGENS ==========
     function initCompartilhar() {
         const btnCompartilhar = document.getElementById('btn-compartilhar');
-        const modalShare = document.getElementById('modal-share');
-        const shareLinkInput = document.getElementById('share-link');
-        const btnCopiarLink = document.getElementById('btn-copiar-link');
-        const modalShareOk = document.getElementById('modal-share-ok');
-        
         if (!btnCompartilhar) return;
         
         btnCompartilhar.addEventListener('click', async () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const propostaId = urlParams.get('id');
-            
-            if (!propostaId) {
-                mostrarModal('Salve a proposta primeiro antes de compartilhar.');
+            const cargos = document.querySelectorAll('.cargo-item');
+            if (cargos.length === 0) {
+                mostrarModal('Adicione pelo menos um cargo antes de gerar as imagens.');
                 return;
             }
             
-            const linkVisualizacao = `${window.location.origin}${window.location.pathname}?id=${propostaId}&visualizacao=true`;
-            if (shareLinkInput) shareLinkInput.value = linkVisualizacao;
-            if (modalShare) modalShare.classList.remove('hidden');
+            const cliente = clienteInput.value;
+            if (!cliente) {
+                mostrarModal('Informe o nome do cliente antes de gerar as imagens.');
+                return;
+            }
+            
+            await gerarImagemPorCargo();
         });
-        
-        if (btnCopiarLink && shareLinkInput) {
-            btnCopiarLink.addEventListener('click', () => {
-                shareLinkInput.select();
-                document.execCommand('copy');
-                mostrarModal('Link copiado para a área de transferência!');
-            });
-        }
-        
-        if (modalShareOk && modalShare) {
-            modalShareOk.addEventListener('click', () => modalShare.classList.add('hidden'));
-            modalShare.addEventListener('click', (e) => {
-                if (e.target === modalShare) modalShare.classList.add('hidden');
-            });
-        }
     }
     
-    // ========== VERIFICAR MODO VISUALIZAÇÃO ==========
+    // ========== VERIFICAR MODO VISUALIZAÇÃO (removido pois não há mais link) ==========
+    // O modo visualização ainda pode existir se a URL vier com ?visualizacao=true
+    // Mantido por compatibilidade, mas sem link de compartilhamento.
     function checkVisualizacao() {
         const urlParams = new URLSearchParams(window.location.search);
         const isVisualizacao = urlParams.get('visualizacao') === 'true';
@@ -470,6 +754,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // ========== INICIALIZAR FUNCIONALIDADES ==========
     initTema();
-    initCompartilhar();
+    initCompartilhar();  // agora chama a geração de imagens
     checkVisualizacao();
 });
