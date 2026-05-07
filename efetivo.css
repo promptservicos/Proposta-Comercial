@@ -1062,6 +1062,7 @@ body.light-mode .taxa-simbolo {
 /* Estilo para o input number - remover setas padrão e manter limpo */
 .cargo-taxa {
     -moz-appearance: textfield;
+    appearance: textfield;
 }
 
 .cargo-taxa::-webkit-inner-spin-button,
