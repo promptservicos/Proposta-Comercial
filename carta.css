@@ -1,0 +1,507 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #e0e0e0;
+    padding: 2rem;
+    position: relative;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        radial-gradient(circle at 20% 80%, rgba(193, 4, 4, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(193, 4, 4, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.container {
+    background: linear-gradient(135deg, #141414 0%, #0c0c0c 100%);
+    max-width: 1000px;
+    width: 100%;
+    padding: 2rem;
+    border-radius: 32px;
+    border: 1px solid rgba(193, 4, 4, 0.3);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(193, 4, 4, 0.1) inset;
+    position: relative;
+    z-index: 1;
+}
+
+/* Cabeçalho da página - LOGO MAIOR */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid rgba(193, 4, 4, 0.3);
+}
+
+.logo-area {
+    display: flex;
+    align-items: center;
+}
+
+.logo-img {
+    width: 120px !important;
+    height: 120px !important;
+    object-fit: contain;
+    border-radius: 20px;
+}
+
+.header-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-tema, .btn-voltar {
+    background: rgba(30, 30, 30, 0.8);
+    border: 1px solid rgba(193, 4, 4, 0.3);
+    color: #c10404;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 1.2rem;
+}
+
+.btn-tema:hover, .btn-voltar:hover {
+    border-color: #c10404;
+    background-color: rgba(193, 4, 4, 0.2);
+    transform: scale(1.05);
+}
+
+/* Modo claro - correção dos botões */
+body.light-mode .btn-tema,
+body.light-mode .btn-voltar {
+    background: #f0f0f0 !important;
+    border: 1px solid rgba(193, 4, 4, 0.4) !important;
+    color: #c10404 !important;
+}
+
+body.light-mode .btn-tema:hover,
+body.light-mode .btn-voltar:hover {
+    background: rgba(193, 4, 4, 0.1) !important;
+    transform: scale(1.05);
+}
+
+/* Área da carta - será capturada para imagem */
+.carta-wrapper {
+    background: #ffffff;
+    border-radius: 24px;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s;
+    overflow: auto;
+    max-height: 80vh;
+}
+
+.carta-wrapper::-webkit-scrollbar {
+    width: 6px;
+}
+
+/* Conteúdo da carta - dimensionamento dinâmico */
+.carta-conteudo {
+    max-width: 800px;
+    margin: 0 auto;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    color: #333;
+    line-height: 1.6;
+    padding: 3rem;
+    transition: all 0.3s ease;
+}
+
+/* Ajuste de tamanho baseado no conteúdo */
+.carta-conteudo.texto-pequeno {
+    font-size: 12px;
+    line-height: 1.4;
+    padding: 2rem;
+}
+
+.carta-conteudo.texto-medio {
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 2.5rem;
+}
+
+.carta-conteudo.texto-normal {
+    font-size: 16px;
+    line-height: 1.6;
+    padding: 3rem;
+}
+
+/* Ajuste no header da carta */
+.carta-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #c10404;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Força o logo a ficar próximo do slogan */
+.carta-header .carta-logo {
+    margin-bottom: 0.25rem !important;
+}
+
+.carta-header .slogan {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+/* Logo dentro da carta - AINDA MAIOR e sem margem inferior grande */
+.carta-logo {
+    width: auto;
+    height: auto;
+    max-width: 280px;
+    max-height: 120px;
+    object-fit: contain;
+    margin-bottom: 0.25rem !important;
+    border-radius: 12px;
+}
+
+/* Slogan - BEM MENOR e mais próximo do logo */
+.slogan {
+    color: #c10404;
+    font-size: 0.7rem !important;
+    font-weight: 300;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    line-height: 1.2;
+}
+
+.carta-corpo {
+    margin-bottom: 2rem;
+    outline: none;
+    min-height: 200px;
+}
+
+.carta-corpo p {
+    margin-bottom: 1rem;
+    text-align: justify;
+}
+
+.carta-corpo[contenteditable="true"] {
+    cursor: text;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.carta-corpo[contenteditable="true"]:hover {
+    background: rgba(193, 4, 4, 0.05);
+}
+
+.carta-corpo[contenteditable="true"]:focus {
+    background: rgba(193, 4, 4, 0.08);
+    outline: none;
+}
+
+/* Placeholder para o corpo da carta */
+.carta-corpo[contenteditable="true"]:empty:before {
+    content: attr(data-placeholder);
+    color: #aaa;
+    font-style: italic;
+    opacity: 0.7;
+}
+
+.carta-corpo[contenteditable="true"]:focus:empty:before {
+    opacity: 0.5;
+}
+
+.carta-assinatura {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid #ddd;
+    text-align: center;
+}
+
+/* Campos editáveis */
+.campos-editor {
+    background: linear-gradient(135deg, #1a1a1a 0%, #111111 100%);
+    border-radius: 24px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid rgba(193, 4, 4, 0.2);
+}
+
+.campos-editor h3 {
+    color: #c10404;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.campo-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.campo-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+.campo-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: #aaa;
+    margin-bottom: 0.3rem;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.campo-group label i {
+    color: #c10404;
+}
+
+.input-moderno {
+    width: 100%;
+    padding: 0.7rem 1rem;
+    background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%);
+    border: 1px solid #2c2c2c;
+    border-radius: 16px;
+    color: #fff;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+    font-family: 'Inter', sans-serif;
+}
+
+.input-moderno:focus {
+    outline: none;
+    border-color: #c10404;
+    box-shadow: 0 0 0 2px rgba(193, 4, 4, 0.2);
+}
+
+/* Botões lado a lado - já está correto */
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.btn-acao {
+    background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%);
+    border: 2px solid #c10404;
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 1rem 1.5rem;
+    border-radius: 50px;
+    flex: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-acao i {
+    color: #c10404;
+    transition: all 0.2s;
+}
+
+.btn-acao:hover {
+    background: linear-gradient(135deg, #c10404 0%, #a00303 100%);
+    border-color: #c10404;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(193, 4, 4, 0.4);
+}
+
+.btn-acao:hover i {
+    color: #ffffff;
+}
+
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(8px);
+}
+
+.modal-content {
+    background: linear-gradient(135deg, #1a1a1a 0%, #111111 100%);
+    border: 1px solid #c10404;
+    border-radius: 24px;
+    padding: 2rem;
+    max-width: 350px;
+    width: 90%;
+    text-align: center;
+}
+
+.modal-icon {
+    font-size: 2.5rem;
+    color: #c10404;
+    margin-bottom: 1rem;
+}
+
+.modal-text {
+    color: #fff;
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+}
+
+.modal-btn-ok {
+    background: linear-gradient(135deg, #c10404 0%, #a00303 100%);
+    color: #fff;
+    border: none;
+    padding: 0.7rem 2rem;
+    border-radius: 40px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.modal-btn-ok:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(193, 4, 4, 0.4);
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Modo claro */
+body.light-mode {
+    background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+}
+
+body.light-mode .container {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%);
+}
+
+body.light-mode .campos-editor {
+    background: #fafafa;
+    border: 1px solid #e0e0e0;
+}
+
+body.light-mode .input-moderno {
+    background: #ffffff !important;
+    border: 1px solid #ddd !important;
+    color: #333 !important;
+}
+
+body.light-mode .campo-group label {
+    color: #555;
+}
+
+body.light-mode .btn-acao {
+    background: #f5f5f5;
+    color: #333;
+}
+
+body.light-mode .btn-acao i {
+    color: #c10404;
+}
+
+body.light-mode .btn-acao:hover {
+    background: linear-gradient(135deg, #c10404 0%, #a00303 100%);
+    color: #fff;
+}
+
+body.light-mode .carta-wrapper {
+    background: #ffffff;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+body.light-mode .modal-content {
+    background: #ffffff;
+}
+
+body.light-mode .modal-text {
+    color: #333;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1a1a1a;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c10404;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #ff4444;
+}
+
+body.light-mode ::-webkit-scrollbar-track {
+    background: #f0f0f0;
+}
+
+/* Responsivo para mobile */
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+    .carta-conteudo {
+        padding: 1rem;
+    }
+    .campo-row {
+        flex-direction: column;
+    }
+    .logo-img {
+        width: 80px !important;
+        height: 80px !important;
+    }
+    .carta-logo {
+        width: 120px !important;
+        height: 120px !important;
+    }
+    .action-buttons {
+        flex-direction: row;
+    }
+    .slogan {
+        font-size: 0.6rem !important;
+    }
+}

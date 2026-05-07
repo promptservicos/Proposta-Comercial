@@ -1152,3 +1152,168 @@ body.light-mode .btn-excluir:hover {
     align-items: center;
     margin-left: auto;
 }
+
+/* Estilo para o filtro de tipo */
+#filtro-tipo-container {
+    min-width: 140px;
+}
+
+#filtro-tipo {
+    background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid #2c2c2c !important;
+    border-radius: 16px !important;
+    padding: 0.8rem 1rem !important;
+    cursor: pointer !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+}
+
+#filtro-tipo option {
+    background: #1a1a1a !important;
+    color: #ffffff !important;
+    padding: 0.8rem !important;
+}
+
+#filtro-tipo option:hover,
+#filtro-tipo option:checked {
+    background: linear-gradient(135deg, #c10404 0%, #a00303 100%) !important;
+    color: #ffffff !important;
+}
+
+body.light-mode #filtro-tipo {
+    background: #ffffff !important;
+    border: 1px solid #ddd !important;
+    color: #333 !important;
+}
+
+body.light-mode #filtro-tipo option {
+    background: #ffffff !important;
+    color: #333 !important;
+}
+
+body.light-mode #filtro-tipo option:hover,
+body.light-mode #filtro-tipo option:checked {
+    background: linear-gradient(135deg, #c10404 0%, #a00303 100%) !important;
+    color: #ffffff !important;
+}
+
+/* Custom Select Estilizado */
+.custom-select-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.custom-select {
+    position: relative;
+    width: 100%;
+}
+
+.custom-select-trigger {
+    background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%);
+    border: 1px solid #2c2c2c;
+    border-radius: 16px;
+    padding: 0.8rem 1rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.custom-select-trigger:hover {
+    border-color: #c10404;
+    background: linear-gradient(135deg, #202020 0%, #181818 100%);
+    transform: translateY(-1px);
+}
+
+.custom-select-trigger .custom-select-value {
+    color: #fff;
+    font-size: 0.95rem;
+}
+
+.custom-select-trigger i {
+    color: #c10404;
+    transition: transform 0.3s ease;
+}
+
+.custom-select.open .custom-select-trigger i {
+    transform: rotate(180deg);
+}
+
+.custom-select-options {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%);
+    border: 1px solid #2c2c2c;
+    border-radius: 16px;
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    z-index: 100;
+}
+
+.custom-select.open .custom-select-options {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.custom-option {
+    padding: 0.8rem 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    color: #fff;
+}
+
+.custom-option i {
+    color: #c10404;
+    width: 20px;
+}
+
+.custom-option:hover {
+    background: linear-gradient(135deg, #c10404 0%, #a00303 100%);
+    padding-left: 1.2rem;
+}
+
+.custom-option.selected {
+    background: linear-gradient(135deg, #c10404 0%, #a00303 100%);
+    font-weight: 600;
+}
+
+/* Modo claro */
+body.light-mode .custom-select-trigger {
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+}
+
+body.light-mode .custom-select-trigger .custom-select-value {
+    color: #333;
+}
+
+body.light-mode .custom-select-trigger:hover {
+    background: #fafafa;
+    border-color: #c10404;
+}
+
+body.light-mode .custom-select-options {
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+}
+
+body.light-mode .custom-option {
+    color: #333;
+}
+
+body.light-mode .custom-option:hover {
+    background: linear-gradient(135deg, #c10404 0%, #a00303 100%);
+    color: #fff;
+}

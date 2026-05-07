@@ -30,8 +30,8 @@ const emailToName = {
 
 // Lista de admins (que veem todas as propostas)
 const ADMIN_EMAILS = [
-    'marketing@promptservicos.com.br',  // Luca - admin mas não aparece na lista
-    'fabiomansur@promptservicos.com.br', // Fabio - admin
+    'marketing@promptservicos.com.br',
+    'fabiomansur@promptservicos.com.br',
 ];
 
 // Lista de vendedores disponíveis para filtro 
@@ -48,10 +48,10 @@ const btnCriar = document.getElementById('btn-criar');
 const btnVer = document.getElementById('btn-ver');
 const panelCriar = document.getElementById('criar-panel');
 const panelVer = document.getElementById('ver-panel');
-const contratoSelect = document.getElementById('contrato-criar');
 const btnContinuar = document.getElementById('btn-continuar');
 const filtroCliente = document.getElementById('filtro-cliente');
 const filtroVendedor = document.getElementById('filtro-vendedor');
+const filtroTipo = document.getElementById('filtro-tipo');
 const filtroDataInicio = document.getElementById('filtro-data-inicio');
 const filtroDataFim = document.getElementById('filtro-data-fim');
 const cardsContainer = document.getElementById('cards-container');
@@ -67,6 +67,55 @@ let propostaSelecionada = null;
 
 // Garantir que o modal comece oculto
 if (modalOverlay) modalOverlay.classList.add('hidden');
+
+// ================== CUSTOM SELECT ==================
+function initCustomSelect() {
+    const customSelect = document.getElementById('custom-select');
+    const hiddenSelect = document.getElementById('contrato-criar');
+    
+    if (!customSelect || !hiddenSelect) return;
+    
+    const trigger = customSelect.querySelector('.custom-select-trigger');
+    const optionsContainer = customSelect.querySelector('.custom-select-options');
+    const valueSpan = trigger.querySelector('.custom-select-value');
+    
+    // Toggle dropdown
+    trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        customSelect.classList.toggle('open');
+    });
+    
+    // Selecionar opção
+    const options = customSelect.querySelectorAll('.custom-option');
+    options.forEach(option => {
+        option.addEventListener('click', () => {
+            const value = option.dataset.value;
+            const text = option.textContent.trim();
+            
+            valueSpan.textContent = text;
+            hiddenSelect.value = value;
+            
+            options.forEach(opt => opt.classList.remove('selected'));
+            option.classList.add('selected');
+            
+            customSelect.classList.remove('open');
+            
+            // Disparar evento change no select oculto para compatibilidade
+            const changeEvent = new Event('change', { bubbles: true });
+            hiddenSelect.dispatchEvent(changeEvent);
+        });
+    });
+    
+    // Fechar ao clicar fora
+    document.addEventListener('click', () => {
+        customSelect.classList.remove('open');
+    });
+    
+    // Prevenir fechamento ao clicar dentro
+    customSelect.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+}
 
 // ================== FUNÇÃO PARA OBTER NOME A PARTIR DO EMAIL ==================
 function getNomeFromEmail(email) {
@@ -135,6 +184,7 @@ function formatarTipoContrato(tipo) {
         case 'temporario': return 'Temporário';
         case 'efetivo': return 'Efetivo';
         case 'terceirizado': return 'Terceirizado';
+        case 'carta': return 'Carta';
         default: return tipo || 'Não definido';
     }
 }
@@ -178,32 +228,78 @@ function updateLight(e, btn) {
 if (btnCriar) btnCriar.addEventListener('mousemove', (e) => updateLight(e, btnCriar));
 if (btnVer) btnVer.addEventListener('mousemove', (e) => updateLight(e, btnVer));
 
-// ================== CRIAÇÃO DE PROPOSTA ==================
+// ================== CRIAÇÃO DE PROPOSTA/CARTA ==================
 if (btnContinuar) {
     btnContinuar.addEventListener('click', () => {
-        const contrato = contratoSelect ? contratoSelect.value : '';
+        const hiddenSelect = document.getElementById('contrato-criar');
+        const contrato = hiddenSelect ? hiddenSelect.value : '';
         if (!contrato) {
-            alert('Selecione o tipo de contrato.');
+            alert('Selecione o tipo de documento.');
             return;
         }
-        window.location.href = `${contrato}.html?vendedor=${encodeURIComponent(usuarioNome)}`;
+        // Se for carta, redireciona para carta.html
+        if (contrato === 'carta') {
+            window.location.href = `carta.html?vendedor=${encodeURIComponent(usuarioNome)}`;
+        } else {
+            window.location.href = `${contrato}.html?vendedor=${encodeURIComponent(usuarioNome)}`;
+        }
     });
 }
 
-// ================== CARREGAR PROPOSTAS ==================
+// ================== CARREGAR PROPOSTAS/CARTAS ==================
 function carregarPropostas() {
     if (cardsContainer) cardsContainer.innerHTML = '<p class="loading">Carregando propostas...</p>';
     
-    db.collection('propostas').orderBy('data', 'desc').get()
-        .then((querySnapshot) => {
+    // Buscar tanto da coleção 'propostas' quanto 'cartas'
+    const promises = [];
+    promises.push(db.collection('propostas').orderBy('data', 'desc').get());
+    promises.push(db.collection('cartas').orderBy('dataGeracao', 'desc').get());
+    
+    Promise.all(promises)
+        .then(([propostasSnap, cartasSnap]) => {
             propostas = [];
-            querySnapshot.forEach((doc) => {
+            
+            // Processar propostas
+            propostasSnap.forEach((doc) => {
                 const data = doc.data();
                 let vendedorNome = data.vendedor;
                 if (vendedorNome && vendedorNome.includes('@')) {
                     vendedorNome = getNomeFromEmail(vendedorNome);
                 }
-                propostas.push({ id: doc.id, ...data, vendedor: vendedorNome });
+                propostas.push({ 
+                    id: doc.id, 
+                    ...data, 
+                    vendedor: vendedorNome,
+                    tipo: data.tipo || 'efetivo',
+                    colecao: 'propostas'
+                });
+            });
+            
+            // Processar cartas
+            cartasSnap.forEach((doc) => {
+                const data = doc.data();
+                let vendedorNome = data.usuario;
+                if (vendedorNome && vendedorNome.includes('@')) {
+                    vendedorNome = getNomeFromEmail(vendedorNome);
+                }
+                // Para cartas, usar dados específicos
+                propostas.push({ 
+                    id: doc.id, 
+                    cliente: data.nome || 'Carta sem nome',
+                    vendedor: vendedorNome || data.nome || 'Não informado',
+                    data: data.dataGeracao || data.dataAtualizacao,
+                    tipo: 'carta',
+                    totalGeral: 0,
+                    cargos: [],
+                    colecao: 'cartas'
+                });
+            });
+            
+            // Ordenar por data (mais recente primeiro)
+            propostas.sort((a, b) => {
+                const dateA = a.data ? new Date(a.data) : new Date(0);
+                const dateB = b.data ? new Date(b.data) : new Date(0);
+                return dateB - dateA;
             });
             
             if (!isAdmin) {
@@ -213,96 +309,95 @@ function carregarPropostas() {
             aplicarFiltros();
         })
         .catch((error) => {
-            console.error('Erro ao carregar propostas: ', error);
+            console.error('Erro ao carregar propostas/cartas: ', error);
             if (cardsContainer) cardsContainer.innerHTML = '<p class="loading">Erro ao carregar. Verifique permissões.</p>';
         });
 }
 
-// ================== DUPLICAR PROPOSTA ==================
-async function duplicarProposta(originalId, tipoProposta) {
+// ================== DUPLICAR PROPOSTA/CARTA ==================
+async function duplicarProposta(originalId, tipoProposta, colecao) {
     try {
-        // Mostrar um feedback visual (opcional)
         const loadingMsg = document.createElement('div');
-        loadingMsg.textContent = 'Duplicando proposta...';
-        loadingMsg.style.position = 'fixed';
-        loadingMsg.style.bottom = '20px';
-        loadingMsg.style.right = '20px';
-        loadingMsg.style.backgroundColor = '#c10404';
-        loadingMsg.style.color = '#fff';
-        loadingMsg.style.padding = '8px 16px';
-        loadingMsg.style.borderRadius = '30px';
-        loadingMsg.style.zIndex = '9999';
+        loadingMsg.textContent = 'Duplicando...';
+        loadingMsg.style.cssText = 'position:fixed; bottom:20px; right:20px; background:#c10404; color:#fff; padding:8px 16px; border-radius:30px; z-index:9999;';
         document.body.appendChild(loadingMsg);
 
-        // 1. Buscar o documento original
-        const docRef = db.collection('propostas').doc(originalId);
+        // Buscar o documento original
+        const docRef = db.collection(colecao).doc(originalId);
         const docSnap = await docRef.get();
         if (!docSnap.exists) {
-            throw new Error('Proposta original não encontrada');
+            throw new Error('Documento original não encontrado');
         }
         const dadosOriginais = docSnap.data();
-
-        // 2. Preparar os dados da cópia
+        
         const novaData = new Date().toISOString();
-
-        // (Opcional) Adicionar "(cópia)" ao nome do cliente
-        let clienteCopia = dadosOriginais.cliente || '';
-        if (clienteCopia && !clienteCopia.toLowerCase().includes('(cópia)')) {
-            clienteCopia = clienteCopia + ' (cópia)';
+        let dadosCopia = {};
+        
+        if (colecao === 'cartas') {
+            // Duplicar carta
+            let nomeCopia = dadosOriginais.nome || 'Carta';
+            if (nomeCopia && !nomeCopia.toLowerCase().includes('(cópia)')) {
+                nomeCopia = nomeCopia + ' (cópia)';
+            }
+            dadosCopia = {
+                ...dadosOriginais,
+                nome: nomeCopia,
+                dataGeracao: novaData,
+                dataAtualizacao: novaData,
+                usuario: usuarioNome,
+                originalId: originalId
+            };
+            delete dadosCopia.id;
+            const novaRef = await db.collection('cartas').add(dadosCopia);
+            loadingMsg.remove();
+            window.location.href = `carta.html?id=${novaRef.id}`;
+        } else {
+            // Duplicar proposta
+            let clienteCopia = dadosOriginais.cliente || '';
+            if (clienteCopia && !clienteCopia.toLowerCase().includes('(cópia)')) {
+                clienteCopia = clienteCopia + ' (cópia)';
+            }
+            dadosCopia = {
+                ...dadosOriginais,
+                cliente: clienteCopia,
+                data: novaData,
+                vendedor: usuarioNome,
+                originalId: originalId
+            };
+            delete dadosCopia.id;
+            const novaRef = await db.collection('propostas').add(dadosCopia);
+            loadingMsg.remove();
+            window.location.href = `${tipoProposta}.html?id=${novaRef.id}`;
         }
-
-        const dadosCopia = {
-            ...dadosOriginais,               // mantém cargos, totalGeral, etc.
-            cliente: clienteCopia,
-            data: novaData,
-            vendedor: usuarioNome,            // força o vendedor atual
-            criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
-            originalId: originalId            // opcional: referência à proposta original
-        };
-
-        // Remover campos que não devem ser copiados (se houver ID)
-        delete dadosCopia.id;
-
-        // 3. Salvar novo documento no Firestore
-        const novaRef = await db.collection('propostas').add(dadosCopia);
-
-        // 4. Remover mensagem de loading e redirecionar para edição
-        loadingMsg.remove();
-        window.location.href = `${tipoProposta}.html?id=${novaRef.id}`;
     } catch (error) {
-        console.error('Erro ao duplicar proposta:', error);
-        alert('Erro ao duplicar proposta. Tente novamente.');
-        // Remover mensagem de loading se existir
-        const msg = document.querySelector('div[style*="Duplicando proposta"]');
+        console.error('Erro ao duplicar:', error);
+        alert('Erro ao duplicar. Tente novamente.');
+        const msg = document.querySelector('div[style*="Duplicando"]');
         if (msg) msg.remove();
     }
 }
 
-// ================== EXCLUIR PROPOSTA ==================
-async function excluirProposta(propostaId) {
-    // Confirmação adicional (já teremos no clique, mas pode ser redundante)
-    if (!confirm('Tem certeza que deseja excluir esta proposta permanentemente? Esta ação não pode ser desfeita.')) {
+// ================== EXCLUIR PROPOSTA/CARTA ==================
+async function excluirProposta(propostaId, colecao) {
+    if (!confirm('Tem certeza que deseja excluir permanentemente? Esta ação não pode ser desfeita.')) {
         return false;
     }
     
     try {
-        // Mostrar feedback visual
         const loadingMsg = document.createElement('div');
-        loadingMsg.textContent = 'Excluindo proposta...';
+        loadingMsg.textContent = 'Excluindo...';
         loadingMsg.style.cssText = 'position:fixed; bottom:20px; right:20px; background:#c10404; color:#fff; padding:8px 16px; border-radius:30px; z-index:9999;';
         document.body.appendChild(loadingMsg);
         
-        // Excluir do Firestore
-        await db.collection('propostas').doc(propostaId).delete();
+        await db.collection(colecao).doc(propostaId).delete();
         
         loadingMsg.remove();
-        // Recarregar a lista de propostas
         await carregarPropostas();
         return true;
     } catch (error) {
-        console.error('Erro ao excluir proposta:', error);
-        alert('Erro ao excluir proposta. Tente novamente.');
-        const msg = document.querySelector('div[style*="Excluindo proposta"]');
+        console.error('Erro ao excluir:', error);
+        alert('Erro ao excluir. Tente novamente.');
+        const msg = document.querySelector('div[style*="Excluindo"]');
         if (msg) msg.remove();
         return false;
     }
@@ -312,6 +407,7 @@ async function excluirProposta(propostaId) {
 function aplicarFiltros() {
     const filtroClienteVal = filtroCliente ? filtroCliente.value.toLowerCase().trim() : '';
     const filtroVendedorVal = (isAdmin && filtroVendedor) ? filtroVendedor.value : usuarioNome;
+    const filtroTipoVal = filtroTipo ? filtroTipo.value : '';
     const dataInicioVal = filtroDataInicio && filtroDataInicio.value ? new Date(filtroDataInicio.value) : null;
     let dataFimVal = filtroDataFim && filtroDataFim.value ? new Date(filtroDataFim.value) : null;
     if (dataFimVal) dataFimVal.setHours(23, 59, 59);
@@ -320,19 +416,21 @@ function aplicarFiltros() {
         const cliente = p.cliente || '';
         const clienteMatch = cliente.toLowerCase().includes(filtroClienteVal);
         const vendedorMatch = !isAdmin ? true : (filtroVendedorVal === '' || p.vendedor === filtroVendedorVal);
+        const tipoMatch = filtroTipoVal === '' || p.tipo === filtroTipoVal;
+        
         let dataMatch = true;
         if (p.data) {
             const dataProposta = new Date(p.data);
             if (dataInicioVal && dataProposta < dataInicioVal) dataMatch = false;
             if (dataFimVal && dataProposta > dataFimVal) dataMatch = false;
         }
-        return clienteMatch && vendedorMatch && dataMatch;
+        return clienteMatch && vendedorMatch && tipoMatch && dataMatch;
     });
 
     if (!cardsContainer) return;
 
     if (filtradas.length === 0) {
-        cardsContainer.innerHTML = '<p class="loading">Nenhuma proposta encontrada.</p>';
+        cardsContainer.innerHTML = '<p class="loading">Nenhuma proposta/carta encontrada.</p>';
         return;
     }
 
@@ -352,19 +450,19 @@ function aplicarFiltros() {
         }
 
         html += `
-        <div class="proposta-card" data-id="${p.id}" data-tipo="${p.tipo || 'efetivo'}">
+        <div class="proposta-card" data-id="${p.id}" data-tipo="${p.tipo || 'efetivo'}" data-colecao="${p.colecao || 'propostas'}">
             <div class="card-header">
-                <span class="cliente-nome">${escapeHtml(p.cliente || 'Sem cliente')}</span>
+                <span class="cliente-nome">${escapeHtml(p.cliente || 'Sem título')}</span>
                 <div class="right-group">
                     <div class="card-badges">
-                        <span class="vendedor-badge">${escapeHtml(p.vendedor)}</span>
+                        <span class="vendedor-badge">${escapeHtml(p.vendedor || 'Não informado')}</span>
                         <span class="tipo-badge">${escapeHtml(tipoContrato)}</span>
                     </div>
                     <div class="card-actions">
-                        <button class="btn-duplicar" data-id="${p.id}" data-tipo="${p.tipo || 'efetivo'}" title="Duplicar proposta">
+                        <button class="btn-duplicar" data-id="${p.id}" data-tipo="${p.tipo || 'efetivo'}" data-colecao="${p.colecao || 'propostas'}" title="Duplicar">
                             <i class="fas fa-copy"></i>
                         </button>
-                        <button class="btn-excluir" data-id="${p.id}" title="Excluir proposta">
+                        <button class="btn-excluir" data-id="${p.id}" data-colecao="${p.colecao || 'propostas'}" title="Excluir">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
@@ -372,10 +470,10 @@ function aplicarFiltros() {
             </div>
             <div class="card-body">
                 <span><i class="fas fa-calendar"></i> ${dataStr}</span>
-                <span><i class="fas fa-briefcase"></i> ${totalCargos} cargo(s)</span>
+                ${p.tipo !== 'carta' ? `<span><i class="fas fa-briefcase"></i> ${totalCargos} cargo(s)</span>` : '<span><i class="fas fa-envelope"></i> Carta</span>'}
             </div>
-            ${nomesCargos ? `<div class="card-cargos"><i class="fas fa-user-tie"></i> ${escapeHtml(nomesCargos)}</div>` : ''}
-            <div class="card-footer">R$ ${totalGeral}</div>
+            ${nomesCargos && p.tipo !== 'carta' ? `<div class="card-cargos"><i class="fas fa-user-tie"></i> ${escapeHtml(nomesCargos)}</div>` : ''}
+            ${p.tipo !== 'carta' ? `<div class="card-footer">R$ ${totalGeral}</div>` : '<div class="card-footer">Carta</div>'}
         </div>
     `;
     });
@@ -385,7 +483,11 @@ function aplicarFiltros() {
     document.querySelectorAll('.proposta-card').forEach(card => {
         card.addEventListener('click', (e) => {
             if (e.target.closest('.btn-duplicar') || e.target.closest('.btn-excluir')) return;
-            propostaSelecionada = { id: card.dataset.id, tipo: card.dataset.tipo || 'efetivo' };
+            propostaSelecionada = { 
+                id: card.dataset.id, 
+                tipo: card.dataset.tipo || 'efetivo',
+                colecao: card.dataset.colecao || 'propostas'
+            };
             if (modalOverlay) modalOverlay.classList.remove('hidden');
         });
     });
@@ -396,9 +498,10 @@ function aplicarFiltros() {
             e.stopPropagation();
             const id = btn.dataset.id;
             const tipo = btn.dataset.tipo;
+            const colecao = btn.dataset.colecao;
             if (!id || !tipo) return;
-            if (confirm('Deseja realmente duplicar esta proposta? Uma nova cópia será criada com a data atual.')) {
-                await duplicarProposta(id, tipo);
+            if (confirm('Deseja realmente duplicar? Uma nova cópia será criada com a data atual.')) {
+                await duplicarProposta(id, tipo, colecao);
             }
         });
     });
@@ -408,10 +511,9 @@ function aplicarFiltros() {
         btn.addEventListener('click', async (e) => {
             e.stopPropagation();
             const id = btn.dataset.id;
+            const colecao = btn.dataset.colecao;
             if (!id) return;
-            if (confirm('Excluir esta proposta permanentemente? Esta ação não pode ser desfeita.')) {
-                await excluirProposta(id);
-            }
+            await excluirProposta(id, colecao);
         });
     });
 }
@@ -427,7 +529,11 @@ function escapeHtml(text) {
 if (modalBtnSim) {
     modalBtnSim.addEventListener('click', () => {
         if (propostaSelecionada) {
-            window.location.href = `${propostaSelecionada.tipo}.html?id=${propostaSelecionada.id}`;
+            if (propostaSelecionada.tipo === 'carta') {
+                window.location.href = `carta.html?id=${propostaSelecionada.id}`;
+            } else {
+                window.location.href = `${propostaSelecionada.tipo}.html?id=${propostaSelecionada.id}`;
+            }
         }
         if (modalOverlay) modalOverlay.classList.add('hidden');
     });
@@ -468,6 +574,7 @@ if (btnLogout) {
 // ================== EVENTOS DE FILTRO ==================
 if (filtroCliente) filtroCliente.addEventListener('input', aplicarFiltros);
 if (filtroVendedor) filtroVendedor.addEventListener('change', aplicarFiltros);
+if (filtroTipo) filtroTipo.addEventListener('change', aplicarFiltros);
 if (filtroDataInicio) filtroDataInicio.addEventListener('change', aplicarFiltros);
 if (filtroDataFim) filtroDataFim.addEventListener('change', aplicarFiltros);
 
@@ -477,7 +584,6 @@ function initTema() {
     const btnTema = document.getElementById('btn-tema');
     const iconTema = btnTema?.querySelector('i');
     
-    // Se NÃO houver tema salvo, ou se o tema salvo for 'light', aplica o tema claro
     if (!temaSalvo || temaSalvo === 'light') {
         document.body.classList.add('light-mode');
         if (iconTema) {
@@ -516,8 +622,8 @@ function initTema() {
 
 // ================== INICIALIZAÇÃO ==================
 document.addEventListener('DOMContentLoaded', function() {
-    // Inicializar tema primeiro
     initTema();
+    initCustomSelect(); // Inicializar o select personalizado
     
     auth.onAuthStateChanged((user) => {
         if (!user) {

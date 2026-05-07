@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carta · Prompt Serviços</title>
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- CSS -->
+    <link rel="stylesheet" href="carta.css">
+    <style>
+        /* Força adicional para o tamanho do logo */
+        .logo-img {
+            width: 120px !important;
+            height: 120px !important;
+        }
+        .carta-logo {
+            width: 180px !important;
+            height: 180px !important;
+        }
+        .slogan {
+            font-size: 0.7rem !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <div class="logo-area">
+                <img src="logo1.png" alt="Prompt Serviços" class="logo-img" onerror="this.src='https://via.placeholder.com/120x120?text=Logo'">
+            </div>
+            <div class="header-actions">
+                <button id="btn-tema" class="btn-tema" title="Modo claro/escuro">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button id="btn-voltar" class="btn-voltar" title="Voltar ao início">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Área da carta que será capturada -->
+        <div id="carta-para-imagem" class="carta-wrapper">
+            <div class="carta-conteudo" id="carta-conteudo">
+                <div class="carta-header">
+                    <img src="logo1.png" alt="Prompt Serviços" class="carta-logo" onerror="this.src='https://via.placeholder.com/180x180?text=Logo'">
+                    <p class="slogan">Soluções em mão de obra</p>
+                </div>
+                
+                <div class="carta-corpo" id="carta-corpo-editable" contenteditable="true" data-placeholder="Escreva aqui..."></div>
+                
+                <div class="carta-assinatura" id="assinatura-area">
+                    <div id="assinatura-nome" style="font-weight: bold; font-size: 1.1rem; color: #c10404;">_________________________</div>
+                    <div id="assinatura-email" style="font-size: 0.9rem; color: #666;">_________________________</div>
+                    <div id="assinatura-telefone" style="font-size: 0.9rem; color: #666;">_________________________</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Campos editáveis -->
+        <div class="campos-editor">
+            <h3><i class="fas fa-pen"></i> Dados da Assinatura</h3>
+            <div class="campo-row">
+                <div class="campo-group">
+                    <label><i class="fas fa-user"></i> Nome</label>
+                    <input type="text" id="input-nome" class="input-moderno" placeholder="Digite seu nome">
+                </div>
+                <div class="campo-group">
+                    <label><i class="fas fa-envelope"></i> E-mail</label>
+                    <input type="email" id="input-email" class="input-moderno" placeholder="seu@email.com">
+                </div>
+                <div class="campo-group">
+                    <label><i class="fas fa-phone"></i> Telefone</label>
+                    <input type="text" id="input-telefone" class="input-moderno" placeholder="(00) 00000-0000">
+                </div>
+            </div>
+        </div>
+
+        <!-- Botões de ação - LADO A LADO -->
+        <div class="action-buttons">
+            <button id="btn-salvar" class="btn-acao">
+                <i class="fas fa-save"></i> Salvar Carta
+            </button>
+            <button id="btn-compartilhar" class="btn-acao">
+                <i class="fas fa-camera"></i> Compartilhar
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div class="modal-content">
+            <i class="fas fa-check-circle modal-icon"></i>
+            <p class="modal-text" id="modal-mensagem">Carta salva como imagem!</p>
+            <button class="modal-btn-ok" id="modal-ok">OK</button>
+        </div>
+    </div>
+
+    <script src="carta.js"></script>
+</body>
+</html>
