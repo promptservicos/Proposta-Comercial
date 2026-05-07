@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const modalMensagem = document.getElementById('modal-mensagem');
     const modalOk = document.getElementById('modal-ok');
     const corpoCarta = document.getElementById('carta-corpo-editable');
+    const inputNomeCarta = document.getElementById('input-nome-carta');
 
     const urlParams = new URLSearchParams(window.location.search);
     const cartaId = urlParams.get('id');
@@ -67,13 +68,20 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function salvarConteudoCarta() {
+        const nomeCarta = inputNomeCarta?.value.trim() || '';
         localStorage.setItem('carta_conteudo', corpoCarta.innerHTML);
+        localStorage.setItem('carta_nome', nomeCarta);
     }
 
     function carregarConteudoCarta() {
         const conteudoSalvo = localStorage.getItem('carta_conteudo');
+        const nomeSalvo = localStorage.getItem('carta_nome');
+        
         if (conteudoSalvo && !cartaId) {
             corpoCarta.innerHTML = conteudoSalvo;
+        }
+        if (nomeSalvo && !cartaId && inputNomeCarta) {
+            inputNomeCarta.value = nomeSalvo;
         }
     }
 
@@ -113,9 +121,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const doc = await db.collection('cartas').doc(cartaId).get();
                 if (doc.exists) {
                     const data = doc.data();
-                    if (data.nome) inputNome.value = data.nome;
-                    if (data.email) inputEmail.value = data.email;
-                    if (data.telefone) inputTelefone.value = data.telefone;
+                    if (data.nome && inputNomeCarta) inputNomeCarta.value = data.nome;
+                    if (data.autorNome) inputNome.value = data.autorNome;
+                    if (data.autorEmail) inputEmail.value = data.autorEmail;
+                    if (data.autorTelefone) inputTelefone.value = data.autorTelefone;
                     if (data.conteudo) corpoCarta.innerHTML = data.conteudo;
                     atualizarAssinatura();
                 }
@@ -126,17 +135,33 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     carregarCartaExistente();
 
+    function getNomeFromEmail(email) {
+        if (!email) return 'Desconhecido';
+        const nome = email.split('@')[0];
+        return nome.charAt(0).toUpperCase() + nome.slice(1);
+    }
+
     async function salvarCarta() {
+        const nomeCarta = inputNomeCarta?.value.trim();
         const conteudo = corpoCarta.innerHTML;
+        
+        // Validação do nome da carta
+        if (!nomeCarta) {
+            mostrarModal('❌ Por favor, informe um nome para a carta!');
+            inputNomeCarta?.focus();
+            return;
+        }
+        
         if (!conteudo || conteudo.trim() === '') {
             mostrarModal('❌ Escreva algo na carta antes de salvar!');
             return;
         }
         
         const carta = {
-            nome: inputNome.value.trim() || 'Não informado',
-            email: inputEmail.value.trim() || 'Não informado',
-            telefone: inputTelefone.value.trim() || 'Não informado',
+            nome: nomeCarta,  // Este é o nome que aparecerá no menu
+            autorNome: inputNome.value.trim() || 'Não informado',
+            autorEmail: inputEmail.value.trim() || 'Não informado',
+            autorTelefone: inputTelefone.value.trim() || 'Não informado',
             conteudo: conteudo,
             tipo: 'carta',
             dataAtualizacao: new Date().toISOString()
@@ -144,7 +169,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
             const usuario = auth.currentUser;
-            if (usuario) carta.usuario = usuario.email || usuario.uid;
+            if (usuario) {
+                carta.usuario = usuario.email || usuario.uid;
+                carta.vendedor = getNomeFromEmail(usuario.email); // Para compatibilidade com o menu
+            }
             
             if (cartaId) {
                 await db.collection('cartas').doc(cartaId).update(carta);
@@ -155,6 +183,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.history.replaceState(null, '', `?id=${docRef.id}`);
                 localStorage.removeItem('carta_draft');
                 localStorage.removeItem('carta_conteudo');
+                localStorage.removeItem('carta_nome');
             }
         } catch (error) {
             console.error('Erro ao salvar:', error);

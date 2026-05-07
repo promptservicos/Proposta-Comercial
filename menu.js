@@ -248,16 +248,19 @@ if (btnContinuar) {
 
 // ================== CARREGAR PROPOSTAS/CARTAS ==================
 function carregarPropostas() {
-    if (cardsContainer) cardsContainer.innerHTML = '<p class="loading">Carregando propostas...</p>';
+    if (cardsContainer) cardsContainer.innerHTML = '<p class="loading">Carregando propostas e cartas...</p>';
     
     // Buscar tanto da coleção 'propostas' quanto 'cartas'
     const promises = [];
     promises.push(db.collection('propostas').orderBy('data', 'desc').get());
-    promises.push(db.collection('cartas').orderBy('dataGeracao', 'desc').get());
+    promises.push(db.collection('cartas').orderBy('dataAtualizacao', 'desc').get());
     
     Promise.all(promises)
         .then(([propostasSnap, cartasSnap]) => {
             propostas = [];
+            
+            console.log('Propostas encontradas:', propostasSnap.size);
+            console.log('Cartas encontradas:', cartasSnap.size);
             
             // Processar propostas
             propostasSnap.forEach((doc) => {
@@ -271,39 +274,47 @@ function carregarPropostas() {
                     ...data, 
                     vendedor: vendedorNome,
                     tipo: data.tipo || 'efetivo',
-                    colecao: 'propostas'
+                    colecao: 'propostas',
+                    dataOrdenacao: data.data || new Date(0)
                 });
             });
             
             // Processar cartas
             cartasSnap.forEach((doc) => {
                 const data = doc.data();
-                let vendedorNome = data.usuario;
+                // Primeiro tenta pegar o vendedor do campo 'vendedor', depois 'usuario'
+                let vendedorNome = data.vendedor || data.usuario;
                 if (vendedorNome && vendedorNome.includes('@')) {
                     vendedorNome = getNomeFromEmail(vendedorNome);
                 }
-                // Para cartas, usar dados específicos
+                // Usar o campo 'nome' da carta como título
+                const tituloCarta = data.nome || 'Carta sem nome';
+                
                 propostas.push({ 
                     id: doc.id, 
-                    cliente: data.nome || 'Carta sem nome',
-                    vendedor: vendedorNome || data.nome || 'Não informado',
-                    data: data.dataGeracao || data.dataAtualizacao,
+                    cliente: tituloCarta,  // Nome da carta aparece como título no card
+                    vendedor: vendedorNome || 'Não informado',
+                    data: data.dataAtualizacao || data.dataGeracao || new Date(),
                     tipo: 'carta',
                     totalGeral: 0,
                     cargos: [],
-                    colecao: 'cartas'
+                    colecao: 'cartas',
+                    dataOrdenacao: data.dataAtualizacao || data.dataGeracao || new Date(0)
                 });
             });
             
             // Ordenar por data (mais recente primeiro)
             propostas.sort((a, b) => {
-                const dateA = a.data ? new Date(a.data) : new Date(0);
-                const dateB = b.data ? new Date(b.data) : new Date(0);
+                const dateA = a.dataOrdenacao ? new Date(a.dataOrdenacao) : new Date(0);
+                const dateB = b.dataOrdenacao ? new Date(b.dataOrdenacao) : new Date(0);
                 return dateB - dateA;
             });
             
+            console.log('Total de itens carregados:', propostas.length);
+            
             if (!isAdmin) {
                 propostas = propostas.filter(p => p.vendedor === usuarioNome);
+                console.log('Após filtro de vendedor:', propostas.length);
             }
             
             aplicarFiltros();
