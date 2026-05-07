@@ -18,6 +18,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const inputNome = document.getElementById('input-nome');
     const inputEmail = document.getElementById('input-email');
     const inputTelefone = document.getElementById('input-telefone');
+    const inputNomeCarta = document.getElementById('input-nome-carta');
+    const campoNomeCarta = document.getElementById('campo-nome-carta');
     const assinaturaNome = document.getElementById('assinatura-nome');
     const assinaturaEmail = document.getElementById('assinatura-email');
     const assinaturaTelefone = document.getElementById('assinatura-telefone');
@@ -28,7 +30,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const modalMensagem = document.getElementById('modal-mensagem');
     const modalOk = document.getElementById('modal-ok');
     const corpoCarta = document.getElementById('carta-corpo-editable');
-    const inputNomeCarta = document.getElementById('input-nome-carta');
 
     const urlParams = new URLSearchParams(window.location.search);
     const cartaId = urlParams.get('id');
@@ -113,7 +114,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         carregarConteudoCarta();
     }
-    carregarRascunho();
 
     async function carregarCartaExistente() {
         if (cartaId) {
@@ -133,7 +133,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
-    carregarCartaExistente();
 
     function getNomeFromEmail(email) {
         if (!email) return 'Desconhecido';
@@ -142,14 +141,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function salvarCarta() {
-        const nomeCarta = inputNomeCarta?.value.trim();
+        let nomeCarta = inputNomeCarta?.value.trim();
         const conteudo = corpoCarta.innerHTML;
         
-        // Validação do nome da carta
-        if (!nomeCarta) {
-            mostrarModal('❌ Por favor, informe um nome para a carta!');
+        // Se for uma nova carta (sem ID) e não tem nome, pede para digitar
+        if (!cartaId && !nomeCarta) {
+            mostrarModal('✏️ Por favor, digite um nome para a carta antes de salvar!');
             inputNomeCarta?.focus();
             return;
+        }
+        
+        if (!nomeCarta && cartaId) {
+            nomeCarta = 'Carta sem nome';
         }
         
         if (!conteudo || conteudo.trim() === '') {
@@ -158,7 +161,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         const carta = {
-            nome: nomeCarta,  // Este é o nome que aparecerá no menu
+            nome: nomeCarta,
             autorNome: inputNome.value.trim() || 'Não informado',
             autorEmail: inputEmail.value.trim() || 'Não informado',
             autorTelefone: inputTelefone.value.trim() || 'Não informado',
@@ -171,7 +174,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const usuario = auth.currentUser;
             if (usuario) {
                 carta.usuario = usuario.email || usuario.uid;
-                carta.vendedor = getNomeFromEmail(usuario.email); // Para compatibilidade com o menu
+                carta.vendedor = getNomeFromEmail(usuario.email);
             }
             
             if (cartaId) {
@@ -204,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ================== BARRA DE FERRAMENTAS SIMPLIFICADA ==================
+    // ================== BARRA DE FERRAMENTAS ==================
     let currentFontSize = 16;
     const fontSizeIndicator = document.getElementById('font-size-indicator');
     const fontSizeInput = document.createElement('input');
@@ -215,7 +218,6 @@ document.addEventListener('DOMContentLoaded', function() {
     fontSizeInput.value = currentFontSize;
     fontSizeInput.className = 'font-size-input';
 
-    // Substituir o indicador por um input editável
     if (fontSizeIndicator) {
         fontSizeIndicator.style.display = 'none';
         const parent = fontSizeIndicator.parentElement;
@@ -240,68 +242,44 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Função para aplicar tamanho de fonte
     function applyFontSize(size) {
         const selection = window.getSelection();
-        
-        // Se não tem seleção, não faz nada
-        if (!selection.rangeCount || selection.isCollapsed) {
-            return;
-        }
+        if (!selection.rangeCount || selection.isCollapsed) return;
         
         const range = selection.getRangeAt(0);
         const selectedContent = range.extractContents();
-        
-        // Criar span com o tamanho desejado
         const span = document.createElement('span');
         span.style.fontSize = size + 'px';
         span.style.lineHeight = '1.5';
         span.appendChild(selectedContent);
-        
-        // Inserir no lugar
         range.insertNode(span);
-        
-        // Selecionar o span novamente
         range.selectNodeContents(span);
         selection.removeAllRanges();
         selection.addRange(range);
-        
         corpoCarta.focus();
         salvarConteudoCarta();
     }
 
-    // Função para aplicar cor
     function applyColor(color) {
         const selection = window.getSelection();
-        
-        if (!selection.rangeCount || selection.isCollapsed) {
-            return;
-        }
+        if (!selection.rangeCount || selection.isCollapsed) return;
         
         const range = selection.getRangeAt(0);
         const selectedContent = range.extractContents();
-        
         const span = document.createElement('span');
         span.style.color = color;
         span.appendChild(selectedContent);
-        
         range.insertNode(span);
         range.selectNodeContents(span);
         selection.removeAllRanges();
         selection.addRange(range);
-        
         corpoCarta.focus();
         salvarConteudoCarta();
     }
 
-    // Função para formatação básica (negrito, itálico, etc)
     function applyFormat(command) {
         const selection = window.getSelection();
-        
-        if (!selection.rangeCount || selection.isCollapsed) {
-            return;
-        }
-        
+        if (!selection.rangeCount || selection.isCollapsed) return;
         document.execCommand(command, false, null);
         corpoCarta.focus();
         salvarConteudoCarta();
@@ -320,7 +298,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function initToolbar() {
-        // Botões de formatação
         document.getElementById('btn-bold')?.addEventListener('click', () => applyFormat('bold'));
         document.getElementById('btn-italic')?.addEventListener('click', () => applyFormat('italic'));
         document.getElementById('btn-underline')?.addEventListener('click', () => applyFormat('underline'));
@@ -331,7 +308,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('btn-ul')?.addEventListener('click', () => applyFormat('insertUnorderedList'));
         document.getElementById('btn-ol')?.addEventListener('click', () => applyFormat('insertOrderedList'));
         
-        // Aumentar fonte
         const fontIncrease = document.getElementById('font-increase');
         if (fontIncrease) {
             fontIncrease.addEventListener('click', () => {
@@ -343,7 +319,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        // Diminuir fonte
         const fontDecrease = document.getElementById('font-decrease');
         if (fontDecrease) {
             fontDecrease.addEventListener('click', () => {
@@ -355,7 +330,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        // Cores
         const colorBtns = document.querySelectorAll('.color-btn');
         colorBtns.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -363,7 +337,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
         
-        // Limpar formatação
         const clearFormatting = document.getElementById('clearFormatting');
         if (clearFormatting) {
             clearFormatting.addEventListener('click', () => {
@@ -374,11 +347,9 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        // Atualizar estado dos botões
         corpoCarta.addEventListener('mouseup', updateActiveButtons);
         corpoCarta.addEventListener('keyup', updateActiveButtons);
         corpoCarta.addEventListener('click', updateActiveButtons);
-        
         corpoCarta.style.lineHeight = '1.5';
         updateActiveButtons();
     }
@@ -447,6 +418,24 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     btnCompartilhar.addEventListener('click', gerarImagemCarta);
+
+    // ================== MOSTRAR/ESCONDER CAMPO NOME ==================
+    function toggleCampoNome(show) {
+        if (campoNomeCarta) {
+            campoNomeCarta.style.display = show ? 'flex' : 'none';
+        }
+    }
+
+    // ================== CARREGAR DADOS INICIAIS ==================
+    carregarRascunho();
+    carregarCartaExistente();
+    
+    // Se for uma nova carta, esconde o campo nome inicialmente
+    if (!cartaId) {
+        toggleCampoNome(false);
+    } else {
+        toggleCampoNome(true);
+    }
 
     // Tema
     function initTema() {
