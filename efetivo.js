@@ -466,17 +466,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         `;
 
         const taxaDiv = document.createElement('div');
-        taxaDiv.className = 'campo-pequeno select-wrapper';
+        taxaDiv.className = 'campo-pequeno';
         taxaDiv.innerHTML = `
-            <label><i class="fas fa-percent"></i> Taxa</label>
-            <select class="cargo-taxa">
-                <option value="0.5" ${taxa === 0.5 ? 'selected' : ''}>50%</option>
-                <option value="0.6" ${taxa === 0.6 ? 'selected' : ''}>60%</option>
-                <option value="0.7" ${taxa === 0.7 ? 'selected' : ''}>70%</option>
-            </select>
-            <i class="fas fa-chevron-down"></i>
+            <label><i class="fas fa-percent"></i> Taxa (%)</label>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <select class="cargo-taxa-select" style="flex: 2;">
+                    <option value="0.5" ${taxa === 0.5 ? 'selected' : ''}>50%</option>
+                    <option value="0.6" ${taxa === 0.6 ? 'selected' : ''}>60%</option>
+                    <option value="0.7" ${taxa === 0.7 ? 'selected' : ''}>70%</option>
+                    <option value="outra">Outra (%)</option>
+                </select>
+                <input type="number" class="input-moderno cargo-taxa-outra" placeholder="Digite %" step="0.1" min="0" max="100" style="flex: 1; display: ${(taxa !== 0.5 && taxa !== 0.6 && taxa !== 0.7) ? 'block' : 'none'};" value="${(taxa !== 0.5 && taxa !== 0.6 && taxa !== 0.7) ? (taxa * 100) : ''}">
+            </div>
         `;
-
+        
         linha.appendChild(cargoDiv);
         linha.appendChild(qtdDiv);
         linha.appendChild(salarioDiv);
@@ -488,19 +491,51 @@ document.addEventListener('DOMContentLoaded', async function() {
         resultadosDiv.className = 'cargo-resultados';
         item.appendChild(resultadosDiv);
 
+        // Referências dos elementos
+        const selectTaxa = item.querySelector('.cargo-taxa-select');
+        const inputTaxaOutra = item.querySelector('.cargo-taxa-outra');
+        
+        // Função para obter o valor atual da taxa (como decimal)
+        function getTaxaValue() {
+            if (selectTaxa.value === 'outra') {
+                const outraValor = parseFloat(inputTaxaOutra.value);
+                if (!isNaN(outraValor) && outraValor > 0) {
+                    return outraValor / 100;
+                }
+                return 0.5; // valor padrão se inválido
+            }
+            return parseFloat(selectTaxa.value);
+        }
+        
+        // Mostrar/esconder campo "Outra"
+        function toggleOutraField() {
+            if (selectTaxa.value === 'outra') {
+                inputTaxaOutra.style.display = 'block';
+                // Se o campo estiver vazio e tinha um valor personalizado salvo
+                if (!inputTaxaOutra.value && (taxa !== 0.5 && taxa !== 0.6 && taxa !== 0.7)) {
+                    inputTaxaOutra.value = taxa * 100;
+                }
+            } else {
+                inputTaxaOutra.style.display = 'none';
+                inputTaxaOutra.value = '';
+            }
+            atualizarResultados();
+        }
+        
         function atualizarResultados() {
             const nome = item.querySelector('.cargo-nome').value.trim() || 'Cargo sem nome';
             const qtd = parseInt(item.querySelector('.cargo-quantidade').value) || 1;
             const salarioInput = item.querySelector('.cargo-salario').value;
             let salario = parseFloat(salarioInput.replace(/\./g, '').replace(',', '.')) || 0;
-            const taxa = parseFloat(item.querySelector('.cargo-taxa').value);
+            const taxaDecimal = getTaxaValue();
+            const taxaPercentual = (taxaDecimal * 100).toFixed(1);
 
-            const valorTaxa = salario * taxa;
+            const valorTaxa = salario * taxaDecimal;
             const subtotalTaxas = valorTaxa * qtd;
 
             resultadosDiv.innerHTML = `
                 <div class="resultado-bloco">
-                    <span class="rotulo"><i class="fas fa-calculator"></i> Taxa (${taxa*100}%)</span>
+                    <span class="rotulo"><i class="fas fa-calculator"></i> Taxa (${taxaPercentual}%)</span>
                     <span class="valor">${formatarMoeda(valorTaxa)}</span>
                 </div>
                 <div class="resultado-bloco">
@@ -526,7 +561,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             atualizarResultados();
         });
-        item.querySelector('.cargo-taxa').addEventListener('change', atualizarResultados);
+        
+        selectTaxa.addEventListener('change', toggleOutraField);
+        inputTaxaOutra.addEventListener('input', function() {
+            // Validar limite máximo de 100%
+            let valor = parseFloat(this.value);
+            if (valor > 100) this.value = 100;
+            if (valor < 0) this.value = 0;
+            atualizarResultados();
+        });
 
         // Botão remover
         item.querySelector('.btn-remover').addEventListener('click', function() {
@@ -535,6 +578,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             salvarRascunho();
         });
 
+        // Inicializar toggle e resultados
+        toggleOutraField();
         atualizarResultados();
         return item;
     }

@@ -1002,3 +1002,27 @@ body.light-mode .btn-toggle-cargo {
 body.light-mode .btn-toggle-cargo:hover {
     background: rgba(193, 4, 4, 0.1);
 }
+
+/* Estilo para o campo de taxa personalizada */
+.cargo-taxa-outra {
+    min-width: 100px;
+}
+
+.cargo-taxa-outra::-webkit-inner-spin-button,
+.cargo-taxa-outra::-webkit-outer-spin-button {
+    opacity: 0.5;
+}
+
+/* Modo claro */
+body.light-mode .cargo-taxa-select,
+body.light-mode .cargo-taxa-outra {
+    background: #ffffff !important;
+    border: 1px solid #ddd !important;
+    color: #333 !important;
+}
+
+body.light-mode .cargo-taxa-select:focus,
+body.light-mode .cargo-taxa-outra:focus {
+    border-color: #c10404 !important;
+    outline: none !important;
+}
