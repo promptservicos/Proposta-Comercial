@@ -639,3 +639,28 @@ body.light-mode .font-size-input:focus {
     border-radius: 30px;
     padding: 0.2rem;
 }
+
+/* Animação para o campo nome */
+@keyframes pulse {
+    0% {
+        border-color: rgba(193, 4, 4, 0.3);
+        box-shadow: 0 0 0 0 rgba(193, 4, 4, 0.2);
+    }
+    50% {
+        border-color: #c10404;
+        box-shadow: 0 0 0 5px rgba(193, 4, 4, 0.3);
+    }
+    100% {
+        border-color: rgba(193, 4, 4, 0.3);
+        box-shadow: 0 0 0 0 rgba(193, 4, 4, 0);
+    }
+}
+
+#campo-nome-carta {
+    transition: all 0.3s ease;
+}
+
+.campo-group input:focus {
+    border-color: #c10404;
+    box-shadow: 0 0 0 3px rgba(193, 4, 4, 0.2);
+}

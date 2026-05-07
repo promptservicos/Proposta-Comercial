@@ -144,10 +144,15 @@ document.addEventListener('DOMContentLoaded', function() {
         let nomeCarta = inputNomeCarta?.value.trim();
         const conteudo = corpoCarta.innerHTML;
         
-        // Se for uma nova carta (sem ID) e não tem nome, pede para digitar
+        // Se for uma nova carta (sem ID) e não tem nome, mostra o campo e pede para digitar
         if (!cartaId && !nomeCarta) {
-            mostrarModal('✏️ Por favor, digite um nome para a carta antes de salvar!');
+            // Mostra o campo nome
+            if (campoNomeCarta) {
+                campoNomeCarta.style.display = 'flex';
+                campoNomeCarta.style.animation = 'pulse 0.5s ease';
+            }
             inputNomeCarta?.focus();
+            mostrarModal('✏️ Digite um nome para a carta no campo abaixo e clique em Salvar novamente!');
             return;
         }
         
