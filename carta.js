@@ -140,27 +140,36 @@ document.addEventListener('DOMContentLoaded', function() {
         return nome.charAt(0).toUpperCase() + nome.slice(1);
     }
 
+    // Variáveis para o modal de nome
+    const modalNomeCarta = document.getElementById('modal-nome-carta');
+    const modalNomeInput = document.getElementById('modal-nome-input');
+    let pendingSave = false; // Para saber se está aguardando o nome
+
+    // Função para mostrar modal de nome
+    function mostrarModalNome() {
+        if (modalNomeCarta) {
+            modalNomeInput.value = '';
+            modalNomeCarta.classList.remove('hidden');
+            modalNomeInput.focus();
+        }
+    }
+
+    function fecharModalNome() {
+        if (modalNomeCarta) {
+            modalNomeCarta.classList.add('hidden');
+            pendingSave = false;
+        }
+    }
+
     async function salvarCarta() {
         let nomeCarta = inputNomeCarta?.value.trim();
         const conteudo = corpoCarta.innerHTML;
         
-        // Se for uma nova carta (sem ID) e não tem nome, mostra o campo e pede para digitar
+        // Se for uma nova carta (sem ID) e não tem nome salvo
         if (!cartaId && !nomeCarta) {
-            // Mostra o campo nome (chama a função toggle)
-            toggleCampoNome(true);
-            
-            // Adiciona classe de destaque
-            if (campoNomeCarta) {
-                campoNomeCarta.style.animation = 'pulse 0.5s ease';
-                setTimeout(() => {
-                    if (campoNomeCarta) campoNomeCarta.style.animation = '';
-                }, 500);
-            }
-            
-            // Foca no input
-            inputNomeCarta?.focus();
-            
-            mostrarModal('✏️ Digite um nome para a carta no campo abaixo e clique em Salvar novamente!');
+            // Mostra o modal para digitar o nome
+            mostrarModalNome();
+            pendingSave = true;
             return;
         }
         
@@ -200,13 +209,66 @@ document.addEventListener('DOMContentLoaded', function() {
                 localStorage.removeItem('carta_draft');
                 localStorage.removeItem('carta_conteudo');
                 localStorage.removeItem('carta_nome');
-                // Após salvar, mantém o campo visível
-                toggleCampoNome(true);
+                // Atualiza o input escondido com o nome
+                if (inputNomeCarta) inputNomeCarta.value = nomeCarta;
             }
         } catch (error) {
             console.error('Erro ao salvar:', error);
             mostrarModal('❌ Erro ao salvar carta.');
         }
+    }
+
+    // Função para salvar após digitar o nome no modal
+    async function salvarComNome() {
+        const nome = modalNomeInput.value.trim();
+        
+        if (!nome) {
+            alert('Por favor, digite um nome para a carta!');
+            return;
+        }
+        
+        // Salva o nome no input escondido
+        if (inputNomeCarta) inputNomeCarta.value = nome;
+        
+        // Fecha o modal
+        fecharModalNome();
+        
+        // Chama o salvamento novamente
+        pendingSave = false;
+        await salvarCarta();
+    }
+
+    // Eventos do modal de nome
+    if (modalNomeCarta) {
+        document.getElementById('modal-salvar-nome')?.addEventListener('click', salvarComNome);
+        document.getElementById('modal-cancelar-nome')?.addEventListener('click', () => {
+            fecharModalNome();
+            pendingSave = false;
+        });
+        
+        // Fechar ao clicar fora
+        modalNomeCarta.addEventListener('click', (e) => {
+            if (e.target === modalNomeCarta) {
+                fecharModalNome();
+                pendingSave = false;
+            }
+        });
+        
+        // Enter no input
+        modalNomeInput?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                salvarComNome();
+            }
+        });
+    }
+
+    // Atualize a função mostrarModal para não conflitar
+    function mostrarModal(mensagem, duracao = 3000) {
+        modalMensagem.textContent = mensagem;
+        modalOverlay.classList.remove('hidden');
+        setTimeout(() => {
+            modalOverlay.classList.add('hidden');
+        }, duracao);
     }
 
     btnSalvar.addEventListener('click', salvarCarta);

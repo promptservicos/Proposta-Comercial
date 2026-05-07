@@ -664,3 +664,54 @@ body.light-mode .font-size-input:focus {
     border-color: #c10404;
     box-shadow: 0 0 0 3px rgba(193, 4, 4, 0.2);
 }
+
+/* Estilo específico para o modal de nome */
+#modal-nome-carta .modal-content {
+    max-width: 400px;
+}
+
+#modal-nome-carta .input-moderno {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%);
+    border: 1px solid #2c2c2c;
+    border-radius: 16px;
+    color: #fff;
+    font-size: 0.95rem;
+    margin: 0.5rem 0 1rem 0;
+}
+
+#modal-nome-carta .input-moderno:focus {
+    outline: none;
+    border-color: #c10404;
+    box-shadow: 0 0 0 2px rgba(193, 4, 4, 0.2);
+}
+
+.modal-btn-cancelar {
+    background: transparent;
+    border: 1px solid #444;
+    color: #fff;
+}
+
+.modal-btn-cancelar:hover {
+    border-color: #c10404;
+    background-color: rgba(193, 4, 4, 0.2);
+}
+
+/* Modo claro */
+body.light-mode #modal-nome-carta .input-moderno {
+    background: #ffffff !important;
+    border: 1px solid #ddd !important;
+    color: #333 !important;
+}
+
+body.light-mode .modal-btn-cancelar {
+    color: #666;
+    border-color: #ddd;
+}
+
+body.light-mode .modal-btn-cancelar:hover {
+    background: rgba(193, 4, 4, 0.1);
+    border-color: #c10404;
+    color: #c10404;
+}
