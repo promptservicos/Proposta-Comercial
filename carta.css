@@ -32,17 +32,17 @@ body::before {
 
 .container {
     background: linear-gradient(135deg, #141414 0%, #0c0c0c 100%);
-    max-width: 1000px;
+    max-width: 1200px;
     width: 100%;
     padding: 2rem;
     border-radius: 32px;
     border: 1px solid rgba(193, 4, 4, 0.3);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(193, 4, 4, 0.1) inset;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
     position: relative;
     z-index: 1;
 }
 
-/* Cabeçalho da página - LOGO MAIOR */
+/* Cabeçalho da página */
 .page-header {
     display: flex;
     justify-content: space-between;
@@ -58,10 +58,10 @@ body::before {
 }
 
 .logo-img {
-    width: 120px !important;
-    height: 120px !important;
+    width: 80px;
+    height: auto;
+    max-height: 80px;
     object-fit: contain;
-    border-radius: 20px;
 }
 
 .header-actions {
@@ -90,155 +90,112 @@ body::before {
     transform: scale(1.05);
 }
 
-/* Modo claro - correção dos botões */
-body.light-mode .btn-tema,
-body.light-mode .btn-voltar {
-    background: #f0f0f0 !important;
-    border: 1px solid rgba(193, 4, 4, 0.4) !important;
-    color: #c10404 !important;
-}
-
-body.light-mode .btn-tema:hover,
-body.light-mode .btn-voltar:hover {
-    background: rgba(193, 4, 4, 0.1) !important;
-    transform: scale(1.05);
-}
-
-/* Área da carta - será capturada para imagem */
+/* Área da carta - MAIS LARGA */
 .carta-wrapper {
     background: #ffffff;
     border-radius: 24px;
     margin-bottom: 2rem;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    transition: all 0.3s;
-    overflow: auto;
-    max-height: 80vh;
+    overflow: visible;
+    width: 100%;
 }
 
-.carta-wrapper::-webkit-scrollbar {
-    width: 6px;
-}
-
-/* Conteúdo da carta - dimensionamento dinâmico */
+/* Conteúdo da carta - MAIS LARGO */
 .carta-conteudo {
-    max-width: 800px;
+    width: 100%;
+    max-width: 900px;
     margin: 0 auto;
     font-family: 'Georgia', 'Times New Roman', serif;
     color: #333;
     line-height: 1.6;
-    padding: 3rem;
-    transition: all 0.3s ease;
-}
-
-/* Ajuste de tamanho baseado no conteúdo */
-.carta-conteudo.texto-pequeno {
-    font-size: 12px;
-    line-height: 1.4;
-    padding: 2rem;
-}
-
-.carta-conteudo.texto-medio {
-    font-size: 14px;
-    line-height: 1.5;
     padding: 2.5rem;
+    background: #ffffff;
 }
 
-.carta-conteudo.texto-normal {
-    font-size: 16px;
-    line-height: 1.6;
-    padding: 3rem;
-}
-
-/* Ajuste no header da carta */
+/* Header da carta */
 .carta-header {
     text-align: center;
     margin-bottom: 2rem;
-    padding-bottom: 1rem;
+    padding-bottom: 1.5rem;
     border-bottom: 2px solid #c10404;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
 }
 
-/* Força o logo a ficar próximo do slogan */
-.carta-header .carta-logo {
-    margin-bottom: 0.25rem !important;
-}
-
-.carta-header .slogan {
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-}
-
-/* Logo dentro da carta - AINDA MAIOR e sem margem inferior grande */
 .carta-logo {
     width: auto;
     height: auto;
-    max-width: 280px;
-    max-height: 120px;
+    max-width: 200px;
+    max-height: 100px;
     object-fit: contain;
-    margin-bottom: 0.25rem !important;
-    border-radius: 12px;
+    margin-bottom: 0.5rem;
 }
 
-/* Slogan - BEM MENOR e mais próximo do logo */
 .slogan {
     color: #c10404;
-    font-size: 0.7rem !important;
-    font-weight: 300;
+    font-size: 0.8rem;
+    font-weight: 400;
     letter-spacing: 1px;
     text-transform: uppercase;
-    opacity: 0.7;
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-    line-height: 1.2;
+    opacity: 0.8;
+    margin-top: 0.25rem;
 }
 
+/* Corpo da carta - ÁREA DE TEXTO MAIS LARGA */
 .carta-corpo {
     margin-bottom: 2rem;
     outline: none;
-    min-height: 200px;
-}
-
-.carta-corpo p {
-    margin-bottom: 1rem;
-    text-align: justify;
-}
-
-.carta-corpo[contenteditable="true"] {
-    cursor: text;
-    padding: 0.5rem;
+    min-height: 250px;
+    font-size: 1rem;
+    line-height: 1.8;
+    padding: 1rem;
     border-radius: 8px;
-    transition: background 0.2s;
+    background: #fefefe;
+}
+
+.carta-corbo p {
+    margin-bottom: 1rem;
 }
 
 .carta-corpo[contenteditable="true"]:hover {
-    background: rgba(193, 4, 4, 0.05);
+    background: #fafafa;
 }
 
 .carta-corpo[contenteditable="true"]:focus {
-    background: rgba(193, 4, 4, 0.08);
-    outline: none;
+    background: #fff9f0;
+    outline: 1px solid #c10404;
 }
 
-/* Placeholder para o corpo da carta */
+/* Placeholder */
 .carta-corpo[contenteditable="true"]:empty:before {
     content: attr(data-placeholder);
     color: #aaa;
     font-style: italic;
-    opacity: 0.7;
+    opacity: 0.6;
+    font-size: 1.1rem;
 }
 
-.carta-corpo[contenteditable="true"]:focus:empty:before {
-    opacity: 0.5;
-}
-
+/* Assinatura */
 .carta-assinatura {
-    margin-top: 3rem;
-    padding-top: 2rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
     border-top: 1px solid #ddd;
     text-align: center;
+}
+
+.assinatura-linha {
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    word-break: break-word;
+}
+
+#assinatura-nome {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: #c10404;
+}
+
+#assinatura-email, #assinatura-telefone {
+    font-size: 0.9rem;
+    color: #666;
 }
 
 /* Campos editáveis */
@@ -263,7 +220,6 @@ body.light-mode .btn-voltar:hover {
     display: flex;
     flex-wrap: wrap;
     gap: 1rem;
-    margin-bottom: 1rem;
 }
 
 .campo-group {
@@ -304,11 +260,10 @@ body.light-mode .btn-voltar:hover {
     box-shadow: 0 0 0 2px rgba(193, 4, 4, 0.2);
 }
 
-/* Botões lado a lado - já está correto */
+/* Botões */
 .action-buttons {
     display: flex;
     gap: 1rem;
-    margin-top: 0.5rem;
 }
 
 .btn-acao {
@@ -327,23 +282,19 @@ body.light-mode .btn-voltar:hover {
     gap: 0.8rem;
     transition: all 0.3s;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
 
 .btn-acao i {
     color: #c10404;
-    transition: all 0.2s;
 }
 
 .btn-acao:hover {
     background: linear-gradient(135deg, #c10404 0%, #a00303 100%);
-    border-color: #c10404;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(193, 4, 4, 0.4);
+    color: #fff;
 }
 
 .btn-acao:hover i {
-    color: #ffffff;
+    color: #fff;
 }
 
 /* Modal */
@@ -379,8 +330,9 @@ body.light-mode .btn-voltar:hover {
 
 .modal-text {
     color: #fff;
-    font-size: 1.1rem;
+    font-size: 1rem;
     margin-bottom: 1.5rem;
+    white-space: pre-line;
 }
 
 .modal-btn-ok {
@@ -392,12 +344,6 @@ body.light-mode .btn-voltar:hover {
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
-}
-
-.modal-btn-ok:hover {
-    transform: scale(1.02);
-    box-shadow: 0 4px 12px rgba(193, 4, 4, 0.4);
 }
 
 .hidden {
@@ -444,7 +390,6 @@ body.light-mode .btn-acao:hover {
 
 body.light-mode .carta-wrapper {
     background: #ffffff;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 body.light-mode .modal-content {
@@ -455,53 +400,242 @@ body.light-mode .modal-text {
     color: #333;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+body.light-mode .btn-tema,
+body.light-mode .btn-voltar {
+    background: #f0f0f0 !important;
+    border: 1px solid rgba(193, 4, 4, 0.4) !important;
+    color: #c10404 !important;
 }
 
-::-webkit-scrollbar-track {
-    background: #1a1a1a;
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: #c10404;
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: #ff4444;
-}
-
-body.light-mode ::-webkit-scrollbar-track {
-    background: #f0f0f0;
-}
-
-/* Responsivo para mobile */
+/* Responsivo */
 @media (max-width: 768px) {
     .container {
         padding: 1rem;
     }
     .carta-conteudo {
-        padding: 1rem;
+        padding: 1.5rem;
     }
     .campo-row {
         flex-direction: column;
     }
-    .logo-img {
-        width: 80px !important;
-        height: 80px !important;
-    }
-    .carta-logo {
-        width: 120px !important;
-        height: 120px !important;
-    }
     .action-buttons {
-        flex-direction: row;
+        flex-direction: column;
     }
-    .slogan {
-        font-size: 0.6rem !important;
+    .carta-corpo {
+        min-height: 180px;
     }
+}
+
+/* ========== BARRA DE FERRAMENTAS ========== */
+.toolbar {
+    background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%);
+    border: 1px solid rgba(193, 4, 4, 0.3);
+    border-radius: 20px;
+    padding: 0.5rem 1rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(10px);
+}
+
+.toolbar button {
+    background: transparent;
+    border: none;
+    color: #c10404;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toolbar button:hover {
+    background: rgba(193, 4, 4, 0.2);
+    transform: scale(1.05);
+}
+
+.toolbar button:active {
+    transform: scale(0.95);
+}
+
+/* Botão ativo/selecionado */
+.toolbar button.active {
+    background: linear-gradient(135deg, #c10404 0%, #a00303 100%);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(193, 4, 4, 0.4);
+}
+
+.toolbar .separator {
+    width: 1px;
+    height: 30px;
+    background: rgba(193, 4, 4, 0.3);
+    margin: 0 0.25rem;
+}
+
+/* Controle de tamanho de fonte */
+.font-size-control {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: rgba(193, 4, 4, 0.1);
+    border-radius: 30px;
+    padding: 0.2rem;
+}
+
+.font-size-control button {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+}
+
+.font-indicator {
+    min-width: 35px;
+    text-align: center;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #c10404;
+    background: rgba(193, 4, 4, 0.1);
+    border-radius: 20px;
+    padding: 0.2rem 0.5rem;
+}
+
+/* Grid de cores */
+.color-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 4px;
+    border-radius: 12px;
+}
+
+.color-btn {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 6px !important;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    transition: all 0.2s;
+    padding: 0 !important;
+}
+
+.color-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 6px rgba(193, 4, 4, 0.5);
+}
+
+/* Modo claro para toolbar */
+body.light-mode .toolbar {
+    background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+    border: 1px solid rgba(193, 4, 4, 0.3);
+}
+
+body.light-mode .toolbar button {
+    color: #c10404;
+}
+
+body.light-mode .toolbar button:hover {
+    background: rgba(193, 4, 4, 0.1);
+}
+
+body.light-mode .toolbar button.active {
+    background: linear-gradient(135deg, #c10404 0%, #a00303 100%);
+    color: #fff;
+}
+
+body.light-mode .toolbar .separator {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+body.light-mode .font-size-control {
+    background: rgba(193, 4, 4, 0.1);
+}
+
+body.light-mode .font-indicator {
+    background: rgba(193, 4, 4, 0.1);
+    color: #c10404;
+}
+
+body.light-mode .color-picker-grid {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+    .toolbar {
+        border-radius: 16px;
+        gap: 0.3rem;
+        padding: 0.4rem 0.8rem;
+    }
+    
+    .toolbar button {
+        width: 32px;
+        height: 32px;
+        font-size: 0.85rem;
+    }
+    
+    .color-picker-grid {
+        grid-template-columns: repeat(6, 1fr);
+        gap: 3px;
+    }
+    
+    .color-btn {
+        width: 24px !important;
+        height: 24px !important;
+    }
+    
+    .font-indicator {
+        min-width: 30px;
+        font-size: 0.8rem;
+    }
+}
+
+/* Input de tamanho de fonte */
+.font-size-input {
+    width: 55px !important;
+    text-align: center;
+    background: rgba(193, 4, 4, 0.1);
+    border: 1px solid rgba(193, 4, 4, 0.3);
+    border-radius: 20px;
+    color: #c10404;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.font-size-input:focus {
+    border-color: #c10404;
+    background: rgba(193, 4, 4, 0.15);
+}
+
+/* Modo claro */
+body.light-mode .font-size-input {
+    background: rgba(193, 4, 4, 0.1);
+    border-color: rgba(193, 4, 4, 0.3);
+    color: #c10404;
+}
+
+body.light-mode .font-size-input:focus {
+    background: rgba(193, 4, 4, 0.15);
+    border-color: #c10404;
+}
+
+/* Ajuste no container do tamanho */
+.font-size-control {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: rgba(193, 4, 4, 0.1);
+    border-radius: 30px;
+    padding: 0.2rem;
 }

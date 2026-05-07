@@ -12,28 +12,13 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <!-- CSS -->
     <link rel="stylesheet" href="carta.css">
-    <style>
-        /* Força adicional para o tamanho do logo */
-        .logo-img {
-            width: 120px !important;
-            height: 120px !important;
-        }
-        .carta-logo {
-            width: 180px !important;
-            height: 180px !important;
-        }
-        .slogan {
-            font-size: 0.7rem !important;
-        }
-    </style>
 </head>
 <body>
     <div class="container">
         <div class="page-header">
             <div class="logo-area">
-                <img src="logo1.png" alt="Prompt Serviços" class="logo-img" onerror="this.src='https://via.placeholder.com/120x120?text=Logo'">
+                <img src="logo1.png" alt="Prompt Serviços" class="logo-img" onerror="this.src='https://via.placeholder.com/100x100?text=Logo'">
             </div>
             <div class="header-actions">
                 <button id="btn-tema" class="btn-tema" title="Modo claro/escuro">
@@ -45,20 +30,93 @@
             </div>
         </div>
 
+        <!-- Barra de Ferramentas de Edição -->
+        <div class="toolbar" id="toolbar">
+            <!-- Formatação básica -->
+            <button type="button" data-command="bold" id="btn-bold" title="Negrito">
+                <i class="fas fa-bold"></i>
+            </button>
+            <button type="button" data-command="italic" id="btn-italic" title="Itálico">
+                <i class="fas fa-italic"></i>
+            </button>
+            <button type="button" data-command="underline" id="btn-underline" title="Sublinhado">
+                <i class="fas fa-underline"></i>
+            </button>
+            <span class="separator"></span>
+            
+            <!-- Alinhamento -->
+            <button type="button" data-command="justifyLeft" id="btn-left" title="Alinhar à esquerda">
+                <i class="fas fa-align-left"></i>
+            </button>
+            <button type="button" data-command="justifyCenter" id="btn-center" title="Centralizar">
+                <i class="fas fa-align-center"></i>
+            </button>
+            <button type="button" data-command="justifyRight" id="btn-right" title="Alinhar à direita">
+                <i class="fas fa-align-right"></i>
+            </button>
+            <button type="button" data-command="justifyFull" id="btn-justify" title="Justificar">
+                <i class="fas fa-align-justify"></i>
+            </button>
+            <span class="separator"></span>
+            
+            <!-- Tamanho da fonte -->
+            <div class="font-size-control">
+                <button type="button" id="font-decrease" title="Diminuir fonte">
+                    <i class="fas fa-minus"></i>
+                </button>
+                <span id="font-size-indicator" class="font-indicator">16</span>
+                <button type="button" id="font-increase" title="Aumentar fonte">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <span class="separator"></span>
+            
+            <!-- Cores - Grid de cores -->
+            <div class="color-picker-grid">
+                <button type="button" class="color-btn" data-color="#000000" style="background: #000000;" title="Preto"></button>
+                <button type="button" class="color-btn" data-color="#c10404" style="background: #c10404;" title="Vermelho"></button>
+                <button type="button" class="color-btn" data-color="#ff0000" style="background: #ff0000;" title="Vermelho claro"></button>
+                <button type="button" class="color-btn" data-color="#0066cc" style="background: #0066cc;" title="Azul"></button>
+                <button type="button" class="color-btn" data-color="#00aaff" style="background: #00aaff;" title="Azul claro"></button>
+                <button type="button" class="color-btn" data-color="#008800" style="background: #008800;" title="Verde escuro"></button>
+                <button type="button" class="color-btn" data-color="#00cc00" style="background: #00cc00;" title="Verde"></button>
+                <button type="button" class="color-btn" data-color="#ff6600" style="background: #ff6600;" title="Laranja"></button>
+                <button type="button" class="color-btn" data-color="#ffcc00" style="background: #ffcc00;" title="Amarelo"></button>
+                <button type="button" class="color-btn" data-color="#993399" style="background: #993399;" title="Roxo"></button>
+                <button type="button" class="color-btn" data-color="#ff69b4" style="background: #ff69b4;" title="Rosa"></button>
+                <button type="button" class="color-btn" data-color="#ffffff" style="background: #ffffff; border:1px solid #ccc;" title="Branco"></button>
+            </div>
+            <span class="separator"></span>
+            
+            <!-- Listas -->
+            <button type="button" data-command="insertUnorderedList" id="btn-ul" title="Lista com marcadores">
+                <i class="fas fa-list-ul"></i>
+            </button>
+            <button type="button" data-command="insertOrderedList" id="btn-ol" title="Lista numerada">
+                <i class="fas fa-list-ol"></i>
+            </button>
+            <span class="separator"></span>
+            
+            <!-- Limpar formatação -->
+            <button type="button" id="clearFormatting" title="Limpar formatação">
+                <i class="fas fa-eraser"></i>
+            </button>
+        </div>
+
         <!-- Área da carta que será capturada -->
         <div id="carta-para-imagem" class="carta-wrapper">
             <div class="carta-conteudo" id="carta-conteudo">
                 <div class="carta-header">
-                    <img src="logo1.png" alt="Prompt Serviços" class="carta-logo" onerror="this.src='https://via.placeholder.com/180x180?text=Logo'">
+                    <img src="logo1.png" alt="Prompt Serviços" class="carta-logo" onerror="this.src='https://via.placeholder.com/150x80?text=Logo'">
                     <p class="slogan">Soluções em mão de obra</p>
                 </div>
                 
                 <div class="carta-corpo" id="carta-corpo-editable" contenteditable="true" data-placeholder="Escreva aqui..."></div>
                 
                 <div class="carta-assinatura" id="assinatura-area">
-                    <div id="assinatura-nome" style="font-weight: bold; font-size: 1.1rem; color: #c10404;">_________________________</div>
-                    <div id="assinatura-email" style="font-size: 0.9rem; color: #666;">_________________________</div>
-                    <div id="assinatura-telefone" style="font-size: 0.9rem; color: #666;">_________________________</div>
+                    <div class="assinatura-linha" id="assinatura-nome">_________________________</div>
+                    <div class="assinatura-linha" id="assinatura-email">_________________________</div>
+                    <div class="assinatura-linha" id="assinatura-telefone">_________________________</div>
                 </div>
             </div>
         </div>
@@ -82,7 +140,7 @@
             </div>
         </div>
 
-        <!-- Botões de ação - LADO A LADO -->
+        <!-- Botões de ação -->
         <div class="action-buttons">
             <button id="btn-salvar" class="btn-acao">
                 <i class="fas fa-save"></i> Salvar Carta

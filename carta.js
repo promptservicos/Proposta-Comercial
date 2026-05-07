@@ -12,7 +12,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
-const analytics = firebase.analytics();
 
 // ================== INICIALIZAÇÃO ==================
 document.addEventListener('DOMContentLoaded', function() {
@@ -28,28 +27,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const modalOverlay = document.getElementById('modal-overlay');
     const modalMensagem = document.getElementById('modal-mensagem');
     const modalOk = document.getElementById('modal-ok');
-    const cartaConteudo = document.getElementById('carta-conteudo');
     const corpoCarta = document.getElementById('carta-corpo-editable');
 
-    // Verificar se está editando uma carta existente
     const urlParams = new URLSearchParams(window.location.search);
     const cartaId = urlParams.get('id');
 
-    // Função para formatar telefone automaticamente
+    // Formatar telefone
     function formatarTelefone(valor) {
         let numeros = valor.replace(/\D/g, '');
-        
         if (numeros.length === 0) return '';
-        
-        if (numeros.length <= 2) {
-            return `(${numeros}`;
-        } else if (numeros.length <= 6) {
-            return `(${numeros.substring(0, 2)}) ${numeros.substring(2)}`;
-        } else if (numeros.length <= 10) {
-            return `(${numeros.substring(0, 2)}) ${numeros.substring(2, 6)}-${numeros.substring(6)}`;
-        } else {
-            return `(${numeros.substring(0, 2)}) ${numeros.substring(2, 7)}-${numeros.substring(7, 11)}`;
-        }
+        if (numeros.length <= 2) return `(${numeros}`;
+        if (numeros.length <= 6) return `(${numeros.substring(0, 2)}) ${numeros.substring(2)}`;
+        if (numeros.length <= 10) return `(${numeros.substring(0, 2)}) ${numeros.substring(2, 6)}-${numeros.substring(6)}`;
+        return `(${numeros.substring(0, 2)}) ${numeros.substring(2, 7)}-${numeros.substring(7, 11)}`;
     }
 
     inputTelefone.addEventListener('input', function(e) {
@@ -57,10 +47,8 @@ document.addEventListener('DOMContentLoaded', function() {
         let cursorPos = e.target.selectionStart;
         let formatted = formatarTelefone(valor);
         e.target.value = formatted;
-        
         let diff = formatted.length - valor.length;
         e.target.setSelectionRange(cursorPos + diff, cursorPos + diff);
-        
         atualizarAssinatura();
     });
 
@@ -79,8 +67,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function salvarConteudoCarta() {
-        const conteudo = corpoCarta.innerHTML;
-        localStorage.setItem('carta_conteudo', conteudo);
+        localStorage.setItem('carta_conteudo', corpoCarta.innerHTML);
     }
 
     function carregarConteudoCarta() {
@@ -90,27 +77,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    corpoCarta.addEventListener('input', function() {
-        salvarConteudoCarta();
-        ajustarTamanhoTexto();
-    });
+    corpoCarta.addEventListener('input', salvarConteudoCarta);
 
     function atualizarAssinatura() {
-        const nome = inputNome.value.trim();
-        const email = inputEmail.value.trim();
-        const telefone = inputTelefone.value.trim();
+        assinaturaNome.textContent = inputNome.value.trim() || '_________________________';
+        assinaturaEmail.textContent = inputEmail.value.trim() || '_________________________';
+        assinaturaTelefone.textContent = inputTelefone.value.trim() || '_________________________';
         
-        assinaturaNome.textContent = nome || '_________________________';
-        assinaturaEmail.textContent = email || '_________________________';
-        assinaturaTelefone.textContent = telefone || '_________________________';
-        
-        const dadosCarta = {
-            nome: nome,
-            email: email,
-            telefone: telefone,
-            data: new Date().toISOString()
-        };
-        localStorage.setItem('carta_draft', JSON.stringify(dadosCarta));
+        localStorage.setItem('carta_draft', JSON.stringify({
+            nome: inputNome.value.trim(),
+            email: inputEmail.value.trim(),
+            telefone: inputTelefone.value.trim()
+        }));
     }
 
     inputNome.addEventListener('input', atualizarAssinatura);
@@ -129,7 +107,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     carregarRascunho();
 
-    // Carregar carta existente do Firebase
     async function carregarCartaExistente() {
         if (cartaId) {
             try {
@@ -141,7 +118,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (data.telefone) inputTelefone.value = data.telefone;
                     if (data.conteudo) corpoCarta.innerHTML = data.conteudo;
                     atualizarAssinatura();
-                    mostrarModal('Carta carregada com sucesso!');
                 }
             } catch (error) {
                 console.error('Erro ao carregar carta:', error);
@@ -150,22 +126,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     carregarCartaExistente();
 
-    // Salvar carta no Firebase
     async function salvarCarta() {
-        const nome = inputNome.value.trim() || 'Não informado';
-        const email = inputEmail.value.trim() || 'Não informado';
-        const telefone = inputTelefone.value.trim() || 'Não informado';
         const conteudo = corpoCarta.innerHTML;
-        
         if (!conteudo || conteudo.trim() === '') {
             mostrarModal('❌ Escreva algo na carta antes de salvar!');
             return;
         }
         
         const carta = {
-            nome: nome,
-            email: email,
-            telefone: telefone,
+            nome: inputNome.value.trim() || 'Não informado',
+            email: inputEmail.value.trim() || 'Não informado',
+            telefone: inputTelefone.value.trim() || 'Não informado',
             conteudo: conteudo,
             tipo: 'carta',
             dataAtualizacao: new Date().toISOString()
@@ -173,9 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
             const usuario = auth.currentUser;
-            if (usuario) {
-                carta.usuario = usuario.email || usuario.uid;
-            }
+            if (usuario) carta.usuario = usuario.email || usuario.uid;
             
             if (cartaId) {
                 await db.collection('cartas').doc(cartaId).update(carta);
@@ -189,54 +158,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             console.error('Erro ao salvar:', error);
-            mostrarModal('❌ Erro ao salvar carta. Tente novamente.');
+            mostrarModal('❌ Erro ao salvar carta.');
         }
     }
 
     btnSalvar.addEventListener('click', salvarCarta);
 
-    function ajustarTamanhoTexto() {
-        const cartaConteudoDiv = document.getElementById('carta-conteudo');
-        
-        cartaConteudoDiv.classList.remove('texto-pequeno', 'texto-medio', 'texto-normal');
-        
-        const alturaConteudo = cartaConteudoDiv.scrollHeight;
-        const larguraConteudo = cartaConteudoDiv.scrollWidth;
-        
-        const limiteAlturaA4 = 1123;
-        const limiteLarguraA4 = 800;
-        
-        if (alturaConteudo > limiteAlturaA4 || larguraConteudo > limiteLarguraA4) {
-            const fatorAltura = limiteAlturaA4 / alturaConteudo;
-            const fatorLargura = limiteLarguraA4 / larguraConteudo;
-            const fator = Math.min(fatorAltura, fatorLargura, 0.9);
-            
-            if (fator < 0.7) {
-                cartaConteudoDiv.classList.add('texto-pequeno');
-            } else if (fator < 0.85) {
-                cartaConteudoDiv.classList.add('texto-medio');
-            } else {
-                cartaConteudoDiv.classList.add('texto-normal');
-            }
-        } else {
-            cartaConteudoDiv.classList.add('texto-normal');
-        }
-        
-        if (alturaConteudo < 400) {
-            cartaConteudoDiv.classList.add('texto-normal');
-        }
-    }
-
-    const observer = new MutationObserver(function(mutations) {
-        ajustarTamanhoTexto();
-    });
-    
-    observer.observe(corpoCarta, {
-        childList: true,
-        subtree: true,
-        characterData: true
-    });
-    
     function formatarData() {
         const now = new Date();
         return now.toLocaleDateString('pt-BR', {
@@ -248,6 +175,188 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // ================== BARRA DE FERRAMENTAS SIMPLIFICADA ==================
+    let currentFontSize = 16;
+    const fontSizeIndicator = document.getElementById('font-size-indicator');
+    const fontSizeInput = document.createElement('input');
+    fontSizeInput.type = 'number';
+    fontSizeInput.min = 8;
+    fontSizeInput.max = 72;
+    fontSizeInput.step = 1;
+    fontSizeInput.value = currentFontSize;
+    fontSizeInput.className = 'font-size-input';
+
+    // Substituir o indicador por um input editável
+    if (fontSizeIndicator) {
+        fontSizeIndicator.style.display = 'none';
+        const parent = fontSizeIndicator.parentElement;
+        fontSizeInput.style.width = '55px';
+        fontSizeInput.style.textAlign = 'center';
+        fontSizeInput.style.background = 'rgba(193, 4, 4, 0.1)';
+        fontSizeInput.style.border = '1px solid rgba(193, 4, 4, 0.3)';
+        fontSizeInput.style.borderRadius = '20px';
+        fontSizeInput.style.color = '#c10404';
+        fontSizeInput.style.fontWeight = '600';
+        fontSizeInput.style.padding = '0.2rem 0.5rem';
+        parent.insertBefore(fontSizeInput, fontSizeIndicator);
+        
+        fontSizeInput.addEventListener('change', function() {
+            let newSize = parseInt(this.value);
+            if (isNaN(newSize)) newSize = 16;
+            if (newSize < 8) newSize = 8;
+            if (newSize > 72) newSize = 72;
+            currentFontSize = newSize;
+            this.value = currentFontSize;
+            applyFontSize(currentFontSize);
+        });
+    }
+
+    // Função para aplicar tamanho de fonte
+    function applyFontSize(size) {
+        const selection = window.getSelection();
+        
+        // Se não tem seleção, não faz nada
+        if (!selection.rangeCount || selection.isCollapsed) {
+            return;
+        }
+        
+        const range = selection.getRangeAt(0);
+        const selectedContent = range.extractContents();
+        
+        // Criar span com o tamanho desejado
+        const span = document.createElement('span');
+        span.style.fontSize = size + 'px';
+        span.style.lineHeight = '1.5';
+        span.appendChild(selectedContent);
+        
+        // Inserir no lugar
+        range.insertNode(span);
+        
+        // Selecionar o span novamente
+        range.selectNodeContents(span);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        
+        corpoCarta.focus();
+        salvarConteudoCarta();
+    }
+
+    // Função para aplicar cor
+    function applyColor(color) {
+        const selection = window.getSelection();
+        
+        if (!selection.rangeCount || selection.isCollapsed) {
+            return;
+        }
+        
+        const range = selection.getRangeAt(0);
+        const selectedContent = range.extractContents();
+        
+        const span = document.createElement('span');
+        span.style.color = color;
+        span.appendChild(selectedContent);
+        
+        range.insertNode(span);
+        range.selectNodeContents(span);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        
+        corpoCarta.focus();
+        salvarConteudoCarta();
+    }
+
+    // Função para formatação básica (negrito, itálico, etc)
+    function applyFormat(command) {
+        const selection = window.getSelection();
+        
+        if (!selection.rangeCount || selection.isCollapsed) {
+            return;
+        }
+        
+        document.execCommand(command, false, null);
+        corpoCarta.focus();
+        salvarConteudoCarta();
+    }
+
+    function updateActiveButtons() {
+        document.getElementById('btn-bold')?.classList.toggle('active', document.queryCommandState('bold'));
+        document.getElementById('btn-italic')?.classList.toggle('active', document.queryCommandState('italic'));
+        document.getElementById('btn-underline')?.classList.toggle('active', document.queryCommandState('underline'));
+        document.getElementById('btn-left')?.classList.toggle('active', document.queryCommandState('justifyLeft'));
+        document.getElementById('btn-center')?.classList.toggle('active', document.queryCommandState('justifyCenter'));
+        document.getElementById('btn-right')?.classList.toggle('active', document.queryCommandState('justifyRight'));
+        document.getElementById('btn-justify')?.classList.toggle('active', document.queryCommandState('justifyFull'));
+        document.getElementById('btn-ul')?.classList.toggle('active', document.queryCommandState('insertUnorderedList'));
+        document.getElementById('btn-ol')?.classList.toggle('active', document.queryCommandState('insertOrderedList'));
+    }
+
+    function initToolbar() {
+        // Botões de formatação
+        document.getElementById('btn-bold')?.addEventListener('click', () => applyFormat('bold'));
+        document.getElementById('btn-italic')?.addEventListener('click', () => applyFormat('italic'));
+        document.getElementById('btn-underline')?.addEventListener('click', () => applyFormat('underline'));
+        document.getElementById('btn-left')?.addEventListener('click', () => applyFormat('justifyLeft'));
+        document.getElementById('btn-center')?.addEventListener('click', () => applyFormat('justifyCenter'));
+        document.getElementById('btn-right')?.addEventListener('click', () => applyFormat('justifyRight'));
+        document.getElementById('btn-justify')?.addEventListener('click', () => applyFormat('justifyFull'));
+        document.getElementById('btn-ul')?.addEventListener('click', () => applyFormat('insertUnorderedList'));
+        document.getElementById('btn-ol')?.addEventListener('click', () => applyFormat('insertOrderedList'));
+        
+        // Aumentar fonte
+        const fontIncrease = document.getElementById('font-increase');
+        if (fontIncrease) {
+            fontIncrease.addEventListener('click', () => {
+                if (currentFontSize < 72) {
+                    currentFontSize += 2;
+                    fontSizeInput.value = currentFontSize;
+                    applyFontSize(currentFontSize);
+                }
+            });
+        }
+        
+        // Diminuir fonte
+        const fontDecrease = document.getElementById('font-decrease');
+        if (fontDecrease) {
+            fontDecrease.addEventListener('click', () => {
+                if (currentFontSize > 8) {
+                    currentFontSize -= 2;
+                    fontSizeInput.value = currentFontSize;
+                    applyFontSize(currentFontSize);
+                }
+            });
+        }
+        
+        // Cores
+        const colorBtns = document.querySelectorAll('.color-btn');
+        colorBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                applyColor(btn.dataset.color);
+            });
+        });
+        
+        // Limpar formatação
+        const clearFormatting = document.getElementById('clearFormatting');
+        if (clearFormatting) {
+            clearFormatting.addEventListener('click', () => {
+                document.execCommand('removeFormat', false, null);
+                corpoCarta.focus();
+                salvarConteudoCarta();
+                updateActiveButtons();
+            });
+        }
+        
+        // Atualizar estado dos botões
+        corpoCarta.addEventListener('mouseup', updateActiveButtons);
+        corpoCarta.addEventListener('keyup', updateActiveButtons);
+        corpoCarta.addEventListener('click', updateActiveButtons);
+        
+        corpoCarta.style.lineHeight = '1.5';
+        updateActiveButtons();
+    }
+
+    initToolbar();
+
+    // ================== FUNÇÃO PARA GERAR IMAGEM ==================
     async function gerarImagemCarta() {
         const btnOriginalHtml = btnCompartilhar.innerHTML;
         btnCompartilhar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando imagem...';
@@ -255,32 +364,29 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
             const cartaElement = document.getElementById('carta-para-imagem');
+            const cartaConteudoEl = cartaElement.querySelector('.carta-conteudo');
             
             const wasLightMode = document.body.classList.contains('light-mode');
             if (!wasLightMode) {
                 document.body.classList.add('light-mode');
             }
             
-            ajustarTamanhoTexto();
             await new Promise(resolve => setTimeout(resolve, 200));
             
             const dataElement = document.createElement('div');
-            dataElement.className = 'carta-data';
             dataElement.style.textAlign = 'center';
-            dataElement.style.fontSize = '0.8rem';
+            dataElement.style.fontSize = '0.7rem';
             dataElement.style.color = '#999';
-            dataElement.style.marginTop = '1rem';
+            dataElement.style.marginTop = '1.5rem';
             dataElement.style.paddingTop = '1rem';
             dataElement.style.borderTop = '1px solid #eee';
             dataElement.innerHTML = `Documento gerado em ${formatarData()}`;
-            
-            const cartaConteudoEl = cartaElement.querySelector('.carta-conteudo');
             cartaConteudoEl.appendChild(dataElement);
             
             await new Promise(resolve => setTimeout(resolve, 300));
             
             const canvas = await html2canvas(cartaElement, {
-                scale: 2,
+                scale: 2.5,
                 backgroundColor: '#ffffff',
                 logging: false,
                 useCORS: true,
@@ -296,12 +402,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             const link = document.createElement('a');
-            const nomeArquivo = `carta_prompt_${new Date().getTime()}.png`;
-            link.download = nomeArquivo;
+            link.download = `carta_prompt_${new Date().getTime()}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
             
-            mostrarModal('✅ Carta salva como imagem com sucesso!');
+            mostrarModal('✅ Carta salva como imagem com sucesso!\nToda a carta foi capturada!');
             
         } catch (error) {
             console.error('Erro ao gerar imagem:', error);
@@ -314,6 +419,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     btnCompartilhar.addEventListener('click', gerarImagemCarta);
 
+    // Tema
     function initTema() {
         const temaSalvo = localStorage.getItem('tema_efetivo');
         const btnTema = document.getElementById('btn-tema');
@@ -324,9 +430,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (iconTema) {
                 iconTema.classList.remove('fa-sun');
                 iconTema.classList.add('fa-moon');
-            }
-            if (!temaSalvo) {
-                localStorage.setItem('tema_efetivo', 'dark');
             }
         } else if (temaSalvo === 'light') {
             document.body.classList.add('light-mode');
@@ -341,23 +444,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.body.classList.toggle('light-mode');
                 const isLight = document.body.classList.contains('light-mode');
                 localStorage.setItem('tema_efetivo', isLight ? 'light' : 'dark');
-                
-                if (iconTema) {
-                    if (isLight) {
-                        iconTema.classList.remove('fa-moon');
-                        iconTema.classList.add('fa-sun');
-                    } else {
-                        iconTema.classList.remove('fa-sun');
-                        iconTema.classList.add('fa-moon');
-                    }
+                const icon = btnTema.querySelector('i');
+                if (isLight) {
+                    icon.classList.remove('fa-moon');
+                    icon.classList.add('fa-sun');
+                } else {
+                    icon.classList.remove('fa-sun');
+                    icon.classList.add('fa-moon');
                 }
             });
         }
     }
-    
-    setTimeout(() => {
-        ajustarTamanhoTexto();
-    }, 100);
     
     initTema();
 });
