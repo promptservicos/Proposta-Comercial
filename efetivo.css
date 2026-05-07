@@ -1026,3 +1026,58 @@ body.light-mode .cargo-taxa-outra:focus {
     border-color: #c10404 !important;
     outline: none !important;
 }
+
+/* Wrapper para o campo de taxa com símbolo */
+.taxa-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.taxa-input-wrapper .cargo-taxa {
+    flex: 1;
+    padding-right: 2.5rem;
+}
+
+.taxa-simbolo {
+    position: absolute;
+    right: 1rem;
+    color: #c10404;
+    font-weight: 600;
+    font-size: 0.9rem;
+    pointer-events: none;
+    background: transparent;
+}
+
+/* Ajuste para o input number no modo claro */
+body.light-mode .taxa-input-wrapper .cargo-taxa {
+    background: #ffffff !important;
+    color: #333 !important;
+}
+
+body.light-mode .taxa-simbolo {
+    color: #c10404;
+}
+
+/* Estilo para o input number - remover setas padrão e manter limpo */
+.cargo-taxa {
+    -moz-appearance: textfield;
+}
+
+.cargo-taxa::-webkit-inner-spin-button,
+.cargo-taxa::-webkit-outer-spin-button {
+    opacity: 0.5;
+    margin-left: 0.25rem;
+}
+
+.cargo-taxa::-webkit-inner-spin-button:hover,
+.cargo-taxa::-webkit-outer-spin-button:hover {
+    opacity: 1;
+}
+
+/* Efeito hover no wrapper */
+.taxa-input-wrapper:hover .taxa-simbolo {
+    color: #ff4444;
+    transform: scale(1.05);
+    transition: all 0.2s;
+}

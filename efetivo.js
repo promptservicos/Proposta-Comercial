@@ -422,7 +422,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // ========== FUNÇÃO PARA CRIAR CARGO ==========
-    function criarCargoItem(cargo = '', quantidade = 1, salario = 0, taxa = 0.5) {
+    function criarCargoItem(cargo = '', quantidade = 1, salario = 0, taxa = 50) {
         const item = document.createElement('div');
         item.className = 'cargo-item';
 
@@ -454,7 +454,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const qtdDiv = document.createElement('div');
         qtdDiv.className = 'campo-pequeno';
         qtdDiv.innerHTML = `
-            <label><i class="fas fa-hashtag"></i> Quant.</label>
+            <label><i class="fas fa-hashtag"></i> Quantidade</label>
             <input type="number" class="input-moderno cargo-quantidade" min="1" value="${quantidade}">
         `;
 
@@ -469,17 +469,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         taxaDiv.className = 'campo-pequeno';
         taxaDiv.innerHTML = `
             <label><i class="fas fa-percent"></i> Taxa (%)</label>
-            <div style="display: flex; gap: 0.5rem; align-items: center;">
-                <select class="cargo-taxa-select" style="flex: 2;">
-                    <option value="0.5" ${taxa === 0.5 ? 'selected' : ''}>50%</option>
-                    <option value="0.6" ${taxa === 0.6 ? 'selected' : ''}>60%</option>
-                    <option value="0.7" ${taxa === 0.7 ? 'selected' : ''}>70%</option>
-                    <option value="outra">Outra (%)</option>
-                </select>
-                <input type="number" class="input-moderno cargo-taxa-outra" placeholder="Digite %" step="0.1" min="0" max="100" style="flex: 1; display: ${(taxa !== 0.5 && taxa !== 0.6 && taxa !== 0.7) ? 'block' : 'none'};" value="${(taxa !== 0.5 && taxa !== 0.6 && taxa !== 0.7) ? (taxa * 100) : ''}">
+            <div class="taxa-input-wrapper">
+                <input type="number" class="input-moderno cargo-taxa" step="0.1" min="0" max="100" placeholder="50" value="${taxa}">
+                <span class="taxa-simbolo">%</span>
             </div>
         `;
-        
+
         linha.appendChild(cargoDiv);
         linha.appendChild(qtdDiv);
         linha.appendChild(salarioDiv);
@@ -491,55 +486,45 @@ document.addEventListener('DOMContentLoaded', async function() {
         resultadosDiv.className = 'cargo-resultados';
         item.appendChild(resultadosDiv);
 
-        // Referências dos elementos
-        const selectTaxa = item.querySelector('.cargo-taxa-select');
-        const inputTaxaOutra = item.querySelector('.cargo-taxa-outra');
-        
-        // Função para obter o valor atual da taxa (como decimal)
-        function getTaxaValue() {
-            if (selectTaxa.value === 'outra') {
-                const outraValor = parseFloat(inputTaxaOutra.value);
-                if (!isNaN(outraValor) && outraValor > 0) {
-                    return outraValor / 100;
-                }
-                return 0.5; // valor padrão se inválido
-            }
-            return parseFloat(selectTaxa.value);
+        function formatarMoeda(valor) {
+            return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         }
-        
-        // Mostrar/esconder campo "Outra"
-        function toggleOutraField() {
-            if (selectTaxa.value === 'outra') {
-                inputTaxaOutra.style.display = 'block';
-                // Se o campo estiver vazio e tinha um valor personalizado salvo
-                if (!inputTaxaOutra.value && (taxa !== 0.5 && taxa !== 0.6 && taxa !== 0.7)) {
-                    inputTaxaOutra.value = taxa * 100;
+
+        function calcularTotalGeral() {
+            let total = 0;
+            document.querySelectorAll('.cargo-item').forEach(item => {
+                const qtd = parseInt(item.querySelector('.cargo-quantidade').value) || 1;
+                const taxaSpan = item.querySelector('.resultado-bloco .valor');
+                if (taxaSpan) {
+                    const taxaText = taxaSpan.textContent;
+                    const taxaValor = parseFloat(taxaText.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
+                    total += taxaValor * qtd;
                 }
-            } else {
-                inputTaxaOutra.style.display = 'none';
-                inputTaxaOutra.value = '';
-            }
-            atualizarResultados();
+            });
+            document.getElementById('total-geral').textContent = formatarMoeda(total);
+            return total;
         }
-        
+
         function atualizarResultados() {
-            const nome = item.querySelector('.cargo-nome').value.trim() || 'Cargo sem nome';
             const qtd = parseInt(item.querySelector('.cargo-quantidade').value) || 1;
             const salarioInput = item.querySelector('.cargo-salario').value;
             let salario = parseFloat(salarioInput.replace(/\./g, '').replace(',', '.')) || 0;
-            const taxaDecimal = getTaxaValue();
-            const taxaPercentual = (taxaDecimal * 100).toFixed(1);
-
-            const valorTaxa = salario * taxaDecimal;
+            let taxaPercentual = parseFloat(item.querySelector('.cargo-taxa').value) || 0;
+            
+            // Limitar taxa entre 0 e 100
+            if (taxaPercentual > 100) taxaPercentual = 100;
+            if (taxaPercentual < 0) taxaPercentual = 0;
+            
+            const valorTaxa = salario * (taxaPercentual / 100);
             const subtotalTaxas = valorTaxa * qtd;
 
             resultadosDiv.innerHTML = `
                 <div class="resultado-bloco">
-                    <span class="rotulo"><i class="fas fa-calculator"></i> Taxa (${taxaPercentual}%)</span>
+                    <span class="rotulo"><i class="fas fa-calculator"></i> Valor da Taxa</span>
                     <span class="valor">${formatarMoeda(valorTaxa)}</span>
                 </div>
                 <div class="resultado-bloco">
-                    <span class="rotulo"><i class="fas fa-layer-group"></i> Subtotal (${qtd} vaga${qtd>1?'s':''})</span>
+                    <span class="rotulo"><i class="fas fa-layer-group"></i> Subtotal (${qtd} vaga${qtd > 1 ? 's' : ''})</span>
                     <span class="valor">${formatarMoeda(subtotalTaxas)}</span>
                 </div>
             `;
@@ -561,10 +546,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             atualizarResultados();
         });
-        
-        selectTaxa.addEventListener('change', toggleOutraField);
-        inputTaxaOutra.addEventListener('input', function() {
-            // Validar limite máximo de 100%
+        item.querySelector('.cargo-taxa').addEventListener('input', function() {
             let valor = parseFloat(this.value);
             if (valor > 100) this.value = 100;
             if (valor < 0) this.value = 0;
@@ -578,8 +560,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             salvarRascunho();
         });
 
-        // Inicializar toggle e resultados
-        toggleOutraField();
         atualizarResultados();
         return item;
     }
