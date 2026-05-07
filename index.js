@@ -44,7 +44,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const temaSalvo = localStorage.getItem('tema_login');
         const btnTema = document.getElementById('btn-tema');
         const iconTema = btnTema?.querySelector('i');
-        const textoTema = btnTema?.querySelector('span');
         
         // Se NÃO houver tema salvo, ou se o tema salvo for 'light', aplica o tema claro
         if (!temaSalvo || temaSalvo === 'light') {
@@ -53,7 +52,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 iconTema.classList.remove('fa-moon');
                 iconTema.classList.add('fa-sun');
             }
-            if (textoTema) textoTema.textContent = 'Modo claro';
             if (!temaSalvo) {
                 localStorage.setItem('tema_login', 'light');
             }
@@ -63,7 +61,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 iconTema.classList.remove('fa-sun');
                 iconTema.classList.add('fa-moon');
             }
-            if (textoTema) textoTema.textContent = 'Modo escuro';
         }
         
         if (btnTema) {
@@ -76,11 +73,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (isLight) {
                         iconTema.classList.remove('fa-moon');
                         iconTema.classList.add('fa-sun');
-                        if (textoTema) textoTema.textContent = 'Modo claro';
                     } else {
                         iconTema.classList.remove('fa-sun');
                         iconTema.classList.add('fa-moon');
-                        if (textoTema) textoTema.textContent = 'Modo escuro';
                     }
                 }
             });
@@ -112,10 +107,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (btnLogin) {
             if (isLoading) {
                 btnLogin.disabled = true;
-                btnLogin.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Entrando...';
+                btnLogin.innerHTML = '<span>Entrando</span><i class="fas fa-spinner fa-spin"></i>';
             } else {
                 btnLogin.disabled = false;
-                btnLogin.innerHTML = '<i class="fas fa-sign-in-alt"></i> Entrar';
+                btnLogin.innerHTML = '<span>Entrar</span><i class="fas fa-arrow-right"></i>';
             }
         }
     }
@@ -169,9 +164,6 @@ document.addEventListener('DOMContentLoaded', function() {
             emailInput.value = savedEmail;
             passwordInput.value = savedPassword;
             if (rememberCheckbox) rememberCheckbox.checked = true;
-        } else if (emailInput && passwordInput) {
-            emailInput.value = '';
-            passwordInput.value = '';
         }
     }
 

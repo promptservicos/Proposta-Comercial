@@ -17,37 +17,32 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
 </head>
 <body>
+    <!-- Botão de tema flutuante -->
+    <button id="btn-tema" class="btn-tema-flutuante" title="Modo claro/escuro">
+        <i class="fas fa-moon"></i>
+    </button>
+
     <div class="container">
         <div class="login-box">
             <div class="logo-container">
                 <img src="logo.png" alt="Prompt Serviços" class="logo">
             </div>
             
-            <p class="subtitle">
-                <i class="fas fa-lock"></i> 
-                Acesse sua conta
-            </p>
+            <h1 class="welcome-title">Bem-vindo</h1>
+            <p class="welcome-subtitle">Acesse nosso canal de propostas</p>
 
             <form id="login-form">
                 <div class="input-group">
-                    <label for="email">
-                        <i class="fas fa-envelope"></i>
-                        E-mail
-                    </label>
                     <div class="input-field">
                         <i class="fas fa-envelope input-icon"></i>
-                        <input type="email" id="email" name="email" placeholder="seu@email.com" autocomplete="email" required>
+                        <input type="email" id="email" name="email" placeholder="E-mail" autocomplete="email" required>
                     </div>
                 </div>
 
                 <div class="input-group">
-                    <label for="password">
-                        <i class="fas fa-key"></i>
-                        Senha
-                    </label>
                     <div class="input-field">
                         <i class="fas fa-lock input-icon"></i>
-                        <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password" required>
+                        <input type="password" id="password" name="password" placeholder="Senha" autocomplete="current-password" required>
                         <button type="button" class="toggle-password" id="toggle-password">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -63,23 +58,10 @@
                 </div>
 
                 <button type="submit" class="btn-login" id="btn-login">
-                    <i class="fas fa-sign-in-alt"></i>
-                    Entrar
+                    <span>Entrar</span>
+                    <i class="fas fa-arrow-right"></i>
                 </button>
             </form>
-
-            <div class="info-message">
-                <i class="fas fa-info-circle"></i>
-                <span>Use as credenciais fornecidas pela administração</span>
-            </div>
-
-            <!-- Botão de tema no rodapé -->
-            <div class="tema-container">
-                <button id="btn-tema" class="btn-tema" title="Modo claro/escuro">
-                    <i class="fas fa-sun"></i>
-                    <span>Modo claro</span>
-                </button>
-            </div>
         </div>
     </div>
 
@@ -89,7 +71,7 @@
             <i class="fas fa-exclamation-circle modal-icon"></i>
             <p class="modal-text" id="modal-mensagem">Erro ao fazer login</p>
             <div class="modal-buttons">
-                <button class="modal-btn modal-btn-ok" id="modal-ok">OK</button>
+                <button class="modal-btn modal-btn-ok" id="modal-ok">Entendi</button>
             </div>
         </div>
     </div>
