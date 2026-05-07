@@ -146,12 +146,20 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Se for uma nova carta (sem ID) e não tem nome, mostra o campo e pede para digitar
         if (!cartaId && !nomeCarta) {
-            // Mostra o campo nome
+            // Mostra o campo nome (chama a função toggle)
+            toggleCampoNome(true);
+            
+            // Adiciona classe de destaque
             if (campoNomeCarta) {
-                campoNomeCarta.style.display = 'flex';
                 campoNomeCarta.style.animation = 'pulse 0.5s ease';
+                setTimeout(() => {
+                    if (campoNomeCarta) campoNomeCarta.style.animation = '';
+                }, 500);
             }
+            
+            // Foca no input
             inputNomeCarta?.focus();
+            
             mostrarModal('✏️ Digite um nome para a carta no campo abaixo e clique em Salvar novamente!');
             return;
         }
@@ -192,6 +200,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 localStorage.removeItem('carta_draft');
                 localStorage.removeItem('carta_conteudo');
                 localStorage.removeItem('carta_nome');
+                // Após salvar, mantém o campo visível
+                toggleCampoNome(true);
             }
         } catch (error) {
             console.error('Erro ao salvar:', error);
