@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     nome: item.querySelector('.cargo-nome')?.value || '',
                     quantidade: item.querySelector('.cargo-quantidade')?.value || 1,
                     salario: item.querySelector('.cargo-salario')?.value || '',
-                    taxa: item.querySelector('.cargo-taxa')?.value || '0.5'
+                    taxa: item.querySelector('.cargo-taxa')?.value || '50'
                 };
                 dados.cargos.push(cargo);
             });
@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                             c.nome,
                             c.quantidade,
                             parseFloat(c.salario?.replace(/\./g, '').replace(',', '.')) || 0,
-                            parseFloat(c.taxa) || 0.5
+                            parseFloat(c.taxa) || 50
                         ));
                     });
                     calcularTotalGeral();
@@ -307,8 +307,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const taxaSelect = cloneCargo.querySelector('.cargo-taxa');
                     const taxa = parseFloat(taxaSelect.value);
                     const taxaPercentual = taxa;
-                    const valorTaxa = salario * taxa;
-                    const subtotal = valorTaxa * qtd;
+                    const valorTaxa = salario * (taxa / 100);
+                    const subtotal = valorTaxa * qtd;  // LINHA ADICIONADA
                     
                     elementoImagem.innerHTML = `
                         <div style="margin-bottom: 20px;">
@@ -515,7 +515,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (taxaPercentual > 100) taxaPercentual = 100;
             if (taxaPercentual < 0) taxaPercentual = 0;
             
-            const valorTaxa = salario * (taxa / 100);
+            const valorTaxa = salario * (taxaPercentual / 100);  // CORRIGIDO: usa taxaPercentual
             const subtotalTaxas = valorTaxa * qtd;
 
             resultadosDiv.innerHTML = `
@@ -589,24 +589,24 @@ document.addEventListener('DOMContentLoaded', async function() {
                             container.appendChild(criarCargoItem(c.nome, c.quantidade, c.salario, c.taxa));
                         });
                     } else {
-                        container.appendChild(criarCargoItem('', 1, 0, 0.5));
+                        container.appendChild(criarCargoItem('', 1, 0, 50));
                     }
                     calcularTotalGeral();
                     localStorage.removeItem(DRAFT_KEY);
                 } else {
                     if (!carregarRascunho()) {
-                        container.appendChild(criarCargoItem('', 1, 0, 0.5));
+                        container.appendChild(criarCargoItem('', 1, 0, 50));
                     }
                 }
             } catch (error) {
                 console.error('Erro ao carregar proposta:', error);
                 if (!carregarRascunho()) {
-                    container.appendChild(criarCargoItem('', 1, 0, 0.5));
+                    container.appendChild(criarCargoItem('', 1, 0, 50));
                 }
             }
         } else {
             if (!carregarRascunho()) {
-                container.appendChild(criarCargoItem('', 1, 0, 0.5));
+                container.appendChild(criarCargoItem('', 1, 0, 50));
             }
         }
     }
@@ -615,7 +615,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Botão adicionar cargo
     btnAdicionar.addEventListener('click', function() {
-        container.appendChild(criarCargoItem('', 1, 0, 0.5));
+        container.appendChild(criarCargoItem('', 1, 0, 50));
         salvarRascunho();
     });
 
