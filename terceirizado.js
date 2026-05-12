@@ -162,8 +162,13 @@ async function gerarImagemProposta() {
         function secaoTemValores(secaoElement) {
             if (!secaoElement) return false;
             
-            const cards = secaoElement.querySelectorAll('.beneficio-card, .seguranca-item, .insumo-card, .despesa-card, .adicional-card, .exames-item');
+            // Verifica se a seção está visível (não oculta)
+            if (secaoElement.style.display === 'none') return false;
+            
+            const cards = secaoElement.querySelectorAll('.beneficio-card, .beneficio-fixo-card, .beneficio-custom-card, .seguranca-item, .insumo-card, .despesa-card, .adicional-card, .exames-item');
+            
             for (const card of cards) {
+                // Verifica inputs de valor
                 const valorInputs = card.querySelectorAll('input[type="text"], input[type="number"]');
                 for (const input of valorInputs) {
                     if (input.classList.contains('quantidade-uniforme') || 
@@ -181,12 +186,24 @@ async function gerarImagemProposta() {
                     if (valor > 0) return true;
                 }
                 
+                // Verifica checkboxes marcadas
                 const checkboxes = card.querySelectorAll('input[type="checkbox"]');
                 for (const cb of checkboxes) {
                     if (cb.checked) return true;
                 }
+                
+                // Verifica spans com valores (para benefícios)
+                const valorSpans = card.querySelectorAll('.beneficio-total, .beneficio-total span');
+                for (const span of valorSpans) {
+                    const texto = span.textContent;
+                    if (texto && texto.includes('R$')) {
+                        const valor = parseFloat(texto.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
+                        if (valor > 0) return true;
+                    }
+                }
             }
             
+            // Verifica itens personalizados
             const customItems = secaoElement.querySelectorAll('.item-custom, .beneficio-custom-card, .exame-custom-item');
             for (const item of customItems) {
                 const qtdInput = item.querySelector('.item-custom-quantidade-input, .beneficio-custom-valor');
@@ -194,10 +211,11 @@ async function gerarImagemProposta() {
                     const valor = parseFloat(qtdInput.value.replace(/\./g, '').replace(',', '.')) || 0;
                     if (valor > 0) return true;
                 }
-                const checkbox = item.querySelector('.exame-custom-checkbox');
+                const checkbox = item.querySelector('.exame-custom-checkbox, .beneficio-custom-checkbox');
                 if (checkbox && checkbox.checked) return true;
             }
             
+            // Verifica totais de uniformes, EPIs e exames
             const uniformesTotal = secaoElement.querySelector('.uniformes-total span:last-child');
             const episTotal = secaoElement.querySelector('.epis-total span:last-child');
             const examesTotal = secaoElement.querySelector('.exames-total span:last-child');
@@ -215,6 +233,17 @@ async function gerarImagemProposta() {
                 if (valor > 0) return true;
             }
             
+            // Verifica se há algum texto visível com valor monetário
+            const allText = secaoElement.innerText || '';
+            const moneyRegex = /R\$\s*\d+[\d.,]*/g;
+            const matches = allText.match(moneyRegex);
+            if (matches) {
+                for (const match of matches) {
+                    const valor = parseFloat(match.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
+                    if (valor > 0) return true;
+                }
+            }
+            
             return false;
         }
         
@@ -223,10 +252,11 @@ async function gerarImagemProposta() {
             const clone = cargoOriginal.cloneNode(true);
             
             const secoes = [
-                { selector: '.expandable-section:nth-child(2)', nome: 'Uniformes e EPIs' },
-                { selector: '.expandable-section:nth-child(3)', nome: 'Benefícios' },
-                { selector: '.expandable-section:nth-child(4)', nome: 'Segurança' },
-                { selector: '.expandable-section:nth-child(5)', nome: 'Insumos' },
+                { selector: '.expandable-section', nome: 'Adicionais' },
+                { selector: '.expandable-section', nome: 'Uniformes e EPIs' },
+                { selector: '.expandable-section', nome: 'Benefícios' },
+                { selector: '.expandable-section', nome: 'Segurança' },
+                { selector: '.expandable-section', nome: 'Insumos' },
                 { selector: '.despesas-section', nome: 'Despesas' },
                 { selector: '.exames-section', nome: 'Exames' }
             ];
