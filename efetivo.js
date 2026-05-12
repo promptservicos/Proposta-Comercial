@@ -348,8 +348,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                                     <span>Taxa de administração (${taxaPercentual}%)</span>
                                     <span style="font-weight: bold;">${formatarMoeda(valorTaxa)}</span>
                                 </div>
-                                <div style="display: flex; justify-content: space-between; padding: 8px 0;">
-                                    <span>Subtotal para ${qtd} vaga(s)</span>
+                                <div style="display: flex; justify-content: space-between; padding: 8px 0; border-top: 1px solid #e0e0e0; margin-top: 8px; padding-top: 12px;">
+                                    <span style="font-weight: bold;">Subtotal para ${qtd} vaga(s)</span>
                                     <span style="font-weight: bold; font-size: 1.2rem; color: #c10404;">${formatarMoeda(subtotal)}</span>
                                 </div>
                             </div>
@@ -515,7 +515,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (taxaPercentual > 100) taxaPercentual = 100;
             if (taxaPercentual < 0) taxaPercentual = 0;
             
-            const valorTaxa = salario * (taxaPercentual / 100);
+            const valorTaxa = salario * (taxa / 100);
             const subtotalTaxas = valorTaxa * qtd;
 
             resultadosDiv.innerHTML = `
