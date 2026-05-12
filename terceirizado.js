@@ -456,7 +456,7 @@ async function gerarImagemProposta() {
                 const cloneCargo = cloneCargoLimpo(cargo);
                 
                 // Expandir todas as seções
-                const todasSecoes = clone.querySelectorAll('.expandable-section, .despesas-section, .exames-section');
+                const todasSecoes = cloneCargo.querySelectorAll('.expandable-section, .despesas-section, .exames-section');
 
                 todasSecoes.forEach(secao => {
                     let nomeSecao = '';
