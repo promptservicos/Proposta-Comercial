@@ -165,85 +165,129 @@ async function gerarImagemProposta() {
             // Verifica se a seção está visível (não oculta)
             if (secaoElement.style.display === 'none') return false;
             
-            const cards = secaoElement.querySelectorAll('.beneficio-card, .beneficio-fixo-card, .beneficio-custom-card, .seguranca-item, .insumo-card, .despesa-card, .adicional-card, .exames-item');
+            // PARA TESTE: vê se é a seção de Benefícios 
+            const titulo = secaoElement.querySelector('.section-title span, .exames-title span, .despesas-title span');
+            const nomeSecao = titulo ? titulo.textContent : '';
             
-            for (const card of cards) {
-                // Verifica inputs de valor
-                const valorInputs = card.querySelectorAll('input[type="text"], input[type="number"]');
-                for (const input of valorInputs) {
-                    if (input.classList.contains('quantidade-uniforme') || 
-                        input.classList.contains('quantidade-epi') ||
-                        input.classList.contains('depreciacao-uniforme') ||
-                        input.classList.contains('depreciacao-epi')) {
-                        continue;
-                    }
-                    let valor = 0;
-                    if (input.type === 'text') {
-                        valor = parseFloat(input.value.replace(/\./g, '').replace(',', '.')) || 0;
-                    } else if (input.type === 'number') {
-                        valor = parseFloat(input.value) || 0;
-                    }
-                    if (valor > 0) return true;
+            // 1. Verificar inputs de valor (exceto uniformes/EPIs)
+            const valorInputs = secaoElement.querySelectorAll('input[type="text"], input[type="number"]');
+            for (const input of valorInputs) {
+                // Ignora inputs de quantidade/depreciação de uniformes/EPIs
+                if (input.classList.contains('quantidade-uniforme') || 
+                    input.classList.contains('quantidade-epi') ||
+                    input.classList.contains('depreciacao-uniforme') ||
+                    input.classList.contains('depreciacao-epi') ||
+                    input.classList.contains('item-custom-quantidade-input') ||
+                    input.classList.contains('item-custom-depreciacao-input')) {
+                    continue;
                 }
                 
-                // Verifica checkboxes marcadas
-                const checkboxes = card.querySelectorAll('input[type="checkbox"]');
-                for (const cb of checkboxes) {
-                    if (cb.checked) return true;
+                let valor = 0;
+                if (input.type === 'text') {
+                    valor = parseFloat(input.value.replace(/\./g, '').replace(',', '.')) || 0;
+                } else if (input.type === 'number') {
+                    valor = parseFloat(input.value) || 0;
                 }
                 
-                // Verifica spans com valores (para benefícios)
-                const valorSpans = card.querySelectorAll('.beneficio-total, .beneficio-total span');
-                for (const span of valorSpans) {
-                    const texto = span.textContent;
-                    if (texto && texto.includes('R$')) {
-                        const valor = parseFloat(texto.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
-                        if (valor > 0) return true;
+                // Se encontrou algum valor > 0, a seção tem conteúdo
+                if (valor > 0) {
+                    console.log(`Seção "${nomeSecao}" tem valor: ${valor} no input ${input.className || input.id || 'sem-classe'}`);
+                    return true;
+                }
+            }
+            
+            // 2. Verificar checkboxes marcadas (exceto as de expandir/recolher)
+            const checkboxes = secaoElement.querySelectorAll('input[type="checkbox"]');
+            for (const cb of checkboxes) {
+                // Ignora se for checkbox de expandir conteúdo
+                if (cb.closest('.section-header') || cb.closest('.exames-header') || cb.closest('.despesas-header')) {
+                    continue;
+                }
+                if (cb.checked) {
+                    console.log(`Seção "${nomeSecao}" tem checkbox marcada: ${cb.className}`);
+                    return true;
+                }
+            }
+            
+            // 3. Verificar campos de benefícios personalizados
+            const customBeneficios = secaoElement.querySelectorAll('.beneficio-custom-card');
+            for (const beneficio of customBeneficios) {
+                const nomeInput = beneficio.querySelector('.beneficio-custom-nome');
+                const nome = nomeInput ? nomeInput.value.trim() : '';
+                if (nome) {
+                    console.log(`Seção "${nomeSecao}" tem benefício personalizado: ${nome}`);
+                    return true;
+                }
+            }
+            
+            // 4. Verificar totais exibidos (spans com valores)
+            const totalSpans = secaoElement.querySelectorAll('.item-total, .item-mensal, .beneficio-total, .seguranca-total, .insumo-total, .despesa-valor, .exames-total span, .uniformes-total span, .epis-total span');
+            for (const span of totalSpans) {
+                const texto = span.textContent;
+                if (texto && texto.includes('R$')) {
+                    const valor = parseFloat(texto.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
+                    if (valor > 0.01) { // Mais de 1 centavo
+                        console.log(`Seção "${nomeSecao}" tem total exibido: ${formatarMoeda(valor)}`);
+                        return true;
                     }
                 }
             }
             
-            // Verifica itens personalizados
-            const customItems = secaoElement.querySelectorAll('.item-custom, .beneficio-custom-card, .exame-custom-item');
-            for (const item of customItems) {
-                const qtdInput = item.querySelector('.item-custom-quantidade-input, .beneficio-custom-valor');
+            // 5. Verificar se há itens de uniformes/EPIs com quantidade > 0
+            const uniformesItems = secaoElement.querySelectorAll('.item-lista');
+            for (const item of uniformesItems) {
+                const qtdInput = item.querySelector('.quantidade-uniforme, .quantidade-epi');
                 if (qtdInput) {
-                    const valor = parseFloat(qtdInput.value.replace(/\./g, '').replace(',', '.')) || 0;
-                    if (valor > 0) return true;
-                }
-                const checkbox = item.querySelector('.exame-custom-checkbox, .beneficio-custom-checkbox');
-                if (checkbox && checkbox.checked) return true;
-            }
-            
-            // Verifica totais de uniformes, EPIs e exames
-            const uniformesTotal = secaoElement.querySelector('.uniformes-total span:last-child');
-            const episTotal = secaoElement.querySelector('.epis-total span:last-child');
-            const examesTotal = secaoElement.querySelector('.exames-total span:last-child');
-            
-            if (uniformesTotal) {
-                const valor = parseFloat(uniformesTotal.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
-                if (valor > 0) return true;
-            }
-            if (episTotal) {
-                const valor = parseFloat(episTotal.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
-                if (valor > 0) return true;
-            }
-            if (examesTotal) {
-                const valor = parseFloat(examesTotal.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
-                if (valor > 0) return true;
-            }
-            
-            // Verifica se há algum texto visível com valor monetário
-            const allText = secaoElement.innerText || '';
-            const moneyRegex = /R\$\s*\d+[\d.,]*/g;
-            const matches = allText.match(moneyRegex);
-            if (matches) {
-                for (const match of matches) {
-                    const valor = parseFloat(match.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
-                    if (valor > 0) return true;
+                    const qtd = parseInt(qtdInput.value) || 0;
+                    if (qtd > 0) {
+                        console.log(`Seção "${nomeSecao}" tem item de uniforme/EPI com quantidade ${qtd}`);
+                        return true;
+                    }
                 }
             }
             
+            // 6. Verificar se há exames marcados
+            const examesChecks = secaoElement.querySelectorAll('.exame-checkbox');
+            for (const cb of examesChecks) {
+                if (cb.checked) {
+                    console.log(`Seção "${nomeSecao}" tem exame marcado`);
+                    return true;
+                }
+            }
+            
+            // 7. Verificar treinamento
+            const treinamentoInput = secaoElement.querySelector('.treinamento-valor');
+            if (treinamentoInput) {
+                const treinamento = parseFloat(treinamentoInput.value.replace(/\./g, '').replace(',', '.')) || 0;
+                if (treinamento > 0) {
+                    console.log(`Seção "${nomeSecao}" tem treinamento: ${treinamento}`);
+                    return true;
+                }
+            }
+            
+            // 8. Verificar taxa de encargos (sempre tem, mas só conta se > 0)
+            const despesaTaxa = secaoElement.querySelector('.despesa-taxa');
+            if (despesaTaxa && nomeSecao.includes('Despesas')) {
+                // A seção de despesas SEMPRE tem a taxa, mas só mostra se houver base de cálculo
+                // Vamos verificar se há algum benefício ou insumo que gere base de cálculo
+                const parentCargo = secaoElement.closest('.cargo-item');
+                if (parentCargo) {
+                    // Verifica se há benefícios ou insumos com valor
+                    const beneficiosSection = parentCargo.querySelector('.expandable-section .section-title span:contains("Benefícios")')?.closest('.expandable-section');
+                    if (beneficiosSection && secaoTemValores(beneficiosSection)) {
+                        return true;
+                    }
+                    const insumosSection = parentCargo.querySelector('.expandable-section .section-title span:contains("Insumos")')?.closest('.expandable-section');
+                    if (insumosSection && secaoTemValores(insumosSection)) {
+                        return true;
+                    }
+                }
+                // Se não tem benefícios nem insumos, não mostra despesas
+                return false;
+            }
+            
+            // Se passou por todas as verificações, não tem valores
+            console.log(`Seção "${nomeSecao}" - SEM VALORES, será ocultada`);
             return false;
         }
         
@@ -412,17 +456,23 @@ async function gerarImagemProposta() {
                 const cloneCargo = cloneCargoLimpo(cargo);
                 
                 // Expandir todas as seções
-                const todasSecoes = cloneCargo.querySelectorAll('.expandable-section, .exames-section, .despesas-section');
+                const todasSecoes = clone.querySelectorAll('.expandable-section, .despesas-section, .exames-section');
+
                 todasSecoes.forEach(secao => {
-                    const content = secao.querySelector('.section-content, .exames-content, .despesas-content');
-                    if (content) {
-                        content.classList.remove('collapsed');
-                        content.style.display = 'block';
+                    let nomeSecao = '';
+                    const tituloSpan = secao.querySelector('.section-title span, .exames-title span, .despesas-title span');
+                    if (tituloSpan) {
+                        nomeSecao = tituloSpan.textContent.trim();
                     }
-                    const toggleIcon = secao.querySelector('.section-toggle, .exames-toggle, .despesas-toggle');
-                    if (toggleIcon) {
-                        toggleIcon.classList.remove('fa-chevron-down');
-                        toggleIcon.classList.add('fa-chevron-up');
+                    
+                    // Verifica se a seção tem valores
+                    const temValores = secaoTemValores(secao);
+                    
+                    if (!temValores) {
+                        console.log(`Ocultando seção: ${nomeSecao || 'sem nome'} - não tem valores`);
+                        secao.style.display = 'none';
+                    } else {
+                        console.log(`Mantendo seção: ${nomeSecao || 'sem nome'} - tem valores`);
                     }
                 });
                 
