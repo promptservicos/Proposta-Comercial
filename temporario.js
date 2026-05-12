@@ -222,30 +222,151 @@ async function gerarImagemPorCargo() {
             return false;
         }
         
-        // Função para clonar e limpar seções vazias
+        // Função para verificar se uma seção tem valores > 0 (VERSÃO MELHORADA PARA TEMPORÁRIO)
+        function secaoTemValores(secaoElement) {
+            if (!secaoElement) return false;
+            
+            // Verifica se a seção está visível (não oculta)
+            if (secaoElement.style.display === 'none') return false;
+            
+            const titulo = secaoElement.querySelector('.section-title span, .exames-title span, .despesas-title span');
+            const nomeSecao = titulo ? titulo.textContent : '';
+            
+            // 1. Verificar inputs de valor (exceto uniformes/EPIs)
+            const valorInputs = secaoElement.querySelectorAll('input[type="text"], input[type="number"]');
+            for (const input of valorInputs) {
+                // Ignora inputs de quantidade/depreciação de uniformes/EPIs
+                if (input.classList.contains('quantidade-uniforme') || 
+                    input.classList.contains('quantidade-epi') ||
+                    input.classList.contains('depreciacao-uniforme') ||
+                    input.classList.contains('depreciacao-epi') ||
+                    input.classList.contains('item-custom-quantidade-input') ||
+                    input.classList.contains('item-custom-depreciacao-input')) {
+                    continue;
+                }
+                
+                let valor = 0;
+                if (input.type === 'text') {
+                    valor = parseFloat(input.value.replace(/\./g, '').replace(',', '.')) || 0;
+                } else if (input.type === 'number') {
+                    valor = parseFloat(input.value) || 0;
+                }
+                
+                // Se encontrou algum valor > 0, a seção tem conteúdo
+                if (valor > 0) {
+                    console.log(`Seção "${nomeSecao}" tem valor: ${valor} no input ${input.className || 'sem-classe'}`);
+                    return true;
+                }
+            }
+            
+            // 2. Verificar checkboxes marcadas (exceto as de expandir/recolher)
+            const checkboxes = secaoElement.querySelectorAll('input[type="checkbox"]');
+            for (const cb of checkboxes) {
+                // Ignora se for checkbox de expandir conteúdo
+                if (cb.closest('.section-header') || cb.closest('.exames-header') || cb.closest('.despesas-header')) {
+                    continue;
+                }
+                if (cb.checked) {
+                    console.log(`Seção "${nomeSecao}" tem checkbox marcada: ${cb.className}`);
+                    return true;
+                }
+            }
+            
+            // 3. Verificar campos de benefícios personalizados
+            const customBeneficios = secaoElement.querySelectorAll('.beneficio-custom-card');
+            for (const beneficio of customBeneficios) {
+                const nomeInput = beneficio.querySelector('.beneficio-custom-nome');
+                const nome = nomeInput ? nomeInput.value.trim() : '';
+                if (nome) {
+                    console.log(`Seção "${nomeSecao}" tem benefício personalizado: ${nome}`);
+                    return true;
+                }
+            }
+            
+            // 4. Verificar totais exibidos (spans com valores)
+            const totalSpans = secaoElement.querySelectorAll('.item-total, .item-mensal, .beneficio-total, .seguranca-total, .insumo-total, .despesa-valor, .exames-total span, .uniformes-total span, .epis-total span');
+            for (const span of totalSpans) {
+                const texto = span.textContent;
+                if (texto && texto.includes('R$')) {
+                    const valor = parseFloat(texto.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
+                    if (valor > 0.01) {
+                        console.log(`Seção "${nomeSecao}" tem total exibido: ${formatarMoeda(valor)}`);
+                        return true;
+                    }
+                }
+            }
+            
+            // 5. Verificar se há itens de uniformes/EPIs com quantidade > 0
+            const uniformesItems = secaoElement.querySelectorAll('.item-lista');
+            for (const item of uniformesItems) {
+                const qtdInput = item.querySelector('.quantidade-uniforme, .quantidade-epi');
+                if (qtdInput) {
+                    const qtd = parseInt(qtdInput.value) || 0;
+                    if (qtd > 0) {
+                        console.log(`Seção "${nomeSecao}" tem item de uniforme/EPI com quantidade ${qtd}`);
+                        return true;
+                    }
+                }
+            }
+            
+            // 6. Verificar se há exames marcados
+            const examesChecks = secaoElement.querySelectorAll('.exame-checkbox');
+            for (const cb of examesChecks) {
+                if (cb.checked) {
+                    console.log(`Seção "${nomeSecao}" tem exame marcado`);
+                    return true;
+                }
+            }
+            
+            // 7. Verificar treinamento
+            const treinamentoInput = secaoElement.querySelector('.treinamento-valor');
+            if (treinamentoInput) {
+                const treinamento = parseFloat(treinamentoInput.value.replace(/\./g, '').replace(',', '.')) || 0;
+                if (treinamento > 0) {
+                    console.log(`Seção "${nomeSecao}" tem treinamento: ${treinamento}`);
+                    return true;
+                }
+            }
+            
+            // 8. Verificar despesas (porcentagens > 0)
+            const despesaPorcentagem = secaoElement.querySelectorAll('.despesa-porcentagem');
+            for (const input of despesaPorcentagem) {
+                const valor = parseFloat(input.value.replace(/\./g, '').replace(',', '.')) || 0;
+                if (valor > 0) {
+                    console.log(`Seção "${nomeSecao}" tem porcentagem de despesa: ${valor}%`);
+                    return true;
+                }
+            }
+            
+            // Se passou por todas as verificações, não tem valores
+            console.log(`Seção "${nomeSecao}" - SEM VALORES, será ocultada`);
+            return false;
+        }
+
+        // Função para clonar e limpar seções vazias (VERSÃO CORRIGIDA)
         function cloneCargoLimpo(cargoOriginal) {
             const clone = cargoOriginal.cloneNode(true);
             
-            const secoes = [
-                { selector: '.expandable-section:nth-child(2)', nome: 'Uniformes e EPIs' },
-                { selector: '.expandable-section:nth-child(3)', nome: 'Benefícios' },
-                { selector: '.expandable-section:nth-child(4)', nome: 'Segurança' },
-                { selector: '.expandable-section:nth-child(5)', nome: 'Insumos' },
-                { selector: '.despesas-section', nome: 'Despesas' },
-                { selector: '.exames-section', nome: 'Exames' }
-            ];
+            // Encontra todas as seções expansíveis por título (mais robusto que :nth-child)
+            const todasSecoes = clone.querySelectorAll('.expandable-section, .despesas-section, .exames-section');
             
-            secoes.forEach(secao => {
-                const elemento = clone.querySelector(secao.selector);
-                if (elemento && !secaoTemValores(elemento)) {
-                    elemento.style.display = 'none';
+            todasSecoes.forEach(secao => {
+                let nomeSecao = '';
+                const tituloSpan = secao.querySelector('.section-title span, .exames-title span, .despesas-title span');
+                if (tituloSpan) {
+                    nomeSecao = tituloSpan.textContent.trim();
+                }
+                
+                // Verifica se a seção tem valores
+                const temValores = secaoTemValores(secao);
+                
+                if (!temValores) {
+                    console.log(`Ocultando seção: ${nomeSecao || 'sem nome'} - não tem valores`);
+                    secao.style.display = 'none';
+                } else {
+                    console.log(`Mantendo seção: ${nomeSecao || 'sem nome'} - tem valores`);
                 }
             });
-            
-            const adicionaisSection = clone.querySelector('.expandable-section:first-child');
-            if (adicionaisSection && !secaoTemValores(adicionaisSection)) {
-                adicionaisSection.style.display = 'none';
-            }
             
             return clone;
         }

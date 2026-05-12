@@ -306,7 +306,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const salario = parseFloat(salarioRaw.replace(/\./g, '').replace(',', '.')) || 0;
                     const taxaSelect = cloneCargo.querySelector('.cargo-taxa');
                     const taxa = parseFloat(taxaSelect.value);
-                    const taxaPercentual = taxa * 100;
+                    const taxaPercentual = taxa;
                     const valorTaxa = salario * taxa;
                     const subtotal = valorTaxa * qtd;
                     
