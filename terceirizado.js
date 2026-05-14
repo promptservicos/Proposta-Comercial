@@ -3830,9 +3830,174 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 
-    // ========== INICIALIZAR FUNCIONALIDADES ==========
+        // ========== FUNÇÃO PARA GERAR LINK DE VISUALIZAÇÃO ==========
+    async function gerarLinkVisualizacao() {
+        try {
+            const vendedor = document.getElementById('vendedor-nome').textContent;
+            const cliente = document.getElementById('cliente-nome').value || 'SEM CLIENTE';
+            const urlParams = new URLSearchParams(window.location.search);
+            let propostaId = urlParams.get('id');
+            
+            if (!propostaId) {
+                await salvarPropostaAtual();
+                const newUrlParams = new URLSearchParams(window.location.search);
+                propostaId = newUrlParams.get('id');
+                if (!propostaId) {
+                    throw new Error('Não foi possível gerar o link. Tente salvar a proposta primeiro.');
+                }
+            }
+            
+            const baseUrl = window.location.href.split('?')[0];
+            const linkVisualizacao = `${baseUrl}?id=${propostaId}&visualizacao=true`;
+            
+            const modalShare = document.getElementById('modal-share');
+            const shareLinkInput = document.getElementById('share-link');
+            
+            if (shareLinkInput && modalShare) {
+                shareLinkInput.value = linkVisualizacao;
+                modalShare.classList.remove('hidden');
+            }
+            
+            try {
+                await navigator.clipboard.writeText(linkVisualizacao);
+                mostrarModal('Link copiado para a área de transferência!');
+            } catch (err) {
+                console.log('Não foi possível copiar automaticamente');
+            }
+            
+        } catch (error) {
+            console.error('Erro ao gerar link:', error);
+            mostrarModal('Erro ao gerar link. Tente salvar a proposta primeiro.');
+        }
+    }
+
+    // ========== SALVAR PROPOSTA ATUAL PARA COMPARTILHAR ==========
+    async function salvarPropostaAtual() {
+        const vendedor = document.getElementById('vendedor-nome').textContent;
+        const cliente = document.getElementById('cliente-nome').value || 'SEM CLIENTE';
+        const urlParams = new URLSearchParams(window.location.search);
+        const propostaId = urlParams.get('id');
+        
+        const cargos = [];
+        for (const item of document.querySelectorAll('.cargo-item')) {
+            const nome = item.querySelector('.cargo-nome').value.trim() || 'Cargo sem nome';
+            const qtd = parseInt(item.querySelector('.cargo-quantidade').value) || 1;
+            const salarioInput = item.querySelector('.cargo-salario').value;
+            const salario = parseFloat(salarioInput.replace(/\./g, '').replace(',', '.')) || 0;
+            const encargosPercentualInput = item.querySelector('.encargos-percentual');
+            const encargosPercentual = parseFloat(encargosPercentualInput?.value.replace(/\./g, '').replace(',', '.')) || 113.00;
+            
+            const heCheck = item.querySelector('.he-check');
+            const anCheck = item.querySelector('.an-check');
+            const perCheck = item.querySelector('.per-check');
+            const insCheck = item.querySelector('.ins-check');
+            const heHorasInput = item.querySelector('.he-horas');
+            const anHorasInput = item.querySelector('.an-horas');
+            const acumuloCheck = item.querySelector('.acumulo-check');
+            const acumuloQuantidadeInput = item.querySelector('.acumulo-quantidade');
+            
+            cargos.push({
+                nome,
+                quantidade: qtd,
+                salario,
+                adicionais: {
+                    horasExtras: heCheck ? heCheck.checked : false,
+                    noturno: anCheck ? anCheck.checked : false,
+                    periculosidade: perCheck ? perCheck.checked : false,
+                    insalubridade: insCheck ? insCheck.checked : false,
+                    heHoras: heHorasInput ? parseFloat(heHorasInput.value) || 0 : 0,
+                    anHoras: anHorasInput ? parseFloat(anHorasInput.value) || 0 : 0,
+                    acumulo: acumuloCheck ? acumuloCheck.checked : false,
+                    acumuloQuantidade: acumuloQuantidadeInput ? parseInt(acumuloQuantidadeInput.value) || 0 : 0,
+                    encargosPercentual: encargosPercentual
+                },
+                uniformes: {},
+                epis: {},
+                beneficios: {},
+                beneficiosPersonalizados: [],
+                seguranca: {},
+                exames: {},
+                insumos: {},
+                despesas: {},
+                treinamento: 0,
+                totalVaga: 0
+            });
+        }
+        
+        const totalGeral = parseFloat(totalGeralEl.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.'));
+        
+        const proposta = {
+            vendedor,
+            cliente,
+            data: new Date().toISOString(),
+            tipo: 'terceirizado',
+            cargos,
+            totalGeral
+        };
+        
+        if (propostaId) {
+            await db.collection('propostas').doc(propostaId).update(proposta);
+        } else {
+            const docRef = await db.collection('propostas').add(proposta);
+            window.history.replaceState(null, '', `?id=${docRef.id}`);
+        }
+    }
+
+    // ========== COMPARTILHAR LINK ==========
+    function initCompartilharLink() {
+        const btnCompartilharLink = document.getElementById('btn-compartilhar-link');
+        if (!btnCompartilharLink) return;
+        
+        btnCompartilharLink.addEventListener('click', async () => {
+            const cargos = document.querySelectorAll('.cargo-item');
+            if (cargos.length === 0) {
+                mostrarModal('Adicione pelo menos um cargo antes de compartilhar.');
+                return;
+            }
+            
+            const cliente = document.getElementById('cliente-nome').value;
+            if (!cliente) {
+                mostrarModal('Informe o nome do cliente antes de compartilhar.');
+                return;
+            }
+            
+            await gerarLinkVisualizacao();
+        });
+    }
+
+        // ========== INICIALIZAR FUNCIONALIDADES ==========
     initTema();
     initBaixarProposta();
+    initCompartilharLink();
     checkVisualizacao();
     
+    // ========== CONFIGURAR MODAIS ==========
+    const modalShare = document.getElementById('modal-share');
+    const modalShareOk = document.getElementById('modal-share-ok');
+    const btnCopiarLinkModal = document.getElementById('btn-copiar-link');
+    
+    if (modalShareOk) {
+        modalShareOk.addEventListener('click', () => {
+            modalShare.classList.add('hidden');
+        });
+    }
+    
+    if (modalShare) {
+        modalShare.addEventListener('click', (e) => {
+            if (e.target === modalShare) {
+                modalShare.classList.add('hidden');
+            }
+        });
+    }
+    
+    if (btnCopiarLinkModal) {
+        btnCopiarLinkModal.addEventListener('click', () => {
+            const shareLinkInput = document.getElementById('share-link');
+            if (shareLinkInput) {
+                shareLinkInput.select();
+                navigator.clipboard.writeText(shareLinkInput.value);
+                mostrarModal('Link copiado!');
+            }
+        });
+    }
 });
