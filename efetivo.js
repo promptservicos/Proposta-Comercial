@@ -777,8 +777,168 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 
+        // ========== FUNÇÃO PARA GERAR LINK DE VISUALIZAÇÃO ==========
+    async function gerarLinkVisualizacao() {
+        try {
+            const vendedor = document.getElementById('vendedor-nome').textContent;
+            const cliente = document.getElementById('cliente-nome').value || 'SEM CLIENTE';
+            const urlParams = new URLSearchParams(window.location.search);
+            let propostaId = urlParams.get('id');
+            
+            if (!propostaId) {
+                await salvarPropostaAtual();
+                const newUrlParams = new URLSearchParams(window.location.search);
+                propostaId = newUrlParams.get('id');
+                if (!propostaId) {
+                    throw new Error('Não foi possível gerar o link. Tente salvar a proposta primeiro.');
+                }
+            }
+            
+            const baseUrl = window.location.href.split('?')[0];
+            const linkVisualizacao = `${baseUrl}?id=${propostaId}&visualizacao=true`;
+            
+            const modalShare = document.getElementById('modal-share');
+            const shareLinkInput = document.getElementById('share-link');
+            
+            if (shareLinkInput && modalShare) {
+                shareLinkInput.value = linkVisualizacao;
+                modalShare.classList.remove('hidden');
+            }
+            
+            try {
+                await navigator.clipboard.writeText(linkVisualizacao);
+                mostrarModal('Link copiado para a área de transferência!');
+            } catch (err) {
+                console.log('Não foi possível copiar automaticamente');
+            }
+            
+        } catch (error) {
+            console.error('Erro ao gerar link:', error);
+            mostrarModal('Erro ao gerar link. Tente salvar a proposta primeiro.');
+        }
+    }
+
+    // ========== SALVAR PROPOSTA ATUAL PARA COMPARTILHAR ==========
+    async function salvarPropostaAtual() {
+        const vendedor = document.getElementById('vendedor-nome').textContent;
+        const cliente = document.getElementById('cliente-nome').value || 'SEM CLIENTE';
+        const urlParams = new URLSearchParams(window.location.search);
+        const propostaId = urlParams.get('id');
+        
+        const cargos = [];
+        for (const item of document.querySelectorAll('.cargo-item')) {
+            const nome = item.querySelector('.cargo-nome').value.trim() || 'Cargo sem nome';
+            const qtd = parseInt(item.querySelector('.cargo-quantidade').value) || 1;
+            const salarioInput = item.querySelector('.cargo-salario').value;
+            const salario = parseFloat(salarioInput.replace(/\./g, '').replace(',', '.')) || 0;
+            const taxa = parseFloat(item.querySelector('.cargo-taxa').value);
+            
+            cargos.push({
+                nome,
+                quantidade: qtd,
+                salario,
+                taxa,
+                valorTaxa: salario * (taxa / 100),
+                subtotal: salario * (taxa / 100) * qtd
+            });
+        }
+        
+        const totalGeral = parseFloat(totalGeralEl.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.'));
+        
+        const proposta = {
+            vendedor,
+            cliente,
+            data: new Date().toISOString(),
+            tipo: 'efetivo',
+            cargos,
+            totalGeral
+        };
+        
+        if (propostaId) {
+            await db.collection('propostas').doc(propostaId).update(proposta);
+        } else {
+            const docRef = await db.collection('propostas').add(proposta);
+            window.history.replaceState(null, '', `?id=${docRef.id}`);
+        }
+    }
+
+    // ========== BAIXAR IMAGENS ==========
+    function initBaixarImagens() {
+        const btnBaixar = document.getElementById('btn-baixar-imagens');
+        if (!btnBaixar) return;
+        
+        btnBaixar.addEventListener('click', async () => {
+            const cargos = document.querySelectorAll('.cargo-item');
+            if (cargos.length === 0) {
+                mostrarModal('Adicione pelo menos um cargo antes de baixar as imagens.');
+                return;
+            }
+            
+            const cliente = document.getElementById('cliente-nome').value;
+            if (!cliente) {
+                mostrarModal('Informe o nome do cliente antes de baixar as imagens.');
+                return;
+            }
+            
+            await gerarImagemPorCargo();
+        });
+    }
+
+    // ========== COMPARTILHAR LINK ==========
+    function initCompartilharLink() {
+        const btnCompartilharLink = document.getElementById('btn-compartilhar-link');
+        if (!btnCompartilharLink) return;
+        
+        btnCompartilharLink.addEventListener('click', async () => {
+            const cargos = document.querySelectorAll('.cargo-item');
+            if (cargos.length === 0) {
+                mostrarModal('Adicione pelo menos um cargo antes de compartilhar.');
+                return;
+            }
+            
+            const cliente = document.getElementById('cliente-nome').value;
+            if (!cliente) {
+                mostrarModal('Informe o nome do cliente antes de compartilhar.');
+                return;
+            }
+            
+            await gerarLinkVisualizacao();
+        });
+    }
+
     // ========== INICIALIZAR FUNCIONALIDADES ==========
     initTema();
-    initCompartilhar();  // agora chama a geração de imagens
+    initBaixarImagens();
+    initCompartilharLink();
     checkVisualizacao();
+    
+    // ========== CONFIGURAR MODAIS ==========
+    const modalShare = document.getElementById('modal-share');
+    const modalShareOk = document.getElementById('modal-share-ok');
+    const btnCopiarLinkModal = document.getElementById('btn-copiar-link');
+    
+    if (modalShareOk) {
+        modalShareOk.addEventListener('click', () => {
+            modalShare.classList.add('hidden');
+        });
+    }
+    
+    if (modalShare) {
+        modalShare.addEventListener('click', (e) => {
+            if (e.target === modalShare) {
+                modalShare.classList.add('hidden');
+            }
+        });
+    }
+    
+    if (btnCopiarLinkModal) {
+        btnCopiarLinkModal.addEventListener('click', () => {
+            const shareLinkInput = document.getElementById('share-link');
+            if (shareLinkInput) {
+                shareLinkInput.select();
+                navigator.clipboard.writeText(shareLinkInput.value);
+                mostrarModal('Link copiado!');
+            }
+        });
+    }
 });
