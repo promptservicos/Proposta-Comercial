@@ -3166,19 +3166,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (shareLinkInput && modalShare) {
                 shareLinkInput.value = linkVisualizacao;
                 modalShare.classList.remove('hidden');
-                
-                // Configurar botão copiar
-                const btnCopiar = document.getElementById('btn-copiar-link');
-                if (btnCopiar) {
-                    btnCopiar.onclick = () => {
-                        shareLinkInput.select();
-                        navigator.clipboard.writeText(linkVisualizacao);
-                        mostrarModal('Link copiado!');
-                    };
-                }
             }
             
-            mostrarModal('Link gerado e copiado para a área de transferência!');
+            // Copiar automaticamente para a área de transferência
+            try {
+                await navigator.clipboard.writeText(linkVisualizacao);
+                mostrarModal('Link copiado para a área de transferência!');
+            } catch (err) {
+                console.log('Não foi possível copiar automaticamente');
+            }
             
         } catch (error) {
             console.error('Erro ao gerar link:', error);
@@ -3202,12 +3198,136 @@ document.addEventListener('DOMContentLoaded', async function() {
             const encargosPercentualInput = item.querySelector('.encargos-percentual');
             const encargosPercentual = parseFloat(encargosPercentualInput?.value.replace(/\./g, '').replace(',', '.')) || 55.83;
             
+            // Adicionais
             const heCheck = item.querySelector('.he-check');
             const anCheck = item.querySelector('.an-check');
             const perCheck = item.querySelector('.per-check');
             const insCheck = item.querySelector('.ins-check');
             const heHorasInput = item.querySelector('.he-horas');
             const anHorasInput = item.querySelector('.an-horas');
+            
+            // Uniformes e EPIs - capturar dados completos
+            let uniformes = {};
+            let epis = {};
+            
+            const uniformesBox = item.querySelector('.uniformes-box');
+            if (uniformesBox) {
+                uniformesBox.querySelectorAll('.item-lista').forEach(lista => {
+                    const nomeItem = lista.querySelector('.item-nome')?.textContent;
+                    const qtdInput = lista.querySelector('.quantidade-uniforme');
+                    const depInput = lista.querySelector('.depreciacao-uniforme');
+                    if (nomeItem && qtdInput && parseInt(qtdInput.value) > 0) {
+                        uniformes[nomeItem] = {
+                            quantidade: parseInt(qtdInput.value),
+                            depreciacao: parseInt(depInput?.value) || 1
+                        };
+                    }
+                });
+            }
+            
+            const episBox = item.querySelector('.epis-box');
+            if (episBox) {
+                episBox.querySelectorAll('.item-lista').forEach(lista => {
+                    const nomeItem = lista.querySelector('.item-nome')?.textContent;
+                    const qtdInput = lista.querySelector('.quantidade-epi');
+                    const depInput = lista.querySelector('.depreciacao-epi');
+                    if (nomeItem && qtdInput && parseInt(qtdInput.value) > 0) {
+                        epis[nomeItem] = {
+                            quantidade: parseInt(qtdInput.value),
+                            depreciacao: parseInt(depInput?.value) || 1
+                        };
+                    }
+                });
+            }
+            
+            // Benefícios fixos
+            let beneficios = {};
+            item.querySelectorAll('.beneficio-card').forEach(card => {
+                const campo = card.querySelector('.beneficio-valor')?.dataset.campo;
+                const valorInput = card.querySelector('.beneficio-valor');
+                const diasInput = card.querySelector('.beneficio-dias');
+                if (campo) {
+                    const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
+                    const dias = parseInt(diasInput?.value) || 0;
+                    if (valor > 0 || dias > 0) {
+                        beneficios[campo] = { valorDiario: valor, dias: dias };
+                    }
+                }
+            });
+            
+            // Benefícios personalizados
+            const beneficiosPersonalizados = [];
+            item.querySelectorAll('.beneficio-custom-card').forEach(card => {
+                const nomeInput = card.querySelector('.beneficio-custom-nome');
+                const valorInput = card.querySelector('.beneficio-custom-valor');
+                const diasInput = card.querySelector('.beneficio-custom-dias');
+                const nome = nomeInput?.value.trim() || '';
+                const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
+                const dias = parseInt(diasInput?.value) || 0;
+                if (nome && (valor > 0 || dias > 0)) {
+                    beneficiosPersonalizados.push({ nome, valorDiario: valor, dias: dias });
+                }
+            });
+            
+            // Segurança
+            let seguranca = {};
+            item.querySelectorAll('.seguranca-item').forEach(card => {
+                const campo = card.querySelector('.seguranca-valor')?.dataset.campo;
+                const valorInput = card.querySelector('.seguranca-valor');
+                const depInput = card.querySelector('.seguranca-depreciacao');
+                if (campo) {
+                    const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
+                    const depreciacao = parseInt(depInput?.value) || 1;
+                    if (valor > 0) {
+                        seguranca[campo] = { valor: valor, depreciacao: depreciacao };
+                    }
+                }
+            });
+            
+            // Insumos
+            let insumos = {};
+            item.querySelectorAll('.insumo-card').forEach(card => {
+                const campo = card.querySelector('.insumo-valor')?.dataset.campo;
+                const valorInput = card.querySelector('.insumo-valor');
+                if (campo) {
+                    const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
+                    if (valor > 0) {
+                        insumos[campo] = { valor: valor };
+                    }
+                }
+            });
+            
+            // Despesas
+            let despesas = {};
+            const despesasSection = item.querySelector('.despesas-section');
+            if (despesasSection) {
+                despesasSection.querySelectorAll('.despesa-card').forEach(card => {
+                    const campo = card.querySelector('.despesa-porcentagem')?.dataset.campo;
+                    const porcentagemInput = card.querySelector('.despesa-porcentagem');
+                    if (campo && porcentagemInput) {
+                        const porcentagem = parseFloat(porcentagemInput.value.replace(/\./g, '').replace(',', '.')) || 0;
+                        if (porcentagem > 0) {
+                            despesas[campo] = { porcentagem: porcentagem };
+                        }
+                    }
+                });
+            }
+            
+            // Exames
+            let exames = {};
+            let treinamento = 0;
+            const examesSection = item.querySelector('.exames-section');
+            if (examesSection) {
+                examesSection.querySelectorAll('.exame-checkbox').forEach(cb => {
+                    if (cb.checked) {
+                        exames[cb.dataset.nome] = true;
+                    }
+                });
+                const treinamentoInputExames = examesSection.querySelector('.treinamento-valor');
+                if (treinamentoInputExames) {
+                    treinamento = parseFloat(treinamentoInputExames.value.replace(/\./g, '').replace(',', '.')) || 0;
+                }
+            }
             
             cargos.push({
                 nome,
@@ -3222,15 +3342,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                     anHoras: anHorasInput ? parseFloat(anHorasInput.value) || 0 : 0,
                     encargosPercentual: encargosPercentual
                 },
-                uniformes: {},
-                epis: {},
-                beneficios: {},
-                beneficiosPersonalizados: [],
-                seguranca: {},
-                insumos: {},
-                despesas: {},
-                exames: {},
-                treinamento: 0,
+                uniformes,
+                epis,
+                beneficios,
+                beneficiosPersonalizados,
+                seguranca,
+                insumos,
+                despesas,
+                exames,
+                treinamento,
                 totalVaga: 0
             });
         }
@@ -3352,10 +3472,40 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // ========== INICIALIZAR FUNCIONALIDADES ==========
+        // ========== INICIALIZAR FUNCIONALIDADES ==========
     initTema();
     initBaixarImagens();
     initCompartilharLink();
     checkVisualizacao();
     
-});  // FECHA O DOMContentLoaded
+    // ========== CONFIGURAR MODAIS ==========
+    // Modal de compartilhamento
+    const modalShare = document.getElementById('modal-share');
+    const modalShareOk = document.getElementById('modal-share-ok');
+    const btnCopiarLinkModal = document.getElementById('btn-copiar-link');
+    
+    if (modalShareOk) {
+        modalShareOk.addEventListener('click', () => {
+            modalShare.classList.add('hidden');
+        });
+    }
+    
+    if (modalShare) {
+        modalShare.addEventListener('click', (e) => {
+            if (e.target === modalShare) {
+                modalShare.classList.add('hidden');
+            }
+        });
+    }
+    
+    if (btnCopiarLinkModal) {
+        btnCopiarLinkModal.addEventListener('click', () => {
+            const shareLinkInput = document.getElementById('share-link');
+            if (shareLinkInput) {
+                shareLinkInput.select();
+                navigator.clipboard.writeText(shareLinkInput.value);
+                mostrarModal('Link copiado!');
+            }
+        });
+    }
+});
