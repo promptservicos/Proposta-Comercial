@@ -3357,3 +3357,5 @@ document.addEventListener('DOMContentLoaded', async function() {
     initBaixarImagens();
     initCompartilharLink();
     checkVisualizacao();
+    
+});  // FECHA O DOMContentLoaded
