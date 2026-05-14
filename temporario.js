@@ -161,67 +161,7 @@ async function gerarImagemPorCargo() {
             
             return adicionais;
         }
-        
-        // Função para verificar se uma seção tem valores > 0
-        function secaoTemValores(secaoElement) {
-            if (!secaoElement) return false;
-            
-            const cards = secaoElement.querySelectorAll('.beneficio-card, .seguranca-item, .insumo-card, .despesa-card, .adicional-card, .exames-item');
-            for (const card of cards) {
-                const valorInputs = card.querySelectorAll('input[type="text"], input[type="number"]');
-                for (const input of valorInputs) {
-                    if (input.classList.contains('quantidade-uniforme') || 
-                        input.classList.contains('quantidade-epi') ||
-                        input.classList.contains('depreciacao-uniforme') ||
-                        input.classList.contains('depreciacao-epi')) {
-                        continue;
-                    }
-                    let valor = 0;
-                    if (input.type === 'text') {
-                        valor = parseFloat(input.value.replace(/\./g, '').replace(',', '.')) || 0;
-                    } else if (input.type === 'number') {
-                        valor = parseFloat(input.value) || 0;
-                    }
-                    if (valor > 0) return true;
-                }
                 
-                const checkboxes = card.querySelectorAll('input[type="checkbox"]');
-                for (const cb of checkboxes) {
-                    if (cb.checked) return true;
-                }
-            }
-            
-            const customItems = secaoElement.querySelectorAll('.item-custom, .beneficio-custom-card, .exame-custom-item');
-            for (const item of customItems) {
-                const qtdInput = item.querySelector('.item-custom-quantidade-input, .beneficio-custom-valor');
-                if (qtdInput) {
-                    const valor = parseFloat(qtdInput.value.replace(/\./g, '').replace(',', '.')) || 0;
-                    if (valor > 0) return true;
-                }
-                const checkbox = item.querySelector('.exame-custom-checkbox');
-                if (checkbox && checkbox.checked) return true;
-            }
-            
-            const uniformesTotal = secaoElement.querySelector('.uniformes-total span:last-child');
-            const episTotal = secaoElement.querySelector('.epis-total span:last-child');
-            const examesTotal = secaoElement.querySelector('.exames-total span:last-child');
-            
-            if (uniformesTotal) {
-                const valor = parseFloat(uniformesTotal.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
-                if (valor > 0) return true;
-            }
-            if (episTotal) {
-                const valor = parseFloat(episTotal.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
-                if (valor > 0) return true;
-            }
-            if (examesTotal) {
-                const valor = parseFloat(examesTotal.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
-                if (valor > 0) return true;
-            }
-            
-            return false;
-        }
-        
         // Função para verificar se uma seção tem valores > 0 (VERSÃO MELHORADA PARA TEMPORÁRIO)
         function secaoTemValores(secaoElement) {
             if (!secaoElement) return false;
@@ -3054,7 +2994,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         atualizarResultados();
         return item;
     }
-    
+
     async function carregarPropostaExistente() {
         const urlParams = new URLSearchParams(window.location.search);
         const propostaId = urlParams.get('id');
@@ -3194,114 +3134,74 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         }
     }
-    
-    function initCompartilhar() {
-        const btnCompartilhar = document.getElementById('btn-compartilhar');
-        
-        if (!btnCompartilhar) return;
-        
-        btnCompartilhar.addEventListener('click', async () => {
-            const cargos = document.querySelectorAll('.cargo-item');
-            if (cargos.length === 0) {
-                mostrarModal('Adicione pelo menos um cargo antes de gerar as imagens.');
-                return;
-            }
+
+    // ========== FUNÇÃO PARA GERAR LINK DE VISUALIZAÇÃO ==========
+    async function gerarLinkVisualizacao() {
+        try {
+            const vendedor = document.getElementById('vendedor-nome').textContent;
+            const cliente = document.getElementById('cliente-nome').value || 'SEM CLIENTE';
+            const urlParams = new URLSearchParams(window.location.search);
+            let propostaId = urlParams.get('id');
             
-            const cliente = document.getElementById('cliente-nome').value;
-            if (!cliente) {
-                mostrarModal('Informe o nome do cliente antes de gerar as imagens.');
-                return;
-            }
-            
-            await gerarImagemPorCargo();
-        });
-    }
-    
-    function checkVisualizacao() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const isVisualizacao = urlParams.get('visualizacao') === 'true';
-        
-        if (isVisualizacao) {
-            document.querySelectorAll('input, select, textarea').forEach(el => {
-                el.disabled = true;
-                el.style.opacity = '0.7';
-                el.style.cursor = 'not-allowed';
-                el.style.pointerEvents = 'none';
-            });
-            
-            document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-                cb.disabled = true;
-                cb.style.pointerEvents = 'none';
-            });
-            
-            document.querySelectorAll('.btn-add, #btn-gerar-pdf, #btn-salvar, .btn-remover, .btn-compartilhar').forEach(btn => {
-                if (btn) btn.style.display = 'none';
-            });
-            
-            const btnAddCargo = document.getElementById('adicionar-cargo');
-            if (btnAddCargo) btnAddCargo.style.display = 'none';
-            
-            document.querySelectorAll('.section-toggle, .despesas-toggle, .exames-toggle').forEach(toggle => {
-                if (toggle) toggle.style.display = 'none';
-            });
-            
-            document.querySelectorAll('.section-content.collapsed, .despesas-content.collapsed, .exames-content.collapsed').forEach(content => {
-                if (content) content.classList.remove('collapsed');
-            });
-            
-            document.querySelectorAll('.box-header').forEach(header => {
-                header.style.pointerEvents = 'none';
-                header.style.cursor = 'default';
-            });
-            
-            const aviso = document.createElement('div');
-            aviso.className = 'aviso-visualizacao';
-            aviso.innerHTML = `
-                <div style="background: #c10404; color: #fff; text-align: center; padding: 0.8rem; border-radius: 8px; margin-bottom: 1rem;">
-                    <i class="fas fa-eye"></i> <strong>Modo de visualização</strong> - Esta proposta é apenas para leitura
-                </div>
-            `;
-            const containerDiv = document.querySelector('.container');
-            if (containerDiv && !containerDiv.querySelector('.aviso-visualizacao')) {
-                containerDiv.insertBefore(aviso, containerDiv.firstChild);
-            }
-        }
-    }
-    
-    document.getElementById('btn-salvar').addEventListener('click', async function() {
-        // ========== EXPANDIR TODAS AS SEÇÕES DE ADICIONAIS ANTES DE SALVAR ==========
-        document.querySelectorAll('.expandable-section:first-child').forEach(secao => {
-            const content = secao.querySelector('.section-content');
-            const toggleIcon = secao.querySelector('.section-toggle');
-            if (content && content.classList.contains('collapsed')) {
-                content.classList.remove('collapsed');
-                if (toggleIcon) {
-                    toggleIcon.classList.remove('fa-chevron-down');
-                    toggleIcon.classList.add('fa-chevron-up');
+            // Se não tiver ID, salva primeiro para ter um ID
+            if (!propostaId) {
+                await salvarPropostaAtual();
+                
+                const newUrlParams = new URLSearchParams(window.location.search);
+                propostaId = newUrlParams.get('id');
+                
+                if (!propostaId) {
+                    throw new Error('Não foi possível gerar o link. Tente salvar a proposta primeiro.');
                 }
             }
-        });
-        
-        // Pequeno delay para garantir que os elementos foram renderizados
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
+            
+            // Construir o link de visualização
+            const baseUrl = window.location.href.split('?')[0];
+            const linkVisualizacao = `${baseUrl}?id=${propostaId}&visualizacao=true`;
+            
+            // Mostrar modal com o link
+            const modalShare = document.getElementById('modal-share');
+            const shareLinkInput = document.getElementById('share-link');
+            
+            if (shareLinkInput && modalShare) {
+                shareLinkInput.value = linkVisualizacao;
+                modalShare.classList.remove('hidden');
+                
+                // Configurar botão copiar
+                const btnCopiar = document.getElementById('btn-copiar-link');
+                if (btnCopiar) {
+                    btnCopiar.onclick = () => {
+                        shareLinkInput.select();
+                        navigator.clipboard.writeText(linkVisualizacao);
+                        mostrarModal('Link copiado!');
+                    };
+                }
+            }
+            
+            mostrarModal('Link gerado e copiado para a área de transferência!');
+            
+        } catch (error) {
+            console.error('Erro ao gerar link:', error);
+            mostrarModal('Erro ao gerar link. Tente salvar a proposta primeiro.');
+        }
+    }
+
+    // ========== SALVAR PROPOSTA ATUAL PARA COMPARTILHAR ==========
+    async function salvarPropostaAtual() {
         const vendedor = document.getElementById('vendedor-nome').textContent;
-        const cliente = clienteInput.value || 'SEM CLIENTE';
+        const cliente = document.getElementById('cliente-nome').value || 'SEM CLIENTE';
         const urlParams = new URLSearchParams(window.location.search);
         const propostaId = urlParams.get('id');
         
         const cargos = [];
-        
         for (const item of document.querySelectorAll('.cargo-item')) {
             const nome = item.querySelector('.cargo-nome').value.trim() || 'Cargo sem nome';
             const qtd = parseInt(item.querySelector('.cargo-quantidade').value) || 1;
             const salarioInput = item.querySelector('.cargo-salario').value;
             const salario = parseFloat(salarioInput.replace(/\./g, '').replace(',', '.')) || 0;
-            
             const encargosPercentualInput = item.querySelector('.encargos-percentual');
             const encargosPercentual = parseFloat(encargosPercentualInput?.value.replace(/\./g, '').replace(',', '.')) || 55.83;
             
-            // ========== CAPTURAR ADICIONAIS - BUSCA DIRETA EM TODO O CARGO ==========
             const heCheck = item.querySelector('.he-check');
             const anCheck = item.querySelector('.an-check');
             const perCheck = item.querySelector('.per-check');
@@ -3309,204 +3209,29 @@ document.addEventListener('DOMContentLoaded', async function() {
             const heHorasInput = item.querySelector('.he-horas');
             const anHorasInput = item.querySelector('.an-horas');
             
-            const horasExtrasValue = heCheck ? heCheck.checked : false;
-            const noturnoValue = anCheck ? anCheck.checked : false;
-            const periculosidadeValue = perCheck ? perCheck.checked : false;
-            const insalubridadeValue = insCheck ? insCheck.checked : false;
-            const heHorasValue = heHorasInput ? parseFloat(heHorasInput.value) || 0 : 0;
-            const anHorasValue = anHorasInput ? parseFloat(anHorasInput.value) || 0 : 0;
-            
-            console.log('🔴 CAPTURANDO ADICIONAIS DO DOM:', {
-                heCheckExiste: !!heCheck,
-                anCheckExiste: !!anCheck,
-                perCheckExiste: !!perCheck,
-                insCheckExiste: !!insCheck,
-                horasExtrasValue: horasExtrasValue,
-                noturnoValue: noturnoValue,
-                heHorasValue: heHorasValue,
-                anHorasValue: anHorasValue
-            });
-            
-            // ========== UNIFORMES E EPIS ==========
-            const uniformesSection = item.querySelectorAll('.expandable-section')[1];
-            let uniformes = {}, epis = {};
-            if (uniformesSection && uniformesSection.__getUniformesDados) {
-                const dados = uniformesSection.__getUniformesDados();
-                uniformes = dados.uniformes || {};
-                epis = dados.epis || {};
-            } else {
-                const uniformesBox = item.querySelector('.uniformes-box');
-                if (uniformesBox) {
-                    uniformesBox.querySelectorAll('.item-lista').forEach(lista => {
-                        const nomeItem = lista.querySelector('.item-nome')?.textContent;
-                        const qtdInput = lista.querySelector('.quantidade-uniforme');
-                        const depInput = lista.querySelector('.depreciacao-uniforme');
-                        if (nomeItem && qtdInput && parseInt(qtdInput.value) > 0) {
-                            uniformes[nomeItem] = {
-                                quantidade: parseInt(qtdInput.value),
-                                depreciacao: parseInt(depInput?.value) || 1
-                            };
-                        }
-                    });
-                }
-                const episBox = item.querySelector('.epis-box');
-                if (episBox) {
-                    episBox.querySelectorAll('.item-lista').forEach(lista => {
-                        const nomeItem = lista.querySelector('.item-nome')?.textContent;
-                        const qtdInput = lista.querySelector('.quantidade-epi');
-                        const depInput = lista.querySelector('.depreciacao-epi');
-                        if (nomeItem && qtdInput && parseInt(qtdInput.value) > 0) {
-                            epis[nomeItem] = {
-                                quantidade: parseInt(qtdInput.value),
-                                depreciacao: parseInt(depInput?.value) || 1
-                            };
-                        }
-                    });
-                }
-            }
-            
-            // ========== BENEFÍCIOS ==========
-            const beneficiosSection = item.querySelectorAll('.expandable-section')[2];
-            let beneficios = {};
-            let beneficiosPersonalizados = [];
-            
-            if (beneficiosSection && beneficiosSection.__getBeneficiosDados) {
-                const dados = beneficiosSection.__getBeneficiosDados();
-                beneficios = dados.beneficios || {};
-                beneficiosPersonalizados = dados.beneficiosPersonalizados || [];
-            } else {
-                item.querySelectorAll('.beneficio-card').forEach(card => {
-                    const campo = card.querySelector('.beneficio-valor')?.dataset.campo;
-                    const valorInput = card.querySelector('.beneficio-valor');
-                    const diasInput = card.querySelector('.beneficio-dias');
-                    const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
-                    const dias = parseInt(diasInput?.value) || 0;
-                    if (valor > 0 || dias > 0) {
-                        beneficios[campo] = { valorDiario: valor, dias: dias };
-                    }
-                });
-                
-                item.querySelectorAll('.beneficio-custom-card').forEach(card => {
-                    const nomeInput = card.querySelector('.beneficio-custom-nome');
-                    const valorInput = card.querySelector('.beneficio-custom-valor');
-                    const diasInput = card.querySelector('.beneficio-custom-dias');
-                    const nome = nomeInput?.value.trim() || '';
-                    const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
-                    const dias = parseInt(diasInput?.value) || 0;
-                    if (nome && (valor > 0 || dias > 0)) {
-                        beneficiosPersonalizados.push({ nome, valorDiario: valor, dias: dias });
-                    }
-                });
-            }
-            
-            // ========== SEGURANÇA ==========
-            const segurancaSection = item.querySelectorAll('.expandable-section')[3];
-            let seguranca = {};
-            if (segurancaSection && segurancaSection.__getSegurancaDados) {
-                seguranca = segurancaSection.__getSegurancaDados();
-            } else {
-                item.querySelectorAll('.seguranca-item').forEach(card => {
-                    const campo = card.querySelector('.seguranca-valor')?.dataset.campo;
-                    const valorInput = card.querySelector('.seguranca-valor');
-                    const depInput = card.querySelector('.seguranca-depreciacao');
-                    const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
-                    const depreciacao = parseInt(depInput?.value) || 1;
-                    if (valor > 0) {
-                        seguranca[campo] = { valor: valor, depreciacao: depreciacao };
-                    }
-                });
-            }
-            
-            // ========== INSUMOS ==========
-            const insumosSection = item.querySelectorAll('.expandable-section')[4];
-            let insumos = {};
-            if (insumosSection && insumosSection.__getInsumosDados) {
-                insumos = insumosSection.__getInsumosDados();
-            } else {
-                item.querySelectorAll('.insumo-card').forEach(card => {
-                    const campo = card.querySelector('.insumo-valor')?.dataset.campo;
-                    const valorInput = card.querySelector('.insumo-valor');
-                    const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
-                    if (valor > 0) {
-                        insumos[campo] = { valor: valor };
-                    }
-                });
-            }
-            
-            // ========== DESPESAS ==========
-            const despesasSection = item.querySelector('.despesas-section');
-            let despesas = {};
-            if (despesasSection && despesasSection.__getDespesasDados) {
-                despesas = despesasSection.__getDespesasDados();
-            } else if (despesasSection) {
-                despesasSection.querySelectorAll('.despesa-card').forEach(card => {
-                    const campo = card.querySelector('.despesa-porcentagem')?.dataset.campo;
-                    const porcentagemInput = card.querySelector('.despesa-porcentagem');
-                    const porcentagem = parseFloat(porcentagemInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
-                    if (porcentagem > 0) {
-                        despesas[campo] = { porcentagem: porcentagem };
-                    }
-                });
-            }
-            
-            // ========== EXAMES ==========
-            const examesSection = item.querySelector('.exames-section');
-            let exames = {};
-            let treinamento = 0;
-            if (examesSection && examesSection.__getExamesDados) {
-                const dados = examesSection.__getExamesDados();
-                exames = dados.exames || {};
-                treinamento = dados.treinamento || 0;
-            } else if (examesSection) {
-                examesSection.querySelectorAll('.exame-checkbox').forEach(cb => {
-                    if (cb.checked) {
-                        exames[cb.dataset.nome] = true;
-                    }
-                });
-                const treinamentoInputExames = examesSection.querySelector('.treinamento-valor');
-                if (treinamentoInputExames) {
-                    treinamento = parseFloat(treinamentoInputExames.value.replace(/\./g, '').replace(',', '.')) || 0;
-                }
-            }
-            
-            // ========== TOTAL DA VAGA ==========
-            const totalVagaElem = item.querySelector('.total-prestacao .valor');
-            const totalVaga = totalVagaElem ? parseFloat(totalVagaElem.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0 : 0;
-            
-            // ========== MONTAR OBJETO DO CARGO ==========
             cargos.push({
                 nome,
                 quantidade: qtd,
                 salario,
                 adicionais: {
-                    horasExtras: horasExtrasValue,
-                    noturno: noturnoValue,
-                    periculosidade: periculosidadeValue,
-                    insalubridade: insalubridadeValue,
-                    heHoras: heHorasValue,
-                    anHoras: anHorasValue,
+                    horasExtras: heCheck ? heCheck.checked : false,
+                    noturno: anCheck ? anCheck.checked : false,
+                    periculosidade: perCheck ? perCheck.checked : false,
+                    insalubridade: insCheck ? insCheck.checked : false,
+                    heHoras: heHorasInput ? parseFloat(heHorasInput.value) || 0 : 0,
+                    anHoras: anHorasInput ? parseFloat(anHorasInput.value) || 0 : 0,
                     encargosPercentual: encargosPercentual
                 },
-                uniformes,
-                epis,
-                beneficios,
-                beneficiosPersonalizados,
-                seguranca,
-                insumos,
-                despesas,
-                exames,
-                treinamento,
-                totalVaga
-            });
-            
-            console.log('🔴 ADICIONAIS SENDO SALVOS:', {
-                nome: nome,
-                horasExtras: horasExtrasValue,
-                noturno: noturnoValue,
-                periculosidade: periculosidadeValue,
-                insalubridade: insalubridadeValue,
-                heHoras: heHorasValue,
-                anHoras: anHorasValue
+                uniformes: {},
+                epis: {},
+                beneficios: {},
+                beneficiosPersonalizados: [],
+                seguranca: {},
+                insumos: {},
+                despesas: {},
+                exames: {},
+                treinamento: 0,
+                totalVaga: 0
             });
         }
         
@@ -3521,27 +3246,114 @@ document.addEventListener('DOMContentLoaded', async function() {
             totalGeral
         };
         
-        console.log('📦 PROPOSTA COMPLETA SENDO ENVIADA:', proposta);
-        
-        try {
-            if (propostaId) {
-                await db.collection('propostas').doc(propostaId).update(proposta);
-                mostrarModal('Proposta atualizada com sucesso!');
-                localStorage.removeItem(DRAFT_KEY);
-            } else {
-                const docRef = await db.collection('propostas').add(proposta);
-                mostrarModal('Proposta salva com sucesso!');
-                window.history.replaceState(null, '', `?id=${docRef.id}`);
-                localStorage.removeItem(DRAFT_KEY);
-            }
-        } catch (error) {
-            console.error('Erro ao salvar:', error);
-            mostrarModal('Erro ao salvar proposta.');
+        if (propostaId) {
+            await db.collection('propostas').doc(propostaId).update(proposta);
+        } else {
+            const docRef = await db.collection('propostas').add(proposta);
+            window.history.replaceState(null, '', `?id=${docRef.id}`);
         }
-    });
+    }
 
-    initTema();
-    initCompartilhar();
-    checkVisualizacao();
+    // ========== BAIXAR IMAGENS ==========
+    function initBaixarImagens() {
+        const btnBaixar = document.getElementById('btn-baixar-imagens');
+        if (!btnBaixar) return;
+        
+        btnBaixar.addEventListener('click', async () => {
+            const cargos = document.querySelectorAll('.cargo-item');
+            if (cargos.length === 0) {
+                mostrarModal('Adicione pelo menos um cargo antes de baixar as imagens.');
+                return;
+            }
+            
+            const cliente = document.getElementById('cliente-nome').value;
+            if (!cliente) {
+                mostrarModal('Informe o nome do cliente antes de baixar as imagens.');
+                return;
+            }
+            
+            await gerarImagemPorCargo();
+        });
+    }
+
+    // ========== COMPARTILHAR LINK ==========
+    function initCompartilharLink() {
+        const btnCompartilharLink = document.getElementById('btn-compartilhar-link');
+        if (!btnCompartilharLink) return;
+        
+        btnCompartilharLink.addEventListener('click', async () => {
+            const cargos = document.querySelectorAll('.cargo-item');
+            if (cargos.length === 0) {
+                mostrarModal('Adicione pelo menos um cargo antes de compartilhar.');
+                return;
+            }
+            
+            const cliente = document.getElementById('cliente-nome').value;
+            if (!cliente) {
+                mostrarModal('Informe o nome do cliente antes de compartilhar.');
+                return;
+            }
+            
+            await gerarLinkVisualizacao();
+        });
+    }
     
-});
+    function checkVisualizacao() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const isVisualizacao = urlParams.get('visualizacao') === 'true';
+        
+        if (isVisualizacao) {
+            // Desabilitar todos os campos de entrada
+            document.querySelectorAll('input, select, textarea').forEach(el => {
+                el.disabled = true;
+                el.style.opacity = '0.7';
+                el.style.cursor = 'not-allowed';
+                el.style.pointerEvents = 'none';
+            });
+            
+            // Desabilitar checkboxes
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                cb.disabled = true;
+                cb.style.pointerEvents = 'none';
+            });
+            
+            // Ocultar botões de ação
+            document.querySelectorAll('.btn-add, #btn-salvar, .btn-remover, #btn-baixar-imagens, #btn-compartilhar-link, .btn-tema').forEach(btn => {
+                if (btn) btn.style.display = 'none';
+            });
+            
+            // Ocultar botão de adicionar cargo
+            const btnAddCargo = document.getElementById('adicionar-cargo');
+            if (btnAddCargo) btnAddCargo.style.display = 'none';
+            
+            // Desabilitar dropdowns (não podem abrir)
+            document.querySelectorAll('.box-header').forEach(header => {
+                header.style.pointerEvents = 'none';
+                header.style.cursor = 'default';
+            });
+            
+            // Expandir todas as seções para o cliente ver tudo
+            document.querySelectorAll('.section-content.collapsed, .despesas-content.collapsed, .exames-content.collapsed').forEach(content => {
+                if (content) content.classList.remove('collapsed');
+            });
+            
+            // Adicionar aviso visual
+            const aviso = document.createElement('div');
+            aviso.className = 'aviso-visualizacao';
+            aviso.innerHTML = `
+                <div style="background: #c10404; color: #fff; text-align: center; padding: 0.8rem; border-radius: 8px; margin-bottom: 1rem;">
+                    <i class="fas fa-eye"></i> <strong>Modo de visualização</strong> - Esta proposta é apenas para leitura
+                </div>
+            `;
+            const containerDiv = document.querySelector('.container');
+            if (containerDiv && !containerDiv.querySelector('.aviso-visualizacao')) {
+                containerDiv.insertBefore(aviso, containerDiv.firstChild);
+            }
+        }
+    }
+    
+    // ========== INICIALIZAR FUNCIONALIDADES ==========
+    initTema();
+    initBaixarImagens();
+    initCompartilharLink();
+    checkVisualizacao();
