@@ -1453,22 +1453,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             let total = 0;
             // Itens padrão
             uniformesItems.forEach(item => {
-                if (typeof item.getTotal === 'function') {
-                    total += item.getTotal();
-                } else if (typeof item.getQuantidade === 'function' && typeof item.getPreco === 'function') {
-                    // Fallback se getTotal não existir
-                    total += item.getQuantidade() * item.getPreco();
-                }
+                // Pega o valor mensal (já dividido pela depreciação) de UM funcionário
+                const valorMensalPorFuncionario = item.getMensal();
+                // Multiplica pela quantidade de funcionários
+                total += valorMensalPorFuncionario * qtdFuncionarios;
             });
             // Itens personalizados
             uniformesCustomItems.forEach(item => {
-                if (typeof item.getTotal === 'function') {
-                    total += item.getTotal();
-                } else if (typeof item.getQuantidade === 'function' && typeof item.getPreco === 'function') {
-                    total += item.getQuantidade() * item.getPreco();
-                }
+                // Pega o valor mensal (já dividido pela depreciação) de UM funcionário
+                const valorMensalPorFuncionario = item.getMensal();
+                // Multiplica pela quantidade de funcionários
+                total += valorMensalPorFuncionario * qtdFuncionarios;
             });
-            return total * qtdFuncionarios;
+            return total;
         }
         
         // Função para calcular total mensal de EPIs (padrão + personalizados)
@@ -1495,32 +1492,30 @@ document.addEventListener('DOMContentLoaded', async function() {
             let total = 0;
             // Itens padrão
             episItems.forEach(item => {
-                if (typeof item.getTotal === 'function') {
-                    total += item.getTotal();
-                } else if (typeof item.getQuantidade === 'function' && typeof item.getPreco === 'function') {
-                    total += item.getQuantidade() * item.getPreco();
-                }
+                // Pega o valor mensal (já dividido pela depreciação) de UM funcionário
+                const valorMensalPorFuncionario = item.getMensal();
+                // Multiplica pela quantidade de funcionários
+                total += valorMensalPorFuncionario * qtdFuncionarios;
             });
             // Itens personalizados
             episCustomItems.forEach(item => {
-                if (typeof item.getTotal === 'function') {
-                    total += item.getTotal();
-                } else if (typeof item.getQuantidade === 'function' && typeof item.getPreco === 'function') {
-                    total += item.getQuantidade() * item.getPreco();
-                }
+                // Pega o valor mensal (já dividido pela depreciação) de UM funcionário
+                const valorMensalPorFuncionario = item.getMensal();
+                // Multiplica pela quantidade de funcionários
+                total += valorMensalPorFuncionario * qtdFuncionarios;
             });
-            return total * qtdFuncionarios;
+            return total;
         }
         
         function calcularTotais() {
-            const totalUniforme = calcularTotalUniformeMensal();
-            const totalEpi = calcularTotalEpiMensal();
-            const totalGeral = totalUniforme + totalEpi;
-            header.querySelector('.summary-value').textContent = formatarMoeda(totalGeral);
+            const totalUniformePorFuncionario = calcularTotalUniformeMensal(); // valor por funcionário (já depreciado)
+            const totalEpiPorFuncionario = calcularTotalEpiMensal(); // valor por funcionário (já depreciado)
+            const totalGeralPorFuncionario = totalUniformePorFuncionario + totalEpiPorFuncionario;
+            header.querySelector('.summary-value').textContent = formatarMoeda(totalGeralPorFuncionario);
             
             const qtdFuncionarios = parseInt(cargoItem?.querySelector('.cargo-quantidade')?.value) || 1;
-            const totalUniformeGeral = calcularTotalUniformeGeral(qtdFuncionarios);
-            const totalEpiGeral = calcularTotalEpiGeral(qtdFuncionarios);
+            const totalUniformeGeral = totalUniformePorFuncionario * qtdFuncionarios;
+            const totalEpiGeral = totalEpiPorFuncionario * qtdFuncionarios;
             
             if (uniformesTotalGeralSpan) uniformesTotalGeralSpan.textContent = formatarMoeda(totalUniformeGeral);
             if (episTotalGeralSpan) episTotalGeralSpan.textContent = formatarMoeda(totalEpiGeral);
@@ -1534,7 +1529,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 episTotalGeralDiv.innerHTML = `Total para ${qtdFuncionarios} funcionário(s): <strong>${formatarMoeda(totalEpiGeral)}</strong>`;
             }
             
-            return { totalUniforme, totalEpi, totalGeral };
+            return { totalUniforme: totalUniformePorFuncionario, totalEpi: totalEpiPorFuncionario, totalGeral: totalGeralPorFuncionario };
         }
         
         // Event listeners para itens padrão
