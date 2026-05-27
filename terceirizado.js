@@ -764,7 +764,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // ========== CAPTURAR ADICIONAIS ==========
                 const adicionaisSection = item.querySelector('.expandable-section .adicionais-grid')?.closest('.expandable-section') 
                     || item.querySelector('.expandable-section:first-child');
-                
                 const adicionaisContent = adicionaisSection?.querySelector('.section-content');
                 
                 if (adicionaisContent) {
@@ -775,7 +774,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                         insalubridade: adicionaisContent.querySelector('.ins-check')?.checked || false,
                         heHoras: parseFloat(adicionaisContent.querySelector('.he-horas')?.value) || 0,
                         anHoras: parseFloat(adicionaisContent.querySelector('.an-horas')?.value) || 0,
-                        // ACÚMULO DE FUNÇÃO
                         acumulo: adicionaisContent.querySelector('.acumulo-check')?.checked || false,
                         acumuloQuantidade: parseInt(adicionaisContent.querySelector('.acumulo-quantidade')?.value) || 0
                     };
@@ -792,11 +790,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                     };
                 }
                 
-                // ========== CAPTURAR UNIFORMES ==========
+                // ========== CAPTURAR UNIFORMES (PADRÃO E PERSONALIZADOS) ==========
                 cargo.uniformes = {};
                 const uniformesBox = item.querySelector('.uniformes-box');
                 if (uniformesBox) {
-                    uniformesBox.querySelectorAll('.item-lista').forEach(lista => {
+                    // Uniformes padrão
+                    uniformesBox.querySelectorAll('.item-lista:not(.item-custom)').forEach(lista => {
                         const nome = lista.querySelector('.item-nome')?.textContent;
                         const qtdInput = lista.querySelector('.quantidade-uniforme');
                         const depInput = lista.querySelector('.depreciacao-uniforme');
@@ -807,13 +806,32 @@ document.addEventListener('DOMContentLoaded', async function() {
                             };
                         }
                     });
+                    
+                    // Uniformes personalizados
+                    const uniformesCustom = [];
+                    uniformesBox.querySelectorAll('.item-custom').forEach(customItem => {
+                        const nome = customItem.querySelector('.item-custom-nome')?.value;
+                        const precoInput = customItem.querySelector('.item-custom-preco-input');
+                        const qtdInput = customItem.querySelector('.item-custom-quantidade-input');
+                        const depInput = customItem.querySelector('.item-custom-depreciacao-input');
+                        const preco = parseFloat(precoInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
+                        const qtd = parseInt(qtdInput?.value) || 0;
+                        const dep = parseInt(depInput?.value) || 1;
+                        if (nome && qtd > 0 && preco > 0) {
+                            uniformesCustom.push({ nome, preco, quantidade: qtd, depreciacao: dep });
+                        }
+                    });
+                    if (uniformesCustom.length > 0) {
+                        cargo.uniformes.custom = uniformesCustom;
+                    }
                 }
                 
-                // ========== CAPTURAR EPIs ==========
+                // ========== CAPTURAR EPIs (PADRÃO E PERSONALIZADOS) ==========
                 cargo.epis = {};
                 const episBox = item.querySelector('.epis-box');
                 if (episBox) {
-                    episBox.querySelectorAll('.item-lista').forEach(lista => {
+                    // EPIs padrão
+                    episBox.querySelectorAll('.item-lista:not(.item-custom)').forEach(lista => {
                         const nome = lista.querySelector('.item-nome')?.textContent;
                         const qtdInput = lista.querySelector('.quantidade-epi');
                         const depInput = lista.querySelector('.depreciacao-epi');
@@ -824,6 +842,24 @@ document.addEventListener('DOMContentLoaded', async function() {
                             };
                         }
                     });
+                    
+                    // EPIs personalizados
+                    const episCustom = [];
+                    episBox.querySelectorAll('.item-custom').forEach(customItem => {
+                        const nome = customItem.querySelector('.item-custom-nome')?.value;
+                        const precoInput = customItem.querySelector('.item-custom-preco-input');
+                        const qtdInput = customItem.querySelector('.item-custom-quantidade-input');
+                        const depInput = customItem.querySelector('.item-custom-depreciacao-input');
+                        const preco = parseFloat(precoInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
+                        const qtd = parseInt(qtdInput?.value) || 0;
+                        const dep = parseInt(depInput?.value) || 1;
+                        if (nome && qtd > 0 && preco > 0) {
+                            episCustom.push({ nome, preco, quantidade: qtd, depreciacao: dep });
+                        }
+                    });
+                    if (episCustom.length > 0) {
+                        cargo.epis.custom = episCustom;
+                    }
                 }
                 
                 // ========== CAPTURAR BENEFÍCIOS ==========
@@ -887,6 +923,24 @@ document.addEventListener('DOMContentLoaded', async function() {
                         }
                     });
                     
+                    // Exames personalizados
+                    const examesCustom = [];
+                    examesSection.querySelectorAll('.exame-custom-item').forEach(customItem => {
+                        const nome = customItem.querySelector('.exame-custom-nome')?.value;
+                        const precoInput = customItem.querySelector('.exame-custom-preco-input');
+                        const checkbox = customItem.querySelector('.exame-custom-checkbox');
+                        const preco = parseFloat(precoInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
+                        const checked = checkbox?.checked || false;
+                        if (nome && preco > 0) {
+                            examesCustom.push({ nome, preco, checked });
+                        } else if (nome && checked) {
+                            examesCustom.push({ nome, preco: 0, checked });
+                        }
+                    });
+                    if (examesCustom.length > 0) {
+                        cargo.exames.custom = examesCustom;
+                    }
+                    
                     const treinamentoInput = examesSection.querySelector('.treinamento-valor');
                     if (treinamentoInput) {
                         cargo.treinamento = parseFloat(treinamentoInput.value.replace(/\./g, '').replace(',', '.')) || 0;
@@ -909,7 +963,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     });
                 }
                 
-                // ========== CAPTURAR DESPESAS (incluindo a taxa de encargos) ==========
+                // ========== CAPTURAR DESPESAS ==========
                 cargo.despesas = {};
                 const despesasSection = item.querySelector('.despesas-section');
                 if (despesasSection) {
@@ -920,7 +974,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         if (!isNaN(taxaNum)) {
                             cargo.despesas.encargos_fiscais = { porcentagem: taxaNum };
                         } else {
-                            cargo.despesas.encargos_fiscais = { porcentagem: 13.75 }; // fallback
+                            cargo.despesas.encargos_fiscais = { porcentagem: 13.75 };
                         }
                     }
                 }
@@ -929,7 +983,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
             
             localStorage.setItem(DRAFT_KEY, JSON.stringify(dados));
-            console.log('Rascunho salvo com sucesso!', dados);
+            console.log('✅ Rascunho salvo com uniformes/EPIs personalizados!');
         } catch (e) {
             console.error('Erro ao salvar rascunho:', e);
         }
@@ -949,18 +1003,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                     container.innerHTML = '';
                     dadosRascunho.cargos.forEach(c => {
                         const examesObj = c.exames || {};
-                        // Garantir que c.despesas exista e tenha a taxa
                         const despesasComTaxa = c.despesas || {};
                         if (!despesasComTaxa.encargos_fiscais) {
                             despesasComTaxa.encargos_fiscais = { porcentagem: 13.75 };
                         }
+                        
+                        // Garantir que uniformes e epis existem
+                        const uniformes = c.uniformes || {};
+                        const epis = c.epis || {};
+                        
                         container.appendChild(criarCargoItem(
                             c.nome,
                             c.quantidade,
                             parseFloat(c.salario?.replace(/\./g, '').replace(',', '.')) || 0,
-                            c.adicionais || {},  // Inclui acumulo e acumuloQuantidade
-                            c.uniformes || {},
-                            c.epis || {},
+                            c.adicionais || {},
+                            uniformes,  // ← Passa os uniformes (incluindo custom)
+                            epis,       // ← Passa os EPIs (incluindo custom)
                             c.beneficios || {},
                             c.seguranca || {},
                             examesObj,
