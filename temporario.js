@@ -1124,11 +1124,23 @@ document.addEventListener('DOMContentLoaded', async function() {
         depreciacaoInput.addEventListener('input', atualizar);
         atualizar();
         
-        return { div, atualizar, getQuantidade: () => parseInt(quantidadeInput.value) || 0, getDepreciacao: () => parseInt(depreciacaoInput.value) || 1, getMensal: () => {
-            const qtd = parseInt(quantidadeInput.value) || 0;
-            const depreciacao = parseInt(depreciacaoInput.value) || 1;
-            return (qtd * item.preco) / depreciacao;
-        } };
+        return { 
+            div, 
+            atualizar, 
+            getQuantidade: () => parseInt(quantidadeInput.value) || 0, 
+            getDepreciacao: () => parseInt(depreciacaoInput.value) || 1,
+            getPreco: () => item.preco,
+            getNome: () => item.nome,
+            getMensal: () => {
+                const qtd = parseInt(quantidadeInput.value) || 0;
+                const depreciacao = parseInt(depreciacaoInput.value) || 1;
+                return (qtd * item.preco) / depreciacao;
+            },
+            getTotal: () => {
+                const qtd = parseInt(quantidadeInput.value) || 0;
+                return qtd * item.preco;
+            }
+        };
     }
 
     function criarUniformesEpisSection(cargoItem, dadosUniformes = {}, dadosEpis = {}) {
@@ -1429,18 +1441,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             salvarRascunho();
         });
         
-        function calcularTotalUniformeMensal() {
-            // Retorna o valor mensal TOTAL para todos os funcionários
-            let total = 0;
-            uniformesItems.forEach(item => {
-                total += item.getMensal();
-            });
-            uniformesCustomItems.forEach(item => {
-                total += item.getMensal();
-            });
-            return total;
-        }
-
         function calcularTotalUniformePorFuncionario() {
             // Retorna o valor mensal por UM funcionário
             let total = 0;
@@ -1461,18 +1461,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
             uniformesCustomItems.forEach(item => {
                 total += item.getTotal() * qtdFuncionarios;
-            });
-            return total;
-        }
-
-        function calcularTotalEpiMensal() {
-            // Retorna o valor mensal TOTAL para todos os funcionários
-            let total = 0;
-            episItems.forEach(item => {
-                total += item.getMensal();
-            });
-            episCustomItems.forEach(item => {
-                total += item.getMensal();
             });
             return total;
         }
