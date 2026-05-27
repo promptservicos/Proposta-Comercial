@@ -1,4 +1,35 @@
-// ================== FIREBASE INIT ==================
+// ========== TEMA (CLARO/ESCURO) ==========
+const themeToggle = document.getElementById('themeToggle');
+const themeIcon = themeToggle.querySelector('i');
+
+const savedTheme = localStorage.getItem('theme_carta');
+if (savedTheme === 'dark') {
+    document.body.classList.add('dark');
+    themeIcon.classList.remove('bx-moon');
+    themeIcon.classList.add('bx-sun');
+} else {
+    document.body.classList.remove('dark');
+    themeIcon.classList.remove('bx-sun');
+    themeIcon.classList.add('bx-moon');
+    if (!savedTheme) localStorage.setItem('theme_carta', 'dark');
+}
+
+themeToggle.addEventListener('click', () => {
+    document.body.classList.toggle('dark');
+    const isDark = document.body.classList.contains('dark');
+    
+    if (isDark) {
+        themeIcon.classList.remove('bx-moon');
+        themeIcon.classList.add('bx-sun');
+        localStorage.setItem('theme_carta', 'dark');
+    } else {
+        themeIcon.classList.remove('bx-sun');
+        themeIcon.classList.add('bx-moon');
+        localStorage.setItem('theme_carta', 'light');
+    }
+});
+
+// ========== FIREBASE INIT ==========
 const firebaseConfig = {
     apiKey: "AIzaSyB2xi5fCMv3Vz_UpRxMdQqrVn1DDyAh3_k",
     authDomain: "propostas-comerciais-e288c.firebaseapp.com",
@@ -9,11 +40,14 @@ const firebaseConfig = {
     measurementId: "G-JEH5ZKSX89"
 };
 
-firebase.initializeApp(firebaseConfig);
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// ================== INICIALIZAÇÃO ==================
+// ========== INICIALIZAÇÃO ==========
 document.addEventListener('DOMContentLoaded', function() {
     const inputNome = document.getElementById('input-nome');
     const inputEmail = document.getElementById('input-email');
@@ -26,8 +60,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnSalvar = document.getElementById('btn-salvar');
     const btnCompartilhar = document.getElementById('btn-compartilhar');
     const btnVoltar = document.getElementById('btn-voltar');
-    const modalOverlay = document.getElementById('modal-overlay');
+    const modalOverlay = document.getElementById('messageModal');
     const modalMensagem = document.getElementById('modal-mensagem');
+    const modalIcon = document.getElementById('modal-icon');
     const modalOk = document.getElementById('modal-ok');
     const corpoCarta = document.getElementById('carta-corpo-editable');
 
@@ -54,9 +89,19 @@ document.addEventListener('DOMContentLoaded', function() {
         atualizarAssinatura();
     });
 
-    function mostrarModal(mensagem) {
+    function mostrarModal(mensagem, isError = false, duracao = 3000) {
         modalMensagem.textContent = mensagem;
+        if (isError) {
+            modalIcon.className = 'bx bx-error-circle modal-icon';
+            modalIcon.style.color = '#ff4444';
+        } else {
+            modalIcon.className = 'bx bx-check-circle modal-icon';
+            modalIcon.style.color = 'var(--link-color)';
+        }
         modalOverlay.classList.remove('hidden');
+        setTimeout(() => {
+            modalOverlay.classList.add('hidden');
+        }, duracao);
     }
 
     modalOk.addEventListener('click', () => modalOverlay.classList.add('hidden'));
@@ -140,12 +185,11 @@ document.addEventListener('DOMContentLoaded', function() {
         return nome.charAt(0).toUpperCase() + nome.slice(1);
     }
 
-    // Variáveis para o modal de nome
+    // Modal de nome
     const modalNomeCarta = document.getElementById('modal-nome-carta');
     const modalNomeInput = document.getElementById('modal-nome-input');
-    let pendingSave = false; // Para saber se está aguardando o nome
+    let pendingSave = false;
 
-    // Função para mostrar modal de nome
     function mostrarModalNome() {
         if (modalNomeCarta) {
             modalNomeInput.value = '';
@@ -165,9 +209,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let nomeCarta = inputNomeCarta?.value.trim();
         const conteudo = corpoCarta.innerHTML;
         
-        // Se for uma nova carta (sem ID) e não tem nome salvo
         if (!cartaId && !nomeCarta) {
-            // Mostra o modal para digitar o nome
             mostrarModalNome();
             pendingSave = true;
             return;
@@ -178,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         if (!conteudo || conteudo.trim() === '') {
-            mostrarModal('❌ Escreva algo na carta antes de salvar!');
+            mostrarModal('❌ Escreva algo na carta antes de salvar!', true);
             return;
         }
         
@@ -209,36 +251,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 localStorage.removeItem('carta_draft');
                 localStorage.removeItem('carta_conteudo');
                 localStorage.removeItem('carta_nome');
-                // Atualiza o input escondido com o nome
                 if (inputNomeCarta) inputNomeCarta.value = nomeCarta;
             }
         } catch (error) {
             console.error('Erro ao salvar:', error);
-            mostrarModal('❌ Erro ao salvar carta.');
+            mostrarModal('❌ Erro ao salvar carta.', true);
         }
     }
 
-    // Função para salvar após digitar o nome no modal
     async function salvarComNome() {
         const nome = modalNomeInput.value.trim();
         
         if (!nome) {
-            alert('Por favor, digite um nome para a carta!');
+            mostrarModal('Por favor, digite um nome para a carta!', true);
             return;
         }
         
-        // Salva o nome no input escondido
         if (inputNomeCarta) inputNomeCarta.value = nome;
-        
-        // Fecha o modal
         fecharModalNome();
-        
-        // Chama o salvamento novamente
         pendingSave = false;
         await salvarCarta();
     }
 
-    // Eventos do modal de nome
     if (modalNomeCarta) {
         document.getElementById('modal-salvar-nome')?.addEventListener('click', salvarComNome);
         document.getElementById('modal-cancelar-nome')?.addEventListener('click', () => {
@@ -246,7 +280,6 @@ document.addEventListener('DOMContentLoaded', function() {
             pendingSave = false;
         });
         
-        // Fechar ao clicar fora
         modalNomeCarta.addEventListener('click', (e) => {
             if (e.target === modalNomeCarta) {
                 fecharModalNome();
@@ -254,21 +287,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Enter no input
         modalNomeInput?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 salvarComNome();
             }
         });
-    }
-
-    // Atualize a função mostrarModal para não conflitar
-    function mostrarModal(mensagem, duracao = 3000) {
-        modalMensagem.textContent = mensagem;
-        modalOverlay.classList.remove('hidden');
-        setTimeout(() => {
-            modalOverlay.classList.add('hidden');
-        }, duracao);
     }
 
     btnSalvar.addEventListener('click', salvarCarta);
@@ -287,28 +310,27 @@ document.addEventListener('DOMContentLoaded', function() {
     // ================== BARRA DE FERRAMENTAS ==================
     let currentFontSize = 16;
     const fontSizeIndicator = document.getElementById('font-size-indicator');
-    const fontSizeInput = document.createElement('input');
-    fontSizeInput.type = 'number';
-    fontSizeInput.min = 8;
-    fontSizeInput.max = 72;
-    fontSizeInput.step = 1;
-    fontSizeInput.value = currentFontSize;
-    fontSizeInput.className = 'font-size-input';
+    let fontSizeInput = null;
 
-    if (fontSizeIndicator) {
-        fontSizeIndicator.style.display = 'none';
-        const parent = fontSizeIndicator.parentElement;
-        fontSizeInput.style.width = '55px';
-        fontSizeInput.style.textAlign = 'center';
-        fontSizeInput.style.background = 'rgba(193, 4, 4, 0.1)';
-        fontSizeInput.style.border = '1px solid rgba(193, 4, 4, 0.3)';
-        fontSizeInput.style.borderRadius = '20px';
-        fontSizeInput.style.color = '#c10404';
-        fontSizeInput.style.fontWeight = '600';
-        fontSizeInput.style.padding = '0.2rem 0.5rem';
-        parent.insertBefore(fontSizeInput, fontSizeIndicator);
+    function createFontSizeInput() {
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.min = 8;
+        input.max = 72;
+        input.step = 1;
+        input.value = currentFontSize;
+        input.className = 'font-size-input';
+        input.style.width = '55px';
+        input.style.textAlign = 'center';
+        input.style.background = 'rgba(193, 4, 4, 0.1)';
+        input.style.border = '1px solid rgba(193, 4, 4, 0.3)';
+        input.style.borderRadius = '20px';
+        input.style.color = '#c10404';
+        input.style.fontWeight = '600';
+        input.style.padding = '0.2rem 0.5rem';
+        input.style.outline = 'none';
         
-        fontSizeInput.addEventListener('change', function() {
+        input.addEventListener('change', function() {
             let newSize = parseInt(this.value);
             if (isNaN(newSize)) newSize = 16;
             if (newSize < 8) newSize = 8;
@@ -317,6 +339,15 @@ document.addEventListener('DOMContentLoaded', function() {
             this.value = currentFontSize;
             applyFontSize(currentFontSize);
         });
+        
+        return input;
+    }
+
+    if (fontSizeIndicator) {
+        fontSizeIndicator.style.display = 'none';
+        const parent = fontSizeIndicator.parentElement;
+        fontSizeInput = createFontSizeInput();
+        parent.insertBefore(fontSizeInput, fontSizeIndicator);
     }
 
     function applyFontSize(size) {
@@ -360,6 +391,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.execCommand(command, false, null);
         corpoCarta.focus();
         salvarConteudoCarta();
+        updateActiveButtons();
     }
 
     function updateActiveButtons() {
@@ -390,7 +422,7 @@ document.addEventListener('DOMContentLoaded', function() {
             fontIncrease.addEventListener('click', () => {
                 if (currentFontSize < 72) {
                     currentFontSize += 2;
-                    fontSizeInput.value = currentFontSize;
+                    if (fontSizeInput) fontSizeInput.value = currentFontSize;
                     applyFontSize(currentFontSize);
                 }
             });
@@ -401,7 +433,7 @@ document.addEventListener('DOMContentLoaded', function() {
             fontDecrease.addEventListener('click', () => {
                 if (currentFontSize > 8) {
                     currentFontSize -= 2;
-                    fontSizeInput.value = currentFontSize;
+                    if (fontSizeInput) fontSizeInput.value = currentFontSize;
                     applyFontSize(currentFontSize);
                 }
             });
@@ -436,16 +468,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // ================== FUNÇÃO PARA GERAR IMAGEM ==================
     async function gerarImagemCarta() {
         const btnOriginalHtml = btnCompartilhar.innerHTML;
-        btnCompartilhar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando imagem...';
+        btnCompartilhar.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Gerando...';
         btnCompartilhar.disabled = true;
         
         try {
             const cartaElement = document.getElementById('carta-para-imagem');
             const cartaConteudoEl = cartaElement.querySelector('.carta-conteudo');
             
-            const wasLightMode = document.body.classList.contains('light-mode');
-            if (!wasLightMode) {
-                document.body.classList.add('light-mode');
+            const wasDarkMode = document.body.classList.contains('dark');
+            if (wasDarkMode) {
+                document.body.classList.remove('dark');
             }
             
             await new Promise(resolve => setTimeout(resolve, 200));
@@ -474,8 +506,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             dataElement.remove();
             
-            if (!wasLightMode) {
-                document.body.classList.remove('light-mode');
+            if (wasDarkMode) {
+                document.body.classList.add('dark');
             }
             
             const link = document.createElement('a');
@@ -483,11 +515,11 @@ document.addEventListener('DOMContentLoaded', function() {
             link.href = canvas.toDataURL('image/png');
             link.click();
             
-            mostrarModal('✅ Carta salva como imagem com sucesso!\nToda a carta foi capturada!');
+            mostrarModal('✅ Carta salva como imagem com sucesso!');
             
         } catch (error) {
             console.error('Erro ao gerar imagem:', error);
-            mostrarModal('❌ Erro ao gerar imagem. Tente novamente.');
+            mostrarModal('❌ Erro ao gerar imagem. Tente novamente.', true);
         } finally {
             btnCompartilhar.innerHTML = btnOriginalHtml;
             btnCompartilhar.disabled = false;
@@ -507,49 +539,16 @@ document.addEventListener('DOMContentLoaded', function() {
     carregarRascunho();
     carregarCartaExistente();
     
-    // Se for uma nova carta, esconde o campo nome inicialmente
     if (!cartaId) {
         toggleCampoNome(false);
     } else {
         toggleCampoNome(true);
     }
 
-    // Tema
-    function initTema() {
-        const temaSalvo = localStorage.getItem('tema_efetivo');
-        const btnTema = document.getElementById('btn-tema');
-        const iconTema = btnTema?.querySelector('i');
-        
-        if (temaSalvo === 'dark' || !temaSalvo) {
-            document.body.classList.remove('light-mode');
-            if (iconTema) {
-                iconTema.classList.remove('fa-sun');
-                iconTema.classList.add('fa-moon');
-            }
-        } else if (temaSalvo === 'light') {
-            document.body.classList.add('light-mode');
-            if (iconTema) {
-                iconTema.classList.remove('fa-moon');
-                iconTema.classList.add('fa-sun');
-            }
+    // Verificar autenticação
+    auth.onAuthStateChanged((user) => {
+        if (!user) {
+            window.location.href = 'index.html';
         }
-        
-        if (btnTema) {
-            btnTema.addEventListener('click', () => {
-                document.body.classList.toggle('light-mode');
-                const isLight = document.body.classList.contains('light-mode');
-                localStorage.setItem('tema_efetivo', isLight ? 'light' : 'dark');
-                const icon = btnTema.querySelector('i');
-                if (isLight) {
-                    icon.classList.remove('fa-moon');
-                    icon.classList.add('fa-sun');
-                } else {
-                    icon.classList.remove('fa-sun');
-                    icon.classList.add('fa-moon');
-                }
-            });
-        }
-    }
-    
-    initTema();
+    });
 });

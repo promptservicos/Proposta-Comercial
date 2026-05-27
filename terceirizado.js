@@ -11,7 +11,10 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-const analytics = firebase.analytics();
+const auth = firebase.auth();
+
+// ========== VERIFICAR MODO DE VISUALIZAÇÃO ==========
+const isVisualizacao = new URLSearchParams(window.location.search).get('visualizacao') === 'true';
 
 // ================== CONSTANTES ==================
 const SALARIO_MINIMO = 1621.00;
@@ -105,13 +108,39 @@ function formatarMoeda(valor) {
     return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+// ========== TOAST NOTIFICATION ==========
+function showToast(message, isError = false) {
+    const existingToast = document.querySelector('.toast-notification');
+    if (existingToast) existingToast.remove();
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification';
+    if (isError) toast.classList.add('error');
+    
+    const icon = document.createElement('i');
+    icon.className = isError ? 'bx bx-error-circle' : 'bx bx-check-circle';
+    
+    const text = document.createElement('span');
+    text.textContent = message;
+    
+    toast.appendChild(icon);
+    toast.appendChild(text);
+    document.body.appendChild(toast);
+    
+    setTimeout(() => toast.classList.add('show'), 10);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
 // ========== FUNÇÃO PARA GERAR IMAGEM POR CARGO E DO TOTAL (DIRETO, SEM ZIP) ==========
 async function gerarImagemProposta() {
     const btnCompartilhar = document.getElementById('btn-compartilhar');
     const textoOriginal = btnCompartilhar ? btnCompartilhar.innerHTML : '';
     
     if (btnCompartilhar) {
-        btnCompartilhar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando imagens...';
+        btnCompartilhar.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Gerando imagens...';
         btnCompartilhar.disabled = true;
     }
     
@@ -331,9 +360,9 @@ async function gerarImagemProposta() {
             }
         });
         
-        const wasLightMode = document.body.classList.contains('light-mode');
-        if (!wasLightMode) {
-            document.body.classList.add('light-mode');
+        const wasDarkMode = document.body.classList.contains('dark');
+        if (wasDarkMode) {
+            document.body.classList.remove('dark');
         }
         
         await new Promise(resolve => setTimeout(resolve, 300));
@@ -616,8 +645,8 @@ async function gerarImagemProposta() {
         }
         
         // Restaurar tema original
-        if (!wasLightMode) {
-            document.body.classList.remove('light-mode');
+        if (wasDarkMode) {
+            document.body.classList.add('dark');
         }
         
         let mensagem = `✅ ${imagensGeradas + 1} imagem(ns) baixada(s) com sucesso!\n- 1 imagem com o TOTAL da proposta\n- ${imagensGeradas} imagem(ns) com detalhes dos cargos`;
@@ -651,19 +680,40 @@ document.addEventListener('DOMContentLoaded', async function() {
     const totalGeralEl = document.getElementById('total-geral');
     const clienteInput = document.getElementById('cliente-nome');
     const btnVoltar = document.getElementById('btn-voltar');
-    const modalOverlay = document.getElementById('modal-overlay');
+    
+    // CORREÇÃO: usar messageModal em vez de modalOverlay
+    const messageModal = document.getElementById('messageModal');
     const modalMensagem = document.getElementById('modal-mensagem');
     const modalOk = document.getElementById('modal-ok');
 
-    function mostrarModal(mensagem) {
-        modalMensagem.textContent = mensagem;
-        modalOverlay.classList.remove('hidden');
+    function mostrarModal(mensagem, isError = false, duracao = 3000) {
+        if (modalMensagem) modalMensagem.textContent = mensagem;
+        if (messageModal) messageModal.classList.remove('hidden');
+        
+        if (isError) {
+            const modalIcon = document.getElementById('modal-icon');
+            if (modalIcon) {
+                modalIcon.className = 'bx bx-error-circle modal-icon';
+                modalIcon.style.color = '#ff4444';
+            }
+        }
+        
+        setTimeout(() => {
+            if (messageModal) messageModal.classList.add('hidden');
+        }, duracao);
     }
 
-    modalOk.addEventListener('click', () => modalOverlay.classList.add('hidden'));
-    modalOverlay.addEventListener('click', (e) => {
-        if (e.target === modalOverlay) modalOverlay.classList.add('hidden');
-    });
+    if (modalOk) {
+        modalOk.addEventListener('click', () => {
+            if (messageModal) messageModal.classList.add('hidden');
+        });
+    }
+
+    if (messageModal) {
+        messageModal.addEventListener('click', (e) => {
+            if (e.target === messageModal) messageModal.classList.add('hidden');
+        });
+    }
 
     btnVoltar.addEventListener('click', () => {
         localStorage.removeItem(DRAFT_KEY);
@@ -674,6 +724,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         this.value = this.value.toUpperCase();
         salvarRascunho();
     });
+
+    // ... resto do código continua igual
 
     function calcularTotalGeral() {
         let total = 0;
@@ -3156,40 +3208,40 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // ========== TEMA CLARO/ESCURO ==========
     function initTema() {
-        const temaSalvo = localStorage.getItem('tema_terceirizado');
-        const btnTema = document.getElementById('btn-tema');
+        const temaSalvo = localStorage.getItem('theme_terceirizado');
+        const btnTema = document.getElementById('themeToggle');
         const iconTema = btnTema?.querySelector('i');
         
-        if (!temaSalvo || temaSalvo === 'light') {
-            document.body.classList.add('light-mode');
+        if (temaSalvo === 'dark') {
+            document.body.classList.add('dark');
             if (iconTema) {
-                iconTema.classList.remove('fa-moon');
-                iconTema.classList.add('fa-sun');
+                iconTema.classList.remove('bx-moon');
+                iconTema.classList.add('bx-sun');
+            }
+        } else {
+            document.body.classList.remove('dark');
+            if (iconTema) {
+                iconTema.classList.remove('bx-sun');
+                iconTema.classList.add('bx-moon');
             }
             if (!temaSalvo) {
-                localStorage.setItem('tema_terceirizado', 'light');
-            }
-        } else if (temaSalvo === 'dark') {
-            document.body.classList.remove('light-mode');
-            if (iconTema) {
-                iconTema.classList.remove('fa-sun');
-                iconTema.classList.add('fa-moon');
+                localStorage.setItem('theme_terceirizado', 'light');
             }
         }
         
         if (btnTema) {
             btnTema.addEventListener('click', () => {
-                document.body.classList.toggle('light-mode');
-                const isLight = document.body.classList.contains('light-mode');
-                localStorage.setItem('tema_terceirizado', isLight ? 'light' : 'dark');
+                document.body.classList.toggle('dark');
+                const isDark = document.body.classList.contains('dark');
+                localStorage.setItem('theme_terceirizado', isDark ? 'dark' : 'light');
                 
                 if (iconTema) {
-                    if (isLight) {
-                        iconTema.classList.remove('fa-moon');
-                        iconTema.classList.add('fa-sun');
+                    if (isDark) {
+                        iconTema.classList.remove('bx-moon');
+                        iconTema.classList.add('bx-sun');
                     } else {
-                        iconTema.classList.remove('fa-sun');
-                        iconTema.classList.add('fa-moon');
+                        iconTema.classList.remove('bx-sun');
+                        iconTema.classList.add('bx-moon');
                     }
                 }
             });
@@ -3860,9 +3912,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             try {
                 await navigator.clipboard.writeText(linkVisualizacao);
-                mostrarModal('Link copiado para a área de transferência!');
+                showToast('✅ Link copiado para a área de transferência!');
+                setTimeout(() => { if (modalShare) modalShare.classList.add('hidden'); }, 1500);
             } catch (err) {
                 console.log('Não foi possível copiar automaticamente');
+                showToast('📋 Clique no botão copiar para copiar o link', false);
             }
             
         } catch (error) {
@@ -3965,11 +4019,32 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-        // ========== INICIALIZAR FUNCIONALIDADES ==========
+    // ========== INICIALIZAR FUNCIONALIDADES ==========
     initTema();
     initBaixarProposta();
     initCompartilharLink();
     checkVisualizacao();
+    
+    // ========== VERIFICAR AUTENTICAÇÃO (PULA SE FOR VISUALIZAÇÃO) ==========
+    if (!isVisualizacao) {
+        // Pequeno delay para evitar conflito
+        setTimeout(() => {
+            auth.onAuthStateChanged((user) => {
+                if (!user) {
+                    // Evitar redirecionamento múltiplo
+                    if (!window._isRedirecting) {
+                        window._isRedirecting = true;
+                        console.log('Usuário não autenticado, redirecionando...');
+                        window.location.href = 'index.html';
+                    }
+                } else {
+                    console.log('Usuário autenticado:', user.email);
+                }
+            });
+        }, 100);
+    } else {
+        console.log('🔓 Modo de visualização - acesso liberado sem login');
+    }
     
     // ========== CONFIGURAR MODAIS ==========
     const modalShare = document.getElementById('modal-share');
@@ -3978,7 +4053,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     if (modalShareOk) {
         modalShareOk.addEventListener('click', () => {
-            modalShare.classList.add('hidden');
+            if (modalShare) modalShare.classList.add('hidden');
         });
     }
     
@@ -3996,7 +4071,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (shareLinkInput) {
                 shareLinkInput.select();
                 navigator.clipboard.writeText(shareLinkInput.value);
-                mostrarModal('Link copiado!');
+                showToast('✅ Link copiado!');
+                setTimeout(() => {
+                    if (modalShare) modalShare.classList.add('hidden');
+                }, 500);
             }
         });
     }

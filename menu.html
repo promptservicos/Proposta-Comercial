@@ -4,62 +4,78 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prompt Serviços · Gestão de Propostas</title>
-    <!-- Font Awesome -->
+    
     <link rel="icon" type="image/png" href="icon1.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- Boxicons CDN -->
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
+    
     <link rel="stylesheet" href="menu.css">
 </head>
 <body>
-    <div class="container">
+    <!-- Botão de alternar tema -->
+    <button id="themeToggle" class="theme-toggle" aria-label="Alternar tema">
+        <i class='bx bx-moon'></i>
+    </button>
+
+    <main class="container">
         <div class="header">
-            <i class="fas fa-chart-line header-icon"></i>
-            <h1>Prompt Serviços</h1>
+            <div class="header-left">
+                <i class='bx bx-line-chart header-icon'></i>
+                <h1>Prompt Serviços</h1>
+            </div>
             <div class="user-info">
-                <i class="fas fa-user-circle"></i>
+                <i class='bx bxs-user-circle'></i>
                 <span id="usuario-nome">Carregando...</span>
-                <button id="btn-tema" class="btn-tema" title="Modo claro/escuro">
-                    <i class="fas fa-sun"></i>
-                </button>
-                <button id="btn-logout" class="btn-logout" title="Sair">
-                    <i class="fas fa-sign-out-alt"></i>
+                <button id="btn-logout" class="logout-btn" title="Sair">
+                    <i class='bx bx-log-out'></i>
                 </button>
             </div>
         </div>
-        <p class="subtitle">gestão de propostas</p>
+        
+        <p class="subtitle">Gestão de propostas</p>
 
         <div class="toggle-container">
-            <button class="toggle-btn" id="btn-criar">Criar proposta</button>
-            <button class="toggle-btn" id="btn-ver">Ver proposta</button>
+            <button class="toggle-btn" id="btn-criar">
+                <i class='bx bx-plus-circle'></i>
+                <span>Criar proposta</span>
+            </button>
+            <button class="toggle-btn" id="btn-ver">
+                <i class='bx bx-show'></i>
+                <span>Ver propostas</span>
+            </button>
         </div>
 
+        <!-- Painel Criar Proposta -->
         <div id="criar-panel" class="panel hidden">
             <div class="field">
-                <label for="contrato-criar"><i class="fas fa-file-contract"></i> Tipo de documento</label>
+                <label><i class='bx bx-file'></i> Tipo de documento</label>
                 <div class="custom-select-wrapper">
                     <div class="custom-select" id="custom-select">
                         <div class="custom-select-trigger">
                             <span class="custom-select-value">Selecione o tipo</span>
-                            <i class="fas fa-chevron-down"></i>
+                            <i class='bx bx-chevron-down'></i>
                         </div>
                         <div class="custom-select-options">
                             <div class="custom-option" data-value="efetivo">
-                                <i class="fas fa-user-tie"></i> Efetivo
+                                <i class='bx bxs-user-badge'></i> Efetivo
                             </div>
                             <div class="custom-option" data-value="temporario">
-                                <i class="fas fa-clock"></i> Temporário
+                                <i class='bx bx-time'></i> Temporário
                             </div>
                             <div class="custom-option" data-value="terceirizado">
-                                <i class="fas fa-building"></i> Terceirizado
+                                <i class='bx bxs-building'></i> Terceirizado
                             </div>
                             <div class="custom-option" data-value="carta">
-                                <i class="fas fa-envelope"></i> Carta
+                                <i class='bx bxs-envelope'></i> Carta
                             </div>
                         </div>
                     </div>
@@ -72,26 +88,30 @@
                     </select>
                 </div>
             </div>
-            <button class="btn" id="btn-continuar">continuar <i class="fas fa-arrow-right"></i></button>
+            <button class="btn-primary" id="btn-continuar">
+                <span>Continuar</span>
+                <i class='bx bx-right-arrow-alt'></i>
+            </button>
         </div>
 
+        <!-- Painel Ver Propostas -->
         <div id="ver-panel" class="panel hidden">
             <div class="filtros">
                 <div class="filtro-item">
-                    <label><i class="fas fa-building"></i> Cliente</label>
-                    <input type="text" id="filtro-cliente" class="input-moderno" placeholder="Nome">
+                    <label><i class='bx bxs-building'></i> Cliente</label>
+                    <input type="text" id="filtro-cliente" class="input-moderno" placeholder="Nome do cliente">
                 </div>
                 <div class="filtro-item" id="filtro-vendedor-container">
-                    <label><i class="fas fa-user-tie"></i> Vendedor</label>
+                    <label><i class='bx bxs-user-detail'></i> Vendedor</label>
                     <div class="select-wrapper">
                         <select id="filtro-vendedor">
                             <option value="">Todos</option>
                         </select>
-                        <span class="select-arrow"></span>
+                        <i class='bx bx-chevron-down select-arrow-icon'></i>
                     </div>
                 </div>
                 <div class="filtro-item" id="filtro-tipo-container">
-                    <label><i class="fas fa-tag"></i> Tipo</label>
+                    <label><i class='bx bx-tag'></i> Tipo</label>
                     <div class="select-wrapper">
                         <select id="filtro-tipo">
                             <option value="">Todos</option>
@@ -100,33 +120,51 @@
                             <option value="terceirizado">Terceirizado</option>
                             <option value="carta">Carta</option>
                         </select>
-                        <span class="select-arrow"></span>
+                        <i class='bx bx-chevron-down select-arrow-icon'></i>
                     </div>
                 </div>
                 <div class="filtro-item data-group">
                     <div class="data-field">
-                        <label><i class="fas fa-calendar-alt"></i> Início</label>
+                        <label><i class='bx bx-calendar'></i> Início</label>
                         <input type="date" id="filtro-data-inicio" class="input-moderno">
                     </div>
                     <div class="data-field">
-                        <label><i class="fas fa-calendar-alt"></i> Fim</label>
+                        <label><i class='bx bx-calendar'></i> Fim</label>
                         <input type="date" id="filtro-data-fim" class="input-moderno">
                     </div>
                 </div>
             </div>
             <div id="cards-container" class="cards-container">
-                <p class="loading">Carregando propostas...</p>
+                <div class="loading-state">
+                    <i class='bx bx-loader-alt bx-spin'></i>
+                    <p>Carregando propostas...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal de confirmação -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <i class='bx bx-folder-open modal-icon'></i>
+            <h3>Abrir proposta?</h3>
+            <p>Tem certeza que deseja abrir esta proposta?</p>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-confirm">Sim, abrir</button>
+                <button class="modal-btn modal-btn-cancel">Cancelar</button>
             </div>
         </div>
     </div>
 
-    <div id="modal-overlay" class="modal-overlay hidden">
+    <!-- Modal de exclusão -->
+    <div id="deleteModal" class="modal">
         <div class="modal-content">
-            <i class="fas fa-file-alt modal-icon"></i>
-            <p class="modal-text">Abrir proposta?</p>
+            <i class='bx bx-trash modal-icon' style="color: #ff4444;"></i>
+            <h3>Excluir proposta?</h3>
+            <p>Esta ação não pode ser desfeita. Tem certeza?</p>
             <div class="modal-buttons">
-                <button class="modal-btn modal-btn-sim">Sim</button>
-                <button class="modal-btn modal-btn-nao">Não</button>
+                <button class="modal-btn modal-btn-delete">Sim, excluir</button>
+                <button class="modal-btn modal-btn-cancel">Cancelar</button>
             </div>
         </div>
     </div>

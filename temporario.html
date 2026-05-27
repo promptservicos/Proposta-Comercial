@@ -4,43 +4,57 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prompt · Proposta Temporário</title>
-    <!-- Font Awesome 6 -->
+    
     <link rel="icon" type="image/png" href="icon1.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="stylesheet" href="temporario.css">
+    
+    <!-- Boxicons CDN -->
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <!-- Firebase SDK -->
+     <!-- Adicione esta linha no HEAD do HTML -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
+    <link rel="stylesheet" href="temporario.css">
 </head>
 <body>
-    <div class="container">
+    <!-- Botão de alternar tema -->
+    <button id="themeToggle" class="theme-toggle" aria-label="Alternar tema">
+        <i class='bx bx-moon'></i>
+    </button>
+
+    <main class="container">
         <div class="header">
-            <i class="fas fa-clock header-icon"></i>
-            <h1>Prompt Serviços</h1>
+            <div class="header-left">
+                <i class='bx bx-time header-icon'></i>
+                <h1>Prompt Serviços</h1>
+            </div>
             <div class="header-actions">
-                <button id="btn-tema" class="btn-tema" title="Modo claro/escuro">
-                    <i class="fas fa-moon"></i>
-                </button>
-                <button id="btn-voltar" class="btn-voltar" title="Voltar ao início">
-                    <i class="fas fa-arrow-left"></i>
+                <button id="btn-voltar" class="back-btn" title="Voltar ao início">
+                    <i class='bx bx-arrow-back'></i>
                 </button>
             </div>
         </div>
 
         <div class="vendedor-info">
-            <i class="fas fa-user-tie"></i>
+            <i class='bx bxs-user-tie'></i>
             <span id="vendedor-nome">Carregando...</span>
         </div>
 
-        <p class="subtitle"><i class="fas fa-file-signature"></i> Proposta de contrato temporário</p>
+        <p class="subtitle">
+            <i class='bx bx-file-signature'></i> 
+            Proposta de contrato temporário
+        </p>
 
         <!-- Campo Cliente -->
         <div class="field cliente-field">
-            <label><i class="fas fa-building"></i> Cliente</label>
+            <label><i class='bx bxs-building'></i> Cliente</label>
             <input type="text" id="cliente-nome" class="input-moderno" placeholder="NOME DO CLIENTE" style="text-transform: uppercase;">
         </div>
 
@@ -49,13 +63,13 @@
 
         <!-- Botão adicionar cargo -->
         <button type="button" id="adicionar-cargo" class="btn-add">
-            <i class="fas fa-plus-circle"></i> Adicionar cargo
+            <i class='bx bx-plus-circle'></i> Adicionar cargo
         </button>
 
         <!-- Resumo final -->
         <div class="resumo-final">
             <div class="resumo-item">
-                <i class="fas fa-chart-line"></i>
+                <i class='bx bx-chart'></i>
                 <span>Total da proposta:</span>
                 <strong id="total-geral">R$ 0,00</strong>
             </div>
@@ -63,27 +77,28 @@
 
         <!-- Botões de ação -->
         <div class="action-buttons">
-            <button type="button" class="btn" id="btn-baixar-imagens">
-                <i class="fas fa-download"></i> Baixar Imagens
+            <button type="button" class="btn-primary" id="btn-baixar-imagens">
+                <i class='bx bx-download'></i> Baixar Imagens
             </button>
-            <button type="button" class="btn" id="btn-compartilhar-link">
-                <i class="fas fa-share-alt"></i> Compartilhar Link
+            <button type="button" class="btn-primary" id="btn-compartilhar-link">
+                <i class='bx bx-share-alt'></i> Compartilhar Link
             </button>
-            <button type="button" class="btn" id="btn-salvar">
-                <i class="fas fa-save"></i> Salvar proposta
+            <button type="button" class="btn-primary" id="btn-salvar">
+                <i class='bx bx-save'></i> Salvar proposta
             </button>
         </div>
-    </div>
+    </main>
 
     <!-- Modal de compartilhamento -->
-    <div id="modal-share" class="modal-overlay hidden">
+    <div id="modal-share" class="modal">
         <div class="modal-content">
-            <i class="fas fa-link modal-icon"></i>
-            <p class="modal-text">Link para visualização da proposta</p>
+            <i class='bx bx-link-alt modal-icon'></i>
+            <h3>Link para visualização</h3>
+            <p class="modal-text">Compartilhe este link para visualizar a proposta</p>
             <div class="share-link-container">
                 <input type="text" id="share-link" class="input-moderno" readonly>
-                <button id="btn-copiar-link" class="btn-copiar">
-                    <i class="fas fa-copy"></i> Copiar
+                <button id="btn-copiar-link" class="btn-copy">
+                    <i class='bx bx-copy'></i> Copiar
                 </button>
             </div>
             <div class="modal-buttons">
@@ -93,16 +108,14 @@
     </div>
 
     <!-- Modal de confirmação -->
-    <div id="modal-overlay" class="modal-overlay hidden">
+    <div id="messageModal" class="modal">
         <div class="modal-content">
-            <p class="modal-text" id="modal-mensagem">Proposta salva com sucesso!</p>
-            <div class="modal-buttons">
-                <button class="modal-btn modal-btn-ok" id="modal-ok">OK</button>
-            </div>
+            <i class='bx bx-check-circle modal-icon' id="modal-icon"></i>
+            <p class="modal-text" id="modal-mensagem">Operação realizada com sucesso!</p>
+            <button class="modal-btn-ok" id="modal-ok">Entendi</button>  <!-- ID = modal-ok -->
         </div>
     </div>
 
     <script src="temporario.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </body>
 </html>

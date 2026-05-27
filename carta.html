@@ -4,29 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Carta · Prompt Serviços</title>
-    <!-- Font Awesome 6 -->
+    
     <link rel="icon" type="image/png" href="icon1.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- Boxicons CDN -->
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Georgia:wght@400;700&display=swap" rel="stylesheet">
+    
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
     <link rel="stylesheet" href="carta.css">
 </head>
 <body>
-    <div class="container">
+    <!-- Botão de alternar tema -->
+    <button id="themeToggle" class="theme-toggle" aria-label="Alternar tema">
+        <i class='bx bx-moon'></i>
+    </button>
+
+    <main class="container">
         <div class="page-header">
             <div class="logo-area">
                 <img src="logo1.png" alt="Prompt Serviços" class="logo-img" onerror="this.src='https://via.placeholder.com/100x100?text=Logo'">
             </div>
             <div class="header-actions">
-                <button id="btn-tema" class="btn-tema" title="Modo claro/escuro">
-                    <i class="fas fa-moon"></i>
-                </button>
-                <button id="btn-voltar" class="btn-voltar" title="Voltar ao início">
-                    <i class="fas fa-arrow-left"></i>
+                <button id="btn-voltar" class="back-btn" title="Voltar ao início">
+                    <i class='bx bx-arrow-back'></i>
                 </button>
             </div>
         </div>
@@ -35,39 +44,39 @@
         <div class="toolbar" id="toolbar">
             <!-- Formatação básica -->
             <button type="button" data-command="bold" id="btn-bold" title="Negrito">
-                <i class="fas fa-bold"></i>
+                <i class='bx bx-bold'></i>
             </button>
             <button type="button" data-command="italic" id="btn-italic" title="Itálico">
-                <i class="fas fa-italic"></i>
+                <i class='bx bx-italic'></i>
             </button>
             <button type="button" data-command="underline" id="btn-underline" title="Sublinhado">
-                <i class="fas fa-underline"></i>
+                <i class='bx bx-underline'></i>
             </button>
             <span class="separator"></span>
             
             <!-- Alinhamento -->
             <button type="button" data-command="justifyLeft" id="btn-left" title="Alinhar à esquerda">
-                <i class="fas fa-align-left"></i>
+                <i class='bx bx-align-left'></i>
             </button>
             <button type="button" data-command="justifyCenter" id="btn-center" title="Centralizar">
-                <i class="fas fa-align-center"></i>
+                <i class='bx bx-align-middle'></i>
             </button>
             <button type="button" data-command="justifyRight" id="btn-right" title="Alinhar à direita">
-                <i class="fas fa-align-right"></i>
+                <i class='bx bx-align-right'></i>
             </button>
             <button type="button" data-command="justifyFull" id="btn-justify" title="Justificar">
-                <i class="fas fa-align-justify"></i>
+                <i class='bx bx-align-justify'></i>
             </button>
             <span class="separator"></span>
             
             <!-- Tamanho da fonte -->
             <div class="font-size-control">
                 <button type="button" id="font-decrease" title="Diminuir fonte">
-                    <i class="fas fa-minus"></i>
+                    <i class='bx bx-minus'></i>
                 </button>
                 <span id="font-size-indicator" class="font-indicator">16</span>
                 <button type="button" id="font-increase" title="Aumentar fonte">
-                    <i class="fas fa-plus"></i>
+                    <i class='bx bx-plus'></i>
                 </button>
             </div>
             <span class="separator"></span>
@@ -75,7 +84,7 @@
             <!-- Cores - Grid de cores -->
             <div class="color-picker-grid">
                 <button type="button" class="color-btn" data-color="#000000" style="background: #000000;" title="Preto"></button>
-                <button type="button" class="color-btn" data-color="#c10404" style="background: #c10404;" title="Vermelho"></button>
+                <button type="button" class="color-btn" data-color="#c10404" style="background: #c10404;" title="Vermelho Prompt"></button>
                 <button type="button" class="color-btn" data-color="#ff0000" style="background: #ff0000;" title="Vermelho claro"></button>
                 <button type="button" class="color-btn" data-color="#0066cc" style="background: #0066cc;" title="Azul"></button>
                 <button type="button" class="color-btn" data-color="#00aaff" style="background: #00aaff;" title="Azul claro"></button>
@@ -91,16 +100,16 @@
             
             <!-- Listas -->
             <button type="button" data-command="insertUnorderedList" id="btn-ul" title="Lista com marcadores">
-                <i class="fas fa-list-ul"></i>
+                <i class='bx bx-list-ul'></i>
             </button>
             <button type="button" data-command="insertOrderedList" id="btn-ol" title="Lista numerada">
-                <i class="fas fa-list-ol"></i>
+                <i class='bx bx-list-ol'></i>
             </button>
             <span class="separator"></span>
             
             <!-- Limpar formatação -->
             <button type="button" id="clearFormatting" title="Limpar formatação">
-                <i class="fas fa-eraser"></i>
+                <i class='bx bx-eraser'></i>
             </button>
         </div>
 
@@ -112,7 +121,7 @@
                     <p class="slogan">Soluções em mão de obra</p>
                 </div>
                 
-                <div class="carta-corpo" id="carta-corpo-editable" contenteditable="true" data-placeholder="Escreva aqui..."></div>
+                <div class="carta-corpo" id="carta-corpo-editable" contenteditable="true" data-placeholder="Escreva aqui o conteúdo da sua carta..."></div>
                 
                 <div class="carta-assinatura" id="assinatura-area">
                     <div class="assinatura-linha" id="assinatura-nome">_________________________</div>
@@ -124,24 +133,24 @@
 
         <!-- Campos editáveis -->
         <div class="campos-editor">
-            <h3><i class="fas fa-pen"></i> Dados da Carta</h3>
+            <h3><i class='bx bx-edit-alt'></i> Dados da Carta</h3>
             <div class="campo-row" id="campo-nome-carta" style="display: none;">
                 <div class="campo-group" style="width: 100%;">
-                    <label><i class="fas fa-tag"></i> Nome da Carta *</label>
+                    <label><i class='bx bx-tag'></i> Nome da Carta *</label>
                     <input type="text" id="input-nome-carta" class="input-moderno" placeholder="Ex: Carta de Apresentação - Cliente XYZ">
                 </div>
             </div>
             <div class="campo-row">
                 <div class="campo-group">
-                    <label><i class="fas fa-user"></i> Nome</label>
+                    <label><i class='bx bxs-user'></i> Nome</label>
                     <input type="text" id="input-nome" class="input-moderno" placeholder="Digite seu nome">
                 </div>
                 <div class="campo-group">
-                    <label><i class="fas fa-envelope"></i> E-mail</label>
+                    <label><i class='bx bxs-envelope'></i> E-mail</label>
                     <input type="email" id="input-email" class="input-moderno" placeholder="seu@email.com">
                 </div>
                 <div class="campo-group">
-                    <label><i class="fas fa-phone"></i> Telefone</label>
+                    <label><i class='bx bxs-phone'></i> Telefone</label>
                     <input type="text" id="input-telefone" class="input-moderno" placeholder="(00) 00000-0000">
                 </div>
             </div>
@@ -150,34 +159,34 @@
         <!-- Botões de ação -->
         <div class="action-buttons">
             <button id="btn-salvar" class="btn-acao">
-                <i class="fas fa-save"></i> Salvar Carta
+                <i class='bx bx-save'></i> Salvar Carta
             </button>
             <button id="btn-compartilhar" class="btn-acao">
-                <i class="fas fa-camera"></i> Compartilhar
+                <i class='bx bx-camera'></i> Compartilhar
             </button>
         </div>
-    </div>
+    </main>
 
-    <!-- Modal -->
-    <div id="modal-overlay" class="modal-overlay hidden">
+    <!-- Modal de mensagem -->
+    <div id="messageModal" class="modal">
         <div class="modal-content">
-            <i class="fas fa-check-circle modal-icon"></i>
-            <p class="modal-text" id="modal-mensagem">Carta salva como imagem!</p>
-            <button class="modal-btn-ok" id="modal-ok">OK</button>
+            <i class='bx bx-check-circle modal-icon' id="modal-icon"></i>
+            <p class="modal-text" id="modal-mensagem">Operação realizada com sucesso!</p>
+            <button class="modal-btn-ok" id="modal-ok">Entendi</button>
         </div>
     </div>
 
     <!-- Modal para nome da carta -->
-    <div id="modal-nome-carta" class="modal-overlay hidden">
+    <div id="modal-nome-carta" class="modal">
         <div class="modal-content">
-            <i class="fas fa-tag modal-icon"></i>
+            <i class='bx bx-tag modal-icon'></i>
             <p class="modal-text">Digite um nome para a carta:</p>
-            <input type="text" id="modal-nome-input" class="input-moderno" placeholder="Ex: Carta de Apresentação - Cliente XYZ" style="width: 100%; margin-bottom: 1.5rem;">
-                <div class="modal-buttons" style="display: flex; gap: 1rem;">
-                    <button class="modal-btn modal-btn-cancelar" id="modal-cancelar-nome">Cancelar</button>
-                    <button class="modal-btn modal-btn-salvar-nome" id="modal-salvar-nome">Salvar</button>
-                </div>
+            <input type="text" id="modal-nome-input" class="input-moderno" placeholder="Ex: Carta de Apresentação - Cliente XYZ">
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancelar" id="modal-cancelar-nome">Cancelar</button>
+                <button class="modal-btn modal-btn-salvar-nome" id="modal-salvar-nome">Salvar</button>
             </div>
+        </div>
     </div>
 
     <script src="carta.js"></script>

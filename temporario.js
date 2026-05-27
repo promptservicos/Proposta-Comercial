@@ -9,10 +9,14 @@ const firebaseConfig = {
     measurementId: "G-JEH5ZKSX89"
 };
 
-firebase.initializeApp(firebaseConfig);
+// Verificar se Firebase já foi inicializado
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+
 const auth = firebase.auth();
 const db = firebase.firestore();
-const analytics = firebase.analytics();
+// REMOVA a linha abaixo se não tiver o SDK do Analytics
 
 // ================== CONSTANTES ==================
 const SALARIO_MINIMO = 1621.00;
@@ -101,6 +105,32 @@ function formatarMoeda(valor) {
     return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+// ========== TOAST NOTIFICATION ==========
+function showToast(message, isError = false) {
+    const existingToast = document.querySelector('.toast-notification');
+    if (existingToast) existingToast.remove();
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification';
+    if (isError) toast.classList.add('error');
+    
+    const icon = document.createElement('i');
+    icon.className = isError ? 'bx bx-error-circle' : 'bx bx-check-circle';
+    
+    const text = document.createElement('span');
+    text.textContent = message;
+    
+    toast.appendChild(icon);
+    toast.appendChild(text);
+    document.body.appendChild(toast);
+    
+    setTimeout(() => toast.classList.add('show'), 10);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
 // ========== FUNÇÃO AUXILIAR ESCAPE HTML ==========
 function escapeHtml(text) {
     if (!text) return '';
@@ -115,7 +145,7 @@ async function gerarImagemPorCargo() {
     const textoOriginal = btnCompartilhar ? btnCompartilhar.innerHTML : '';
     
     if (btnCompartilhar) {
-        btnCompartilhar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando imagens...';
+        btnCompartilhar.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Gerando imagens...';
         btnCompartilhar.disabled = true;
     }
     
@@ -322,9 +352,9 @@ async function gerarImagemPorCargo() {
             }
         });
         
-        const wasLightMode = document.body.classList.contains('light-mode');
-        if (!wasLightMode) {
-            document.body.classList.add('light-mode');
+        const wasDarkMode = document.body.classList.contains('dark');
+        if (wasDarkMode) {
+            document.body.classList.add('dark');
         }
         
         await new Promise(resolve => setTimeout(resolve, 300));
@@ -601,8 +631,8 @@ async function gerarImagemPorCargo() {
         }
         
         // Restaurar tema original
-        if (!wasLightMode) {
-            document.body.classList.remove('light-mode');
+        if (wasDarkMode) {
+            document.body.classList.remove('dark');
         }
         
         let mensagem = `✅ ${imagensGeradas + 1} imagem(ns) baixada(s) com sucesso!\n- 1 imagem com o TOTAL da proposta\n- ${imagensGeradas} imagem(ns) com detalhes dos cargos`;
@@ -631,6 +661,19 @@ async function gerarImagemPorCargo() {
 
 // ================== INICIALIZAÇÃO ==================
 document.addEventListener('DOMContentLoaded', async function() {
+    if (window.isLoading) return;
+    window.isLoading = true;
+
+    // Verificar se é modo visualização logo no início
+    const urlParamsVis = new URLSearchParams(window.location.search);
+    const isVisualizacaoModo = urlParamsVis.get('visualizacao') === 'true';
+    
+    // Se for modo visualização, não precisa carregar dados do usuário logado
+    if (isVisualizacaoModo) {
+        console.log('🔓 Modo visualização - carregando dados apenas para leitura');
+        // Carrega a proposta mas NÃO redireciona para login
+    }
+
     const container = document.getElementById('cargos-container');
     const btnAdicionar = document.getElementById('adicionar-cargo');
     const totalGeralEl = document.getElementById('total-geral');
@@ -645,10 +688,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         modalOverlay.classList.remove('hidden');
     }
 
-    modalOk.addEventListener('click', () => modalOverlay.classList.add('hidden'));
-    modalOverlay.addEventListener('click', (e) => {
-        if (e.target === modalOverlay) modalOverlay.classList.add('hidden');
-    });
+    if (modalOk) {
+        modalOk.addEventListener('click', () => {
+            if (modalOverlay) modalOverlay.classList.add('hidden');
+        });
+    }
+    if (modalOverlay) {
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) modalOverlay.classList.add('hidden');
+        });
+    }
 
     btnVoltar.addEventListener('click', () => {
         localStorage.removeItem(DRAFT_KEY);
@@ -3094,41 +3143,42 @@ document.addEventListener('DOMContentLoaded', async function() {
         salvarRascunho();
     });
     
+    // ========== TEMA CLARO/ESCURO ==========
     function initTema() {
-        const temaSalvo = localStorage.getItem('tema_temporario');
-        const btnTema = document.getElementById('btn-tema');
+        const temaSalvo = localStorage.getItem('theme_temporario');
+        const btnTema = document.getElementById('themeToggle');
         const iconTema = btnTema?.querySelector('i');
         
-        if (!temaSalvo || temaSalvo === 'light') {
-            document.body.classList.add('light-mode');
+        if (temaSalvo === 'dark') {
+            document.body.classList.add('dark');
             if (iconTema) {
-                iconTema.classList.remove('fa-moon');
-                iconTema.classList.add('fa-sun');
+                iconTema.classList.remove('bx-moon');
+                iconTema.classList.add('bx-sun');
+            }
+        } else {
+            document.body.classList.remove('dark');
+            if (iconTema) {
+                iconTema.classList.remove('bx-sun');
+                iconTema.classList.add('bx-moon');
             }
             if (!temaSalvo) {
-                localStorage.setItem('tema_temporario', 'light');
-            }
-        } else if (temaSalvo === 'dark') {
-            document.body.classList.remove('light-mode');
-            if (iconTema) {
-                iconTema.classList.remove('fa-sun');
-                iconTema.classList.add('fa-moon');
+                localStorage.setItem('theme_temporario', 'light');
             }
         }
         
         if (btnTema) {
             btnTema.addEventListener('click', () => {
-                document.body.classList.toggle('light-mode');
-                const isLight = document.body.classList.contains('light-mode');
-                localStorage.setItem('tema_temporario', isLight ? 'light' : 'dark');
+                document.body.classList.toggle('dark');
+                const isDark = document.body.classList.contains('dark');
+                localStorage.setItem('theme_temporario', isDark ? 'dark' : 'light');
                 
                 if (iconTema) {
-                    if (isLight) {
-                        iconTema.classList.remove('fa-moon');
-                        iconTema.classList.add('fa-sun');
+                    if (isDark) {
+                        iconTema.classList.remove('bx-moon');
+                        iconTema.classList.add('bx-sun');
                     } else {
-                        iconTema.classList.remove('fa-sun');
-                        iconTema.classList.add('fa-moon');
+                        iconTema.classList.remove('bx-sun');
+                        iconTema.classList.add('bx-moon');
                     }
                 }
             });
@@ -3171,7 +3221,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Copiar automaticamente para a área de transferência
             try {
                 await navigator.clipboard.writeText(linkVisualizacao);
-                mostrarModal('Link copiado para a área de transferência!');
+                showToast('✅ Link copiado para a área de transferência!');
             } catch (err) {
                 console.log('Não foi possível copiar automaticamente');
             }
@@ -3752,35 +3802,83 @@ document.addEventListener('DOMContentLoaded', async function() {
     initBaixarImagens();
     initCompartilharLink();
     checkVisualizacao();
-    
-    // ========== CONFIGURAR MODAIS ==========
-    // Modal de compartilhamento
-    const modalShare = document.getElementById('modal-share');
-    const modalShareOk = document.getElementById('modal-share-ok');
-    const btnCopiarLinkModal = document.getElementById('btn-copiar-link');
-    
-    if (modalShareOk) {
-        modalShareOk.addEventListener('click', () => {
-            modalShare.classList.add('hidden');
-        });
-    }
-    
-    if (modalShare) {
-        modalShare.addEventListener('click', (e) => {
-            if (e.target === modalShare) {
-                modalShare.classList.add('hidden');
+
+    // ========== CONFIGURAR MODAIS COM VERIFICAÇÕES ==========
+    // Aguardar um pouco para garantir que os elementos estão no DOM
+    setTimeout(() => {
+        // Modal de compartilhamento
+        const modalShare = document.getElementById('modal-share');
+        const modalShareOk = document.getElementById('modal-share-ok');
+        const btnCopiarLinkModal = document.getElementById('btn-copiar-link');
+
+        if (modalShareOk) {
+            modalShareOk.addEventListener('click', () => {
+                if (modalShare) modalShare.classList.add('hidden');
+            });
+        }
+
+        if (modalShare) {
+            modalShare.addEventListener('click', (e) => {
+                if (e.target === modalShare) {
+                    modalShare.classList.add('hidden');
+                }
+            });
+        }
+
+        if (btnCopiarLinkModal) {
+            btnCopiarLinkModal.addEventListener('click', () => {
+                const shareLinkInput = document.getElementById('share-link');
+                if (shareLinkInput) {
+                    shareLinkInput.select();
+                    navigator.clipboard.writeText(shareLinkInput.value).then(() => {
+                        showToast('✅ Link copiado!');
+                    }).catch(() => {
+                        showToast('✅ Link copiado! (copie manualmente)');
+                    });
+                    if (modalShare) modalShare.classList.add('hidden');
+                }
+            });
+        }
+
+        // Modal de mensagem - USAR O messageModal, NÃO o modalOverlay
+        const messageModal = document.getElementById('messageModal');
+        const modalOkBtn = document.getElementById('modal-ok');
+
+        if (modalOkBtn) {
+            modalOkBtn.addEventListener('click', () => {
+                if (messageModal) messageModal.classList.add('hidden');
+            });
+        }
+
+        if (messageModal) {
+            messageModal.addEventListener('click', (e) => {
+                if (e.target === messageModal) messageModal.classList.add('hidden');
+            });
+        }
+    }, 100);
+
+    // Verificar autenticação - com prevenção de loop
+    let isRedirecting = false;
+
+    // Verificar se é modo de visualização
+    const urlParams = new URLSearchParams(window.location.search);
+    const isVisualizacao = urlParams.get('visualizacao') === 'true';
+
+    // Verificar autenticação - PULA se for modo visualização
+    if (!isVisualizacao) {
+        auth.onAuthStateChanged((user) => {
+            if (!user) {
+                console.log('Usuário não autenticado, redirecionando...');
+                window.location.href = 'index.html';
+            } else {
+                console.log('Usuário autenticado:', user.email);
             }
         });
-    }
-    
-    if (btnCopiarLinkModal) {
-        btnCopiarLinkModal.addEventListener('click', () => {
-            const shareLinkInput = document.getElementById('share-link');
-            if (shareLinkInput) {
-                shareLinkInput.select();
-                navigator.clipboard.writeText(shareLinkInput.value);
-                mostrarModal('Link copiado!');
-            }
+    } else {
+        console.log('Modo de visualização ativo - sem necessidade de login');
+        // Garantir que está em modo somente leitura
+        document.querySelectorAll('input, select, textarea, button:not(#btn-voltar):not(.theme-toggle)').forEach(el => {
+            if (el) el.disabled = true;
         });
     }
 });
