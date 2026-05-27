@@ -61,6 +61,15 @@ const rememberCheckbox = document.getElementById('rememberMe');
 const loginBtn = document.getElementById('loginBtn');
 const togglePasswordBtn = document.getElementById('togglePassword');
 const alertBox = document.getElementById('alertBox');
+const supportLink = document.getElementById('supportLink');
+
+// ========== LINK DO SUPORTE (WHATSAPP) ==========
+if (supportLink) {
+    supportLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.open('https://wa.me/5511977194737', '_blank');
+    });
+}
 
 // ========== TOGGLE SENHA ==========
 if (togglePasswordBtn && passwordInput) {
@@ -148,14 +157,17 @@ if (messageModal) {
 
 // ========== VERIFICAR SESSÃO ATIVA ==========
 function checkActiveSession() {
-    auth.onAuthStateChanged((user) => {
-        if (user) {
-            const nome = user.email.split('@')[0];
-            sessionStorage.setItem('session_email', user.email);
-            sessionStorage.setItem('session_name', nome);
-            window.location.href = 'menu.html';
-        }
-    });
+    setTimeout(() => {
+        auth.onAuthStateChanged((user) => {
+            if (user && !isRedirecting) {
+                isRedirecting = true;
+                const nome = user.email.split('@')[0];
+                sessionStorage.setItem('session_email', user.email);
+                sessionStorage.setItem('session_name', nome);
+                window.location.href = 'menu.html';
+            }
+        });
+    }, 500);
 }
 
 checkActiveSession();
@@ -317,7 +329,7 @@ if (sendResetBtn) {
         
         try {
             await auth.sendPasswordResetEmail(email);
-            showResetAlert('E-mail de redefinição enviado! Verifique sua caixa de entrada.', 'success');
+            showResetAlert('✅ E-mail de redefinição enviado! Verifique sua caixa de entrada.', 'success');
             sendResetBtn.innerHTML = '<span>Enviado!</span><i class="bx bx-check"></i>';
             
             setTimeout(() => {
@@ -329,9 +341,20 @@ if (sendResetBtn) {
             sendResetBtn.disabled = false;
             sendResetBtn.innerHTML = '<span>Enviar instruções</span><i class="bx bx-send"></i>';
             
-            let errorMsg = error.code === 'auth/user-not-found' 
-                ? 'Não há usuário cadastrado com este e-mail.' 
-                : 'Erro ao enviar e-mail. Tente novamente.';
+            let errorMsg = '';
+            switch (error.code) {
+                case 'auth/user-not-found':
+                    errorMsg = '❌ Não há usuário cadastrado com este e-mail.';
+                    break;
+                case 'auth/too-many-requests':
+                    errorMsg = '⚠️ Muitas tentativas. Aguarde alguns minutos e tente novamente.';
+                    break;
+                case 'auth/network-request-failed':
+                    errorMsg = '🌐 Erro de rede. Verifique sua conexão com a internet.';
+                    break;
+                default:
+                    errorMsg = '❌ Erro ao enviar e-mail. Tente novamente mais tarde.';
+            }
             showResetAlert(errorMsg, 'error');
         }
     });

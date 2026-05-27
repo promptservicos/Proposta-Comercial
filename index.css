@@ -69,6 +69,7 @@ body {
     background-image: var(--bg-pattern);
     position: relative;
     overflow-x: hidden;
+    padding: 1rem;
 }
 
 /* Botão de alternar tema */
@@ -98,9 +99,10 @@ body {
     border-color: var(--input-focus);
 }
 
-/* Container do formulário */
+/* Container do formulário - MAIS LARGO */
 .container {
-    width: 450px;
+    width: 520px;
+    max-width: 95%;
     background: var(--container-bg);
     border: 1px solid var(--container-border);
     border-radius: 32px;
@@ -154,6 +156,18 @@ body {
     margin: 25px 0;
 }
 
+/* Ícone à esquerda */
+.input-icon-left {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 20px;
+    color: var(--text-light);
+    z-index: 1;
+    pointer-events: none;
+}
+
 .input-box input {
     width: 100%;
     height: 52px;
@@ -163,7 +177,7 @@ body {
     outline: none;
     font-size: 16px;
     color: var(--text-color);
-    padding: 0 45px 0 20px;
+    padding: 0 50px 0 55px; /* Espaço para ícone esquerdo e botão toggle */
 }
 
 .input-box input::placeholder {
@@ -175,49 +189,44 @@ body {
     box-shadow: 0 0 0 3px rgba(193, 4, 4, 0.1);
 }
 
-.input-box i {
-    position: absolute;
-    right: 20px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 20px;
-    color: var(--text-light);
-}
-
+/* Botão toggle password - mais à direita */
 .toggle-password {
     position: absolute;
-    right: 45px;
+    right: 15px;
     top: 50%;
     transform: translateY(-50%);
     background: transparent;
     border: none;
     cursor: pointer;
     color: var(--text-light);
-    font-size: 18px;
+    font-size: 20px;
     padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: color 0.3s ease;
+    z-index: 1;
+    width: 32px;
+    height: 32px;
 }
 
 .toggle-password:hover {
     color: var(--input-focus);
 }
 
-/* Checkbox personalizado */
+/* Lembrar e Esqueci minha senha */
 .remember-forgot {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin: 20px 0 25px;
-    font-size: 14px;
+    font-size: 13px;
 }
 
 .custom-checkbox {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     cursor: pointer;
     position: relative;
     user-select: none;
@@ -232,11 +241,11 @@ body {
 }
 
 .checkmark {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     background-color: transparent;
     border: 1.5px solid var(--input-border);
-    border-radius: 5px;
+    border-radius: 4px;
     display: inline-block;
     position: relative;
     transition: all 0.3s ease;
@@ -254,7 +263,7 @@ body {
     top: 50%;
     transform: translate(-50%, -50%);
     color: white;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: bold;
 }
 
@@ -262,16 +271,27 @@ body {
     border-color: var(--input-focus);
 }
 
+.checkbox-text {
+    color: var(--text-light);
+    font-size: 12px;
+    transition: color 0.3s ease;
+}
+
+.custom-checkbox:hover .checkbox-text {
+    color: var(--link-color);
+}
+
 .remember-forgot a {
     text-decoration: none;
-    color: var(--link-color);
-    font-weight: 500;
-    transition: opacity 0.3s ease;
+    color: var(--text-light);
+    font-size: 12px;
+    transition: all 0.3s ease;
 }
 
 .remember-forgot a:hover {
-    text-decoration: underline;
-    opacity: 0.8;
+    color: var(--link-color);
+    text-decoration: none;
+    opacity: 1;
 }
 
 /* Botão login */
@@ -318,20 +338,25 @@ body {
     transform: none;
 }
 
+/* Link de suporte */
 .support-link {
-    font-size: 13px;
+    font-size: 12px;
     text-align: center;
     margin: 20px 0 5px;
 }
 
-.support-link a {
-    text-decoration: none;
-    color: var(--link-color);
-    font-weight: 500;
-    transition: opacity 0.3s ease;
+.support-link p {
+    color: var(--text-light);
 }
 
-.support-link a:hover {
+.support-link-highlight {
+    text-decoration: none;
+    color: var(--link-color) !important;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.support-link-highlight:hover {
     text-decoration: underline;
     opacity: 0.8;
 }
@@ -358,7 +383,7 @@ body {
     color: var(--text-color);
 }
 
-/* Modal */
+/* Modais */
 .modal {
     display: none;
     position: fixed;
@@ -378,7 +403,7 @@ body {
     border: 1px solid var(--container-border);
     border-radius: 28px;
     padding: 35px 30px;
-    width: 400px;
+    width: 450px;
     max-width: 90%;
     text-align: center;
     color: var(--text-color);
@@ -442,6 +467,16 @@ body {
     margin: 20px 0;
 }
 
+/* Ajuste para o modal de recuperação de senha */
+#passwordResetModal .input-box .input-icon-left {
+    left: 20px;
+}
+
+#passwordResetModal .input-box input {
+    padding-left: 55px;
+    padding-right: 20px;
+}
+
 #resetAlertBox {
     margin-top: 15px;
 }
@@ -453,11 +488,12 @@ body {
 
 ::-webkit-scrollbar-track {
     background: var(--bg-color);
+    border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb {
     background: var(--link-color);
-    border-radius: 3px;
+    border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -471,9 +507,9 @@ body {
 }
 
 /* Responsividade */
-@media (max-width: 520px) {
+@media (max-width: 600px) {
     .container {
-        width: 92%;
+        width: 95%;
         padding: 30px 22px;
     }
     
@@ -507,9 +543,44 @@ body {
     .input-box input {
         height: 48px;
         font-size: 14px;
+        padding: 0 45px 0 50px;
     }
     
     .login-btn {
         height: 48px;
+    }
+    
+    .input-icon-left {
+        left: 15px;
+        font-size: 18px;
+    }
+    
+    .toggle-password {
+        right: 12px;
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 25px 18px;
+    }
+    
+    .subtitle {
+        font-size: 0.8rem;
+    }
+    
+    .input-box input {
+        padding: 0 40px 0 45px;
+    }
+    
+    .input-icon-left {
+        left: 12px;
+        font-size: 16px;
+    }
+    
+    .toggle-password {
+        right: 10px;
+        font-size: 16px;
     }
 }
