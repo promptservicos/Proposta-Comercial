@@ -1131,8 +1131,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     </div>
                     <div class="dropdown-menu uniformes-menu"></div>
                     <div class="uniformes-total">
-                        <div>Total Mensal Uniformes: <span>R$ 0,00</span></div>
-                        <div class="uniformes-total-geral" style="font-size: 0.8rem; color: #c10404; margin-top: 0.25rem;">Total para ${cargoItem ? (cargoItem.querySelector('.cargo-quantidade')?.value || 1) : 1} funcionário(s): <strong>R$ 0,00</strong></div>
+                        <div>Total Mensal Uniformes (por funcionário): <span>R$ 0,00</span></div>
+                        <div class="uniformes-total-geral" style="font-size: 0.8rem; margin-top: 0.25rem;"></div>
                     </div>
                 </div>
                 <div class="epis-box">
@@ -1142,8 +1142,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     </div>
                     <div class="dropdown-menu epis-menu"></div>
                     <div class="epis-total">
-                        <div>Total Mensal EPIs: <span>R$ 0,00</span></div>
-                        <div class="epis-total-geral" style="font-size: 0.8rem; color: #c10404; margin-top: 0.25rem;">Total para ${cargoItem ? (cargoItem.querySelector('.cargo-quantidade')?.value || 1) : 1} funcionário(s): <strong>R$ 0,00</strong></div>
+                        <div>Total Mensal EPIs (por funcionário): <span>R$ 0,00</span></div>
+                        <div class="epis-total-geral" style="font-size: 0.8rem; margin-top: 0.25rem;"></div>
                     </div>
                 </div>
             </div>

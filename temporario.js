@@ -1160,8 +1160,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     </div>
                     <div class="dropdown-menu uniformes-menu"></div>
                     <div class="uniformes-total">
-                        <div>Total Mensal Uniformes: <span>R$ 0,00</span></div>
-                        <div class="uniformes-total-geral" style="font-size: 0.8rem; color: #c10404; margin-top: 0.25rem;">Total para ${cargoItem ? (cargoItem.querySelector('.cargo-quantidade')?.value || 1) : 1} funcionário(s): <strong>R$ 0,00</strong></div>
+                        <div>Total Mensal Uniformes (por funcionário): <span>R$ 0,00</span></div>
+                        <div class="uniformes-total-geral" style="font-size: 0.8rem; margin-top: 0.25rem;"></div>
                     </div>
                 </div>
                 <div class="epis-box">
@@ -1171,8 +1171,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     </div>
                     <div class="dropdown-menu epis-menu"></div>
                     <div class="epis-total">
-                        <div>Total Mensal EPIs: <span>R$ 0,00</span></div>
-                        <div class="epis-total-geral" style="font-size: 0.8rem; color: #c10404; margin-top: 0.25rem;">Total para ${cargoItem ? (cargoItem.querySelector('.cargo-quantidade')?.value || 1) : 1} funcionário(s): <strong>R$ 0,00</strong></div>
+                        <div>Total Mensal EPIs (por funcionário): <span>R$ 0,00</span></div>
+                        <div class="epis-total-geral" style="font-size: 0.8rem; margin-top: 0.25rem;"></div>
                     </div>
                 </div>
             </div>
@@ -1429,8 +1429,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             salvarRascunho();
         });
         
-        // Função para calcular total mensal de uniformes (padrão + personalizados)
         function calcularTotalUniformeMensal() {
+            // Retorna o valor mensal TOTAL para todos os funcionários
             let total = 0;
             uniformesItems.forEach(item => {
                 total += item.getMensal();
@@ -1441,18 +1441,20 @@ document.addEventListener('DOMContentLoaded', async function() {
             return total;
         }
 
-        function calcularTotalUniformeGeral(qtdFuncionarios) {
+        function calcularTotalUniformePorFuncionario() {
+            // Retorna o valor mensal por UM funcionário
             let total = 0;
             uniformesItems.forEach(item => {
-                total += item.getMensal() * qtdFuncionarios;
+                total += item.getMensal();
             });
             uniformesCustomItems.forEach(item => {
-                total += item.getMensal() * qtdFuncionarios;
+                total += item.getMensal();
             });
             return total;
         }
 
         function calcularTotalUniformeTotalGeral(qtdFuncionarios) {
+            // Retorna o valor TOTAL (sem depreciação) para todos os funcionários
             let total = 0;
             uniformesItems.forEach(item => {
                 total += item.getTotal() * qtdFuncionarios;
@@ -1464,6 +1466,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         function calcularTotalEpiMensal() {
+            // Retorna o valor mensal TOTAL para todos os funcionários
             let total = 0;
             episItems.forEach(item => {
                 total += item.getMensal();
@@ -1474,18 +1477,20 @@ document.addEventListener('DOMContentLoaded', async function() {
             return total;
         }
 
-        function calcularTotalEpiGeral(qtdFuncionarios) {
+        function calcularTotalEpiPorFuncionario() {
+            // Retorna o valor mensal por UM funcionário
             let total = 0;
             episItems.forEach(item => {
-                total += item.getMensal() * qtdFuncionarios;
+                total += item.getMensal();
             });
             episCustomItems.forEach(item => {
-                total += item.getMensal() * qtdFuncionarios;
+                total += item.getMensal();
             });
             return total;
         }
 
         function calcularTotalEpiTotalGeral(qtdFuncionarios) {
+            // Retorna o valor TOTAL (sem depreciação) para todos os funcionários
             let total = 0;
             episItems.forEach(item => {
                 total += item.getTotal() * qtdFuncionarios;
@@ -1499,34 +1504,45 @@ document.addEventListener('DOMContentLoaded', async function() {
         function calcularTotais() {
             const qtdFuncionarios = parseInt(cargoItem?.querySelector('.cargo-quantidade')?.value) || 1;
             
-            const totalUniformeMensal = calcularTotalUniformeMensal();
-            const totalEpiMensal = calcularTotalEpiMensal();
-            const totalGeralMensal = totalUniformeMensal + totalEpiMensal;
+            // Valor mensal por funcionário (R$ 32,42)
+            const uniformePorFuncionario = calcularTotalUniformePorFuncionario();
+            const epiPorFuncionario = calcularTotalEpiPorFuncionario();
             
+            // Valor mensal TOTAL para todos os funcionários (R$ 97,25)
+            const uniformeMensalTotal = uniformePorFuncionario * qtdFuncionarios;
+            const epiMensalTotal = epiPorFuncionario * qtdFuncionarios;
+            const totalGeralMensal = uniformeMensalTotal + epiMensalTotal;
+            
+            // ATUALIZA O SUBTOTAL DO CABEÇALHO (deve ser o valor TOTAL mensal)
             header.querySelector('.summary-value').textContent = formatarMoeda(totalGeralMensal);
             
-            const totalUniformeGeralMensal = calcularTotalUniformeGeral(qtdFuncionarios);
-            const totalEpiGeralMensal = calcularTotalEpiGeral(qtdFuncionarios);
+            // Atualiza "Total Mensal Uniformes:" (mostra o valor POR funcionário)
+            if (uniformesTotalSpan) uniformesTotalSpan.textContent = formatarMoeda(uniformePorFuncionario);
+            if (episTotalSpan) episTotalSpan.textContent = formatarMoeda(epiPorFuncionario);
+            
+            // Atualiza as divs de total geral
+            const uniformesTotalGeralDiv = content.querySelector('.uniformes-total-geral');
+            const episTotalGeralDiv = content.querySelector('.epis-total-geral');
             
             const totalUniformeTotalGeral = calcularTotalUniformeTotalGeral(qtdFuncionarios);
             const totalEpiTotalGeral = calcularTotalEpiTotalGeral(qtdFuncionarios);
             
-            if (uniformesTotalSpan) uniformesTotalSpan.textContent = formatarMoeda(totalUniformeGeralMensal);
-            if (episTotalSpan) episTotalSpan.textContent = formatarMoeda(totalEpiGeralMensal);
-            
-            const uniformesTotalGeralDiv = content.querySelector('.uniformes-total-geral');
-            const episTotalGeralDiv = content.querySelector('.epis-total-geral');
-            
             if (uniformesTotalGeralDiv) {
-                uniformesTotalGeralDiv.innerHTML = `Total Mensal para ${qtdFuncionarios} funcionário(s): <strong>${formatarMoeda(totalUniformeGeralMensal)}</strong><br>
+                uniformesTotalGeralDiv.innerHTML = `Total Mensal para ${qtdFuncionarios} funcionário(s): <strong>${formatarMoeda(uniformeMensalTotal)}</strong><br>
                                                 <span style="font-size: 0.7rem; color: #888;">Valor total (sem depreciação): ${formatarMoeda(totalUniformeTotalGeral)}</span>`;
             }
             if (episTotalGeralDiv) {
-                episTotalGeralDiv.innerHTML = `Total Mensal para ${qtdFuncionarios} funcionário(s): <strong>${formatarMoeda(totalEpiGeralMensal)}</strong><br>
+                episTotalGeralDiv.innerHTML = `Total Mensal para ${qtdFuncionarios} funcionário(s): <strong>${formatarMoeda(epiMensalTotal)}</strong><br>
                                             <span style="font-size: 0.7rem; color: #888;">Valor total (sem depreciação): ${formatarMoeda(totalEpiTotalGeral)}</span>`;
             }
             
-            return { totalUniforme: totalUniformeMensal, totalEpi: totalEpiMensal, totalGeral: totalGeralMensal };
+            return { 
+                totalUniformeMensal: uniformeMensalTotal, 
+                totalEpiMensal: epiMensalTotal, 
+                totalGeralMensal: totalGeralMensal,
+                uniformePorFuncionario,
+                epiPorFuncionario
+            };
         }
         
         // Event listeners para itens padrão
