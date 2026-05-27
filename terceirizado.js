@@ -1478,19 +1478,22 @@ document.addEventListener('DOMContentLoaded', async function() {
         function calcularTotais() {
             const qtdFuncionarios = parseInt(cargoItem?.querySelector('.cargo-quantidade')?.value) || 1;
             
-            // Valor mensal por funcionário (R$ 32,42)
+            // Valor mensal por funcionário (R$ 32,42) - NÃO muda com a quantidade
             const uniformePorFuncionario = calcularTotalUniformePorFuncionario();
             const epiPorFuncionario = calcularTotalEpiPorFuncionario();
             
-            // Valor mensal TOTAL para todos os funcionários (R$ 97,25)
+            // Valor mensal TOTAL para todos os funcionários (R$ 97,25 para 3, R$ 162,08 para 5)
             const uniformeMensalTotal = uniformePorFuncionario * qtdFuncionarios;
             const epiMensalTotal = epiPorFuncionario * qtdFuncionarios;
             const totalGeralMensal = uniformeMensalTotal + epiMensalTotal;
             
-            // ATUALIZA O SUBTOTAL DO CABEÇALHO (deve ser o valor TOTAL mensal)
-            header.querySelector('.summary-value').textContent = formatarMoeda(totalGeralMensal);
+            console.log(`Atualizando totais - Funcionários: ${qtdFuncionarios}, Por funcionário: ${uniformePorFuncionario}, Total: ${uniformeMensalTotal}`);
             
-            // Atualiza "Total Mensal Uniformes:" (mostra o valor POR funcionário)
+            // ATUALIZA O SUBTOTAL DO CABEÇALHO (valor TOTAL mensal)
+            const summaryValue = header.querySelector('.summary-value');
+            if (summaryValue) summaryValue.textContent = formatarMoeda(totalGeralMensal);
+            
+            // Atualiza "Total Mensal Uniformes:" (mostra o valor POR funcionário - NÃO muda)
             if (uniformesTotalSpan) uniformesTotalSpan.textContent = formatarMoeda(uniformePorFuncionario);
             if (episTotalSpan) episTotalSpan.textContent = formatarMoeda(epiPorFuncionario);
             
@@ -1509,6 +1512,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 episTotalGeralDiv.innerHTML = `Total Mensal para ${qtdFuncionarios} funcionário(s): <strong>${formatarMoeda(epiMensalTotal)}</strong><br>
                                             <span style="font-size: 0.7rem; color: #888;">Valor total (sem depreciação): ${formatarMoeda(totalEpiTotalGeral)}</span>`;
             }
+            
+            // Salvar rascunho após atualizar
+            if (typeof salvarRascunho !== 'undefined') salvarRascunho();
             
             return { 
                 totalUniformeMensal: uniformeMensalTotal, 
@@ -1544,13 +1550,25 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
         
-        // Listener para quantidade de funcionários
+        // Adicionar listener para quando a quantidade de funcionários mudar
         if (cargoItem) {
             const qtdInput = cargoItem.querySelector('.cargo-quantidade');
             if (qtdInput) {
-                qtdInput.addEventListener('input', () => {
+                // Remove listeners antigos para evitar duplicação
+                const oldListener = qtdInput._listener;
+                if (oldListener) qtdInput.removeEventListener('input', oldListener);
+                
+                // Cria o novo listener
+                const qtdListener = () => {
                     calcularTotais();
-                });
+                    // Dispara evento para o cargo principal recalcular
+                    if (cargoItem && cargoItem.dispatchEvent) {
+                        cargoItem.dispatchEvent(new Event('recalcular'));
+                    }
+                };
+                
+                qtdInput.addEventListener('input', qtdListener);
+                qtdInput._listener = qtdListener; // Armazena referência
             }
         }
         
