@@ -47,6 +47,34 @@ if (!firebase.apps.length) {
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+// ========== CHAVE DE CRIPTOGRAFIA ==========
+const ENCRYPTION_KEY = 'PromptServicos2024Secure!@#$%';
+
+// ========== FUNÇÕES DE CRIPTOGRAFIA ==========
+function decryptData(encryptedData) {
+    if (!encryptedData) return null;
+    try {
+        const bytes = CryptoJS.AES.decrypt(encryptedData, ENCRYPTION_KEY);
+        const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
+        if (!decryptedString) throw new Error('Falha na descriptografia');
+        return JSON.parse(decryptedString);
+    } catch (error) {
+        console.error('Erro ao descriptografar:', error);
+        return null;
+    }
+}
+
+function encryptData(data) {
+    try {
+        const jsonString = JSON.stringify(data);
+        const encrypted = CryptoJS.AES.encrypt(jsonString, ENCRYPTION_KEY).toString();
+        return encrypted;
+    } catch (error) {
+        console.error('Erro ao criptografar:', error);
+        return null;
+    }
+}
+
 // ========== MAPEAMENTO DE EMAILS ==========
 const emailToName = {
     'marketing@promptservicos.com.br': 'Luca',
@@ -113,7 +141,6 @@ function verificarSessao() {
     const sessionName = sessionStorage.getItem('session_name');
     
     if (!sessionEmail) {
-        // Evitar redirecionamento em loop
         if (!window._isRedirecting) {
             window._isRedirecting = true;
             window.location.href = 'index.html';
@@ -267,13 +294,36 @@ function carregarPropostas() {
                 if (vendedorNome && vendedorNome.includes('@')) {
                     vendedorNome = getNomeFromEmail(vendedorNome);
                 }
+                
+                let clienteNome = '';
+                let cargosLista = [];
+                let totalGeral = data.totalGeral || 0;
+                
+                if (data.dadosCriptografados) {
+                    const dadosDescriptografados = decryptData(data.dadosCriptografados);
+                    if (dadosDescriptografados) {
+                        clienteNome = dadosDescriptografados.cliente || '';
+                        cargosLista = dadosDescriptografados.cargos || [];
+                        totalGeral = dadosDescriptografados.totalGeral || data.totalGeral || 0;
+                    } else {
+                        clienteNome = data.cliente || 'Erro ao descriptografar';
+                        cargosLista = data.cargos || [];
+                    }
+                } else {
+                    clienteNome = data.cliente || '';
+                    cargosLista = data.cargos || [];
+                }
+                
                 propostas.push({ 
                     id: doc.id, 
-                    ...data, 
+                    cliente: clienteNome,
                     vendedor: vendedorNome,
                     tipo: data.tipo || 'efetivo',
                     colecao: 'propostas',
-                    dataOrdenacao: data.data || new Date(0)
+                    data: data.data || new Date(0),
+                    dataOrdenacao: data.data || new Date(0),
+                    totalGeral: totalGeral,
+                    cargos: cargosLista
                 });
             });
             
@@ -324,19 +374,18 @@ async function duplicarProposta(originalId, tipoProposta, colecao) {
         if (!docSnap.exists) throw new Error('Documento original não encontrado');
         
         const dadosOriginais = docSnap.data();
-        const novaData = new Date().toISOString();
-        let dadosCopia = {};
+        const user = auth.currentUser;
         
         if (colecao === 'cartas') {
             let nomeCopia = dadosOriginais.nome || 'Carta';
             if (nomeCopia && !nomeCopia.toLowerCase().includes('(cópia)')) {
                 nomeCopia = nomeCopia + ' (cópia)';
             }
-            dadosCopia = {
+            const dadosCopia = {
                 ...dadosOriginais,
                 nome: nomeCopia,
-                dataGeracao: novaData,
-                dataAtualizacao: novaData,
+                dataGeracao: new Date().toISOString(),
+                dataAtualizacao: new Date().toISOString(),
                 usuario: usuarioNome,
                 originalId: originalId
             };
@@ -344,18 +393,54 @@ async function duplicarProposta(originalId, tipoProposta, colecao) {
             const novaRef = await db.collection('cartas').add(dadosCopia);
             window.location.href = `carta.html?id=${novaRef.id}`;
         } else {
+            // Verificar se é proposta com criptografia
+            if (dadosOriginais.dadosCriptografados) {
+                const dadosDescriptografados = decryptData(dadosOriginais.dadosCriptografados);
+                if (dadosDescriptografados) {
+                    let clienteCopia = dadosDescriptografados.cliente || '';
+                    if (clienteCopia && !clienteCopia.toLowerCase().includes('(cópia)')) {
+                        clienteCopia = clienteCopia + ' (cópia)';
+                    }
+                    const cargosCopia = dadosDescriptografados.cargos || [];
+                    const totalGeralCopia = dadosDescriptografados.totalGeral || dadosOriginais.totalGeral || 0;
+                    
+                    const novosDadosSensiveis = {
+                        cliente: clienteCopia,
+                        cargos: cargosCopia,
+                        totalGeral: totalGeralCopia
+                    };
+                    
+                    const dadosCopia = {
+                        vendedor: usuarioNome,
+                        emailVendedor: user?.email || dadosOriginais.emailVendedor,
+                        tipo: tipoProposta,
+                        data: firebase.firestore.FieldValue.serverTimestamp(),
+                        totalGeral: totalGeralCopia,
+                        dadosCriptografados: encryptData(novosDadosSensiveis),
+                        originalId: originalId
+                    };
+                    
+                    const novaRef = await db.collection('propostas').add(dadosCopia);
+                    window.location.href = `${tipoProposta}.html?id=${novaRef.id}`;
+                    return;
+                }
+            }
+            
+            // Fallback para propostas antigas
             let clienteCopia = dadosOriginais.cliente || '';
             if (clienteCopia && !clienteCopia.toLowerCase().includes('(cópia)')) {
                 clienteCopia = clienteCopia + ' (cópia)';
             }
-            dadosCopia = {
+            
+            const dadosCopia = {
                 ...dadosOriginais,
                 cliente: clienteCopia,
-                data: novaData,
+                data: firebase.firestore.FieldValue.serverTimestamp(),
                 vendedor: usuarioNome,
                 originalId: originalId
             };
             delete dadosCopia.id;
+            
             const novaRef = await db.collection('propostas').add(dadosCopia);
             window.location.href = `${tipoProposta}.html?id=${novaRef.id}`;
         }
@@ -454,7 +539,6 @@ function aplicarFiltros() {
     });
     cardsContainer.innerHTML = html;
 
-    // Eventos dos cards
     document.querySelectorAll('.proposta-card').forEach(card => {
         card.addEventListener('click', (e) => {
             if (e.target.closest('.btn-duplicar') || e.target.closest('.btn-excluir')) return;
@@ -554,11 +638,9 @@ if (filtroDataFim) filtroDataFim.addEventListener('change', aplicarFiltros);
 document.addEventListener('DOMContentLoaded', function() {
     initCustomSelect();
     
-    // Pequeno delay para evitar conflito de redirecionamento
     setTimeout(() => {
         auth.onAuthStateChanged((user) => {
             if (!user) {
-                // Evitar redirecionamento múltiplo
                 if (!window._isRedirecting) {
                     window._isRedirecting = true;
                     window.location.href = 'index.html';

@@ -50,22 +50,46 @@ const db = firebase.firestore();
 // ========== CONSTANTES ==========
 const DRAFT_KEY = 'proposta_efetivo_draft';
 
+// ========== CHAVE DE CRIPTOGRAFIA ==========
+const ENCRYPTION_KEY = 'PromptServicos2024Secure!@#$%';
+
+// ========== FUNÇÕES DE CRIPTOGRAFIA ==========
+function encryptData(data) {
+    try {
+        const jsonString = JSON.stringify(data);
+        const encrypted = CryptoJS.AES.encrypt(jsonString, ENCRYPTION_KEY).toString();
+        return encrypted;
+    } catch (error) {
+        console.error('Erro ao criptografar:', error);
+        return null;
+    }
+}
+
+function decryptData(encryptedData) {
+    try {
+        const bytes = CryptoJS.AES.decrypt(encryptedData, ENCRYPTION_KEY);
+        const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
+        if (!decryptedString) throw new Error('Falha na descriptografia');
+        return JSON.parse(decryptedString);
+    } catch (error) {
+        console.error('Erro ao descriptografar:', error);
+        return null;
+    }
+}
+
 // ========== FUNÇÃO DE TOAST NOTIFICATION ==========
 function showToast(message, isError = false) {
-    // Remove toast existente se houver
     const existingToast = document.querySelector('.toast-notification');
     if (existingToast) {
         existingToast.remove();
     }
     
-    // Criar elemento toast
     const toast = document.createElement('div');
     toast.className = 'toast-notification';
     if (isError) {
         toast.classList.add('error');
     }
     
-    // Ícone baseado no tipo
     const icon = document.createElement('i');
     icon.className = isError ? 'bx bx-error-circle' : 'bx bx-check-circle';
     
@@ -76,12 +100,10 @@ function showToast(message, isError = false) {
     toast.appendChild(text);
     document.body.appendChild(toast);
     
-    // Mostrar com animação
     setTimeout(() => {
         toast.classList.add('show');
     }, 10);
     
-    // Remover após 3 segundos
     setTimeout(() => {
         toast.classList.remove('show');
         setTimeout(() => {
@@ -599,18 +621,38 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const doc = await db.collection('propostas').doc(propostaId).get();
                 if (doc.exists) {
                     const data = doc.data();
+                    
+                    let dadosDescriptografados = null;
+                    if (data.dadosCriptografados) {
+                        dadosDescriptografados = decryptData(data.dadosCriptografados);
+                    }
+                    
                     if (!vendedorParam) {
                         document.getElementById('vendedor-nome').textContent = data.vendedor || 'Não informado';
                     }
-                    clienteInput.value = data.cliente || '';
-                    container.innerHTML = '';
-                    if (data.cargos && data.cargos.length > 0) {
-                        data.cargos.forEach(c => {
-                            container.appendChild(criarCargoItem(c.nome, c.quantidade, c.salario, c.taxa));
-                        });
+                    
+                    if (dadosDescriptografados) {
+                        clienteInput.value = dadosDescriptografados.cliente || '';
+                        container.innerHTML = '';
+                        if (dadosDescriptografados.cargos && dadosDescriptografados.cargos.length > 0) {
+                            dadosDescriptografados.cargos.forEach(c => {
+                                container.appendChild(criarCargoItem(c.nome, c.quantidade, c.salario, c.taxa));
+                            });
+                        } else {
+                            container.appendChild(criarCargoItem('', 1, 0, 50));
+                        }
                     } else {
-                        container.appendChild(criarCargoItem('', 1, 0, 50));
+                        clienteInput.value = data.cliente || '';
+                        container.innerHTML = '';
+                        if (data.cargos && data.cargos.length > 0) {
+                            data.cargos.forEach(c => {
+                                container.appendChild(criarCargoItem(c.nome, c.quantidade, c.salario, c.taxa));
+                            });
+                        } else {
+                            container.appendChild(criarCargoItem('', 1, 0, 50));
+                        }
                     }
+                    
                     calcularTotalGeral();
                     localStorage.removeItem(DRAFT_KEY);
                 } else {
@@ -638,12 +680,71 @@ document.addEventListener('DOMContentLoaded', async function() {
         salvarRascunho();
     });
 
-    // ========== SALVAR PROPOSTA ==========
+    // ========== SALVAR PROPOSTA ATUAL PARA COMPARTILHAR (VERSÃO CRIPTOGRAFADA) ==========
+    async function salvarPropostaAtual() {
+        const vendedor = document.getElementById('vendedor-nome').textContent;
+        const cliente = clienteInput.value || 'SEM CLIENTE';
+        const urlParams = new URLSearchParams(window.location.search);
+        const propostaId = urlParams.get('id');
+        const user = auth.currentUser;
+        
+        if (!user) return;
+        
+        const cargos = [];
+        for (const item of document.querySelectorAll('.cargo-item')) {
+            const nome = item.querySelector('.cargo-nome').value.trim() || 'Cargo sem nome';
+            const qtd = parseInt(item.querySelector('.cargo-quantidade').value) || 1;
+            const salarioInput = item.querySelector('.cargo-salario').value;
+            const salario = parseFloat(salarioInput.replace(/\./g, '').replace(',', '.')) || 0;
+            const taxa = parseFloat(item.querySelector('.cargo-taxa').value);
+            
+            cargos.push({
+                nome,
+                quantidade: qtd,
+                salario,
+                taxa,
+                valorTaxa: salario * (taxa / 100),
+                subtotal: salario * (taxa / 100) * qtd
+            });
+        }
+        
+        const totalGeral = parseFloat(totalGeralEl.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.'));
+        
+        const dadosSensiveis = {
+            cliente: cliente,
+            cargos: cargos,
+            totalGeral: totalGeral
+        };
+        
+        const propostaPublica = {
+            vendedor: vendedor,
+            emailVendedor: user.email,
+            tipo: 'efetivo',
+            data: firebase.firestore.FieldValue.serverTimestamp(),
+            totalGeral: totalGeral,
+            dadosCriptografados: encryptData(dadosSensiveis)
+        };
+        
+        if (propostaId) {
+            await db.collection('propostas').doc(propostaId).update(propostaPublica);
+        } else {
+            const docRef = await db.collection('propostas').add(propostaPublica);
+            window.history.replaceState(null, '', `?id=${docRef.id}`);
+        }
+    }
+
+    // ========== SALVAR PROPOSTA (VERSÃO CRIPTOGRAFADA) ==========
     document.getElementById('btn-salvar').addEventListener('click', async function() {
         const vendedor = document.getElementById('vendedor-nome').textContent;
         const cliente = clienteInput.value || 'SEM CLIENTE';
         const urlParams = new URLSearchParams(window.location.search);
         const propostaId = urlParams.get('id');
+        const user = auth.currentUser;
+        
+        if (!user) {
+            mostrarModal('❌ Usuário não autenticado. Faça login novamente.', true);
+            return;
+        }
         
         const cargos = [];
         document.querySelectorAll('.cargo-item').forEach(item => {
@@ -667,22 +768,35 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         const totalGeral = parseFloat(totalGeralEl.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.'));
         
-        const proposta = {
-            vendedor,
-            cliente,
-            data: new Date().toISOString(),
+        const dadosSensiveis = {
+            cliente: cliente,
+            cargos: cargos,
+            totalGeral: totalGeral
+        };
+        
+        const propostaPublica = {
+            vendedor: vendedor,
+            emailVendedor: user.email,
             tipo: 'efetivo',
-            cargos,
-            totalGeral
+            data: new Date().toISOString(),
+            totalGeral: totalGeral,
+            dadosCriptografados: encryptData(dadosSensiveis)
         };
         
         try {
             if (propostaId) {
-                await db.collection('propostas').doc(propostaId).update(proposta);
-                mostrarModal('✅ Proposta atualizada com sucesso!');
+                const docRef = db.collection('propostas').doc(propostaId);
+                const doc = await docRef.get();
+                
+                if (doc.exists) {
+                    await docRef.update(propostaPublica);
+                    mostrarModal('✅ Proposta atualizada com sucesso!');
+                } else {
+                    throw new Error('Proposta não encontrada');
+                }
                 localStorage.removeItem(DRAFT_KEY);
             } else {
-                const docRef = await db.collection('propostas').add(proposta);
+                const docRef = await db.collection('propostas').add(propostaPublica);
                 mostrarModal('✅ Proposta salva com sucesso!');
                 window.history.replaceState(null, '', `?id=${docRef.id}`);
                 localStorage.removeItem(DRAFT_KEY);
@@ -721,12 +835,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 modalShare.classList.remove('hidden');
             }
             
-            // Copiar para clipboard
             try {
                 await navigator.clipboard.writeText(linkVisualizacao);
-                // Usar o toast em vez do modal
                 showToast('✅ Link copiado para a área de transferência!');
-                // Fechar o modal automaticamente após copiar
                 setTimeout(() => {
                     if (modalShare) modalShare.classList.add('hidden');
                 }, 1000);
@@ -738,49 +849,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         } catch (error) {
             console.error('Erro ao gerar link:', error);
             showToast('❌ Erro ao gerar link. Tente salvar a proposta primeiro.', true);
-        }
-    }
-
-    async function salvarPropostaAtual() {
-        const vendedor = document.getElementById('vendedor-nome').textContent;
-        const cliente = clienteInput.value || 'SEM CLIENTE';
-        const urlParams = new URLSearchParams(window.location.search);
-        const propostaId = urlParams.get('id');
-        
-        const cargos = [];
-        for (const item of document.querySelectorAll('.cargo-item')) {
-            const nome = item.querySelector('.cargo-nome').value.trim() || 'Cargo sem nome';
-            const qtd = parseInt(item.querySelector('.cargo-quantidade').value) || 1;
-            const salarioInput = item.querySelector('.cargo-salario').value;
-            const salario = parseFloat(salarioInput.replace(/\./g, '').replace(',', '.')) || 0;
-            const taxa = parseFloat(item.querySelector('.cargo-taxa').value);
-            
-            cargos.push({
-                nome,
-                quantidade: qtd,
-                salario,
-                taxa,
-                valorTaxa: salario * (taxa / 100),
-                subtotal: salario * (taxa / 100) * qtd
-            });
-        }
-        
-        const totalGeral = parseFloat(totalGeralEl.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.'));
-        
-        const proposta = {
-            vendedor,
-            cliente,
-            data: new Date().toISOString(),
-            tipo: 'efetivo',
-            cargos,
-            totalGeral
-        };
-        
-        if (propostaId) {
-            await db.collection('propostas').doc(propostaId).update(proposta);
-        } else {
-            const docRef = await db.collection('propostas').add(proposta);
-            window.history.replaceState(null, '', `?id=${docRef.id}`);
         }
     }
 
@@ -908,7 +976,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     } else {
         console.log('🔓 Modo de visualização ativo - acesso liberado sem necessidade de login');
-        // Reforçar o modo visualização
         setTimeout(() => {
             checkVisualizacao();
         }, 50);
