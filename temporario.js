@@ -556,7 +556,9 @@ async function gerarImagemPorCargo() {
                 elementoImagem.style.borderRadius = '16px';
                 elementoImagem.style.width = '1000px';
                 elementoImagem.style.fontFamily = "'Inter', 'Segoe UI', sans-serif";
-                
+                elementoImagem.style.color = '#333333';
+                elementoImagem.style.background = '#ffffff';
+
                 elementoImagem.innerHTML = `
                     <div style="margin-bottom: 20px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #c10404;">
@@ -578,6 +580,93 @@ async function gerarImagemPorCargo() {
                         Documento gerado em ${dataAtual} - Proposta válida por 30 dias
                     </div>
                 `;
+
+                // 🔥 FORÇAR ESTILOS DE TEMA CLARO
+                const style = document.createElement('style');
+                style.textContent = `
+                    /* Reset completo para tema claro */
+                    .cargo-item, .cargo-item * {
+                        background-color: #ffffff !important;
+                        background: #ffffff !important;
+                        color: #333333 !important;
+                        border-color: #e0e0e0 !important;
+                    }
+                    
+                    input, select, textarea {
+                        background-color: #ffffff !important;
+                        background: #ffffff !important;
+                        color: #333333 !important;
+                        border: 1px solid #cccccc !important;
+                        border-radius: 4px !important;
+                    }
+                    
+                    .beneficio-card, .seguranca-item, .insumo-card, .despesa-card {
+                        background-color: #f5f5f5 !important;
+                        border: 1px solid #e0e0e0 !important;
+                        border-radius: 8px !important;
+                        padding: 10px !important;
+                        margin-bottom: 8px !important;
+                    }
+                    
+                    label, .beneficio-nome, .seguranca-nome, .insumo-nome, .despesa-nome {
+                        color: #555555 !important;
+                        font-weight: 600 !important;
+                    }
+                    
+                    .beneficio-total, .seguranca-total, .insumo-total, .despesa-valor {
+                        color: #c10404 !important;
+                        font-weight: bold !important;
+                    }
+                    
+                    .beneficio-campo input, .seguranca-campo input, .insumo-campo input, .despesa-campo input {
+                        background-color: #ffffff !important;
+                        border: 1px solid #cccccc !important;
+                        color: #333333 !important;
+                    }
+                    
+                    input[type="checkbox"] {
+                        accent-color: #c10404 !important;
+                        background-color: #ffffff !important;
+                    }
+                    
+                    .total-prestacao, .cargo-resultados {
+                        background-color: #fafafa !important;
+                        border-top: 2px solid #c10404 !important;
+                    }
+                    
+                    .expandable-section, .exames-section, .despesas-section {
+                        background-color: #ffffff !important;
+                        border: 1px solid #e0e0e0 !important;
+                        margin-bottom: 15px !important;
+                        border-radius: 8px !important;
+                    }
+                    
+                    .section-header, .exames-header, .despesas-header {
+                        background-color: #f8f8f8 !important;
+                        border-bottom: 1px solid #e0e0e0 !important;
+                    }
+                    
+                    .dropdown-menu {
+                        background-color: #ffffff !important;
+                        border: 1px solid #e0e0e0 !important;
+                    }
+                    
+                    h1, h2, h3, h4, .section-title span, .exames-title span, .despesas-title span {
+                        color: #333333 !important;
+                    }
+                    
+                    .beneficio-valor, .seguranca-valor, .insumo-valor, .despesa-porcentagem {
+                        background: #ffffff !important;
+                        background-image: none !important;
+                    }
+                    
+                    .section-content, .exames-content, .despesas-content {
+                        background-color: #ffffff !important;
+                    }
+                `;
+                elementoImagem.appendChild(style);
+
+                document.body.appendChild(elementoImagem);
                 
                 document.body.appendChild(elementoImagem);
                 
