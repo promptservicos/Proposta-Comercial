@@ -3317,6 +3317,18 @@ document.addEventListener('DOMContentLoaded', async function() {
         const urlParams = new URLSearchParams(window.location.search);
         const propostaId = urlParams.get('id');
         
+        // Obter email do usuário logado
+        const user = auth.currentUser;
+        const emailVendedor = user ? user.email : null;
+        
+        if (!emailVendedor) {
+            console.error('Usuário não está logado');
+            mostrarModal('Você precisa estar logado para salvar!', true);
+            return;
+        }
+        
+        console.log('📧 Salvando proposta para email:', emailVendedor);
+        
         // --- Dados que serão criptografados ---
         const dadosSensiveis = {
             cliente: cliente,
@@ -3540,22 +3552,34 @@ document.addEventListener('DOMContentLoaded', async function() {
         const dadosCriptografados = encryptData(dadosSensiveis);
         if (!dadosCriptografados) {
             console.error('Falha ao criptografar os dados');
+            mostrarModal('Erro ao criptografar os dados da proposta', true);
             return;
         }
 
+        // 🔥 PARTE MODIFICADA: Adicionado o campo emailVendedor
         const dadosPublicos = {
             vendedor: vendedor,
+            emailVendedor: emailVendedor,  // ← CAMPO OBRIGATÓRIO PARA AS REGRAS
             tipo: 'temporario',
             data: firebase.firestore.FieldValue.serverTimestamp(),
             totalGeral: parseFloat(totalGeralEl.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')),
             dadosCriptografados: dadosCriptografados
         };
         
+        console.log('📦 Enviando para o Firebase:', { 
+            vendedor, 
+            emailVendedor, 
+            tipo: 'temporario',
+            totalGeral: dadosPublicos.totalGeral 
+        });
+        
         if (propostaId) {
             await db.collection('propostas').doc(propostaId).update(dadosPublicos);
+            console.log('✅ Proposta atualizada com sucesso! ID:', propostaId);
         } else {
             const docRef = await db.collection('propostas').add(dadosPublicos);
             window.history.replaceState(null, '', `?id=${docRef.id}`);
+            console.log('✅ Nova proposta criada com sucesso! ID:', docRef.id);
         }
     }
 
