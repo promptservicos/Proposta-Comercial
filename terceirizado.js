@@ -3811,102 +3811,143 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
+    // ========== FUNÇÃO PARA ATIVAR MODO VISUALIZAÇÃO ==========
+    function ativarModoVisualizacao() {
+        console.log('🔓 Ativando modo de visualização...');
+        
+        // 1. DESABILITAR TODOS OS INPUTS
+        document.querySelectorAll('input, select, textarea').forEach(el => {
+            el.disabled = true;
+            el.style.opacity = '0.85';
+            el.style.cursor = 'default';
+            el.style.pointerEvents = 'none';
+            el.style.backgroundColor = '#f5f5f5';
+            el.style.color = '#333';
+        });
+        
+        // 2. DESABILITAR CHECKBOXES
+        document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.disabled = true;
+            cb.style.pointerEvents = 'none';
+            cb.style.opacity = '0.7';
+        });
+        
+        // 3. DESABILITAR BOTÕES DE AÇÃO
+        document.querySelectorAll('.btn-add, .btn-remover, .btn-remover-beneficio, .btn-remover-custom, .btn-remover-exame-custom').forEach(btn => {
+            if (btn) {
+                btn.style.display = 'none';
+                btn.disabled = true;
+            }
+        });
+        
+        // 4. OCULTAR BOTÕES PRINCIPAIS
+        const botoesOcultar = [
+            'adicionar-cargo',
+            'btn-salvar',
+            'btn-compartilhar-link',
+            'btn-baixar-proposta'
+        ];
+        
+        botoesOcultar.forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.style.display = 'none';
+                btn.disabled = true;
+            }
+        });
+        
+        // 5. DESABILITAR DROPDOWNS
+        document.querySelectorAll('.box-header').forEach(header => {
+            header.style.pointerEvents = 'none';
+            header.style.cursor = 'default';
+            header.style.opacity = '0.8';
+        });
+        
+        // 6. EXPANDIR TODAS AS SEÇÕES
+        document.querySelectorAll('.section-content.collapsed, .despesas-content.collapsed, .exames-content.collapsed').forEach(content => {
+            if (content) {
+                content.classList.remove('collapsed');
+                content.style.display = 'block';
+            }
+        });
+        
+        // 7. EXPANDIR TODOS OS DROPDOWNS
+        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+            menu.classList.add('open');
+            menu.style.display = 'block';
+            menu.style.position = 'relative';
+            menu.style.zIndex = '1';
+            menu.style.maxHeight = 'none';
+            
+            const header = menu.previousElementSibling;
+            if (header && header.classList.contains('box-header')) {
+                const icon = header.querySelector('i');
+                if (icon) {
+                    icon.classList.remove('fa-chevron-down');
+                    icon.classList.add('fa-chevron-up');
+                }
+            }
+        });
+        
+        // 8. DESABILITAR BOTÕES DE ADICIONAR
+        document.querySelectorAll('.btn-add-custom, .btn-add-custom-uniforme, .btn-add-custom-epi, .btn-add-custom-exame, .btn-add-beneficio').forEach(btn => {
+            if (btn) {
+                btn.style.display = 'none';
+                btn.disabled = true;
+            }
+        });
+        
+        // 9. DESABILITAR TOGGLE DO CARGO
+        document.querySelectorAll('.btn-toggle-cargo').forEach(btn => {
+            if (btn) {
+                btn.style.display = 'none';
+                btn.disabled = true;
+            }
+        });
+        
+        // 10. ADICIONAR AVISO VISUAL
+        const aviso = document.createElement('div');
+        aviso.className = 'aviso-visualizacao';
+        aviso.id = 'aviso-visualizacao';
+        aviso.style.cssText = `
+            background: #c10404; 
+            color: #fff; 
+            text-align: center; 
+            padding: 0.8rem 1rem; 
+            border-radius: 8px; 
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+            box-shadow: 0 4px 12px rgba(193, 4, 4, 0.3);
+        `;
+        aviso.innerHTML = `
+            <i class="fas fa-eye" style="font-size: 1.2rem;"></i> 
+            <span><strong>Modo de visualização</strong> - Esta proposta é apenas para leitura</span>
+        `;
+        
+        const containerDiv = document.querySelector('.container');
+        if (containerDiv && !document.getElementById('aviso-visualizacao')) {
+            containerDiv.insertBefore(aviso, containerDiv.firstChild);
+        }
+        
+        console.log('✅ Modo visualização ativado com sucesso!');
+    }
+
+    // ========== VERIFICAR MODO DE VISUALIZAÇÃO (SUBSTITUA A EXISTENTE) ==========
     function checkVisualizacao() {
         const urlParams = new URLSearchParams(window.location.search);
         const isVisualizacao = urlParams.get('visualizacao') === 'true';
         
         if (isVisualizacao) {
-            const propostaId = urlParams.get('id');
-            if (!propostaId) {
-                document.getElementById('cargos-container').innerHTML = '<p style="text-align:center;padding:2rem;">ID da proposta não fornecido.</p>';
-                return;
-            }
+            console.log('🔓 Modo de visualização detectado!');
             
-            // 🔴 USA db.collection (Firestore compat)
-            db.collection('propostas').doc(propostaId).get()
-                .then((doc) => {
-                    if (doc.exists) {
-                        const proposta = doc.data();
-                        console.log('📄 Proposta carregada:', proposta);
-                        
-                        // 🔴 PASSA A PROPOSTA COMPLETA (incluindo dadosCriptografados)
-                        carregarVisualizacaoResumida(proposta);
-                        
-                        // Oculta elementos de edição
-                        const btnAdicionar = document.getElementById('adicionar-cargo');
-                        const btnSalvar = document.getElementById('btn-salvar');
-                        const btnCompartilharLink = document.getElementById('btn-compartilhar-link');
-                        const btnBaixarProposta = document.getElementById('btn-baixar-proposta');
-                        const clienteInput = document.getElementById('cliente-nome');
-                        const vendedorInfo = document.querySelector('.vendedor-info');
-                        
-                        if (btnAdicionar) btnAdicionar.style.display = 'none';
-                        if (btnSalvar) btnSalvar.style.display = 'none';
-                        if (btnCompartilharLink) btnCompartilharLink.style.display = 'none';
-                        if (btnBaixarProposta) btnBaixarProposta.style.display = 'none';
-                        
-                        if (vendedorInfo) {
-                            vendedorInfo.innerHTML = `
-                                <i class='bx bxs-user-tie'></i>
-                                <span>Vendedor: ${escapeHtml(proposta.vendedor || 'Não informado')}</span>
-                            `;
-                        }
-                        
-                        if (clienteInput) {
-                            clienteInput.disabled = true;
-                            // Tenta pegar o cliente dos dados criptografados
-                            if (proposta.dadosCriptografados) {
-                                const dados = decryptData(proposta.dadosCriptografados);
-                                if (dados && dados.cliente) {
-                                    clienteInput.value = dados.cliente;
-                                }
-                            }
-                        }
-                        
-                        // Oculta seções de edição
-                        document.querySelectorAll('.expandable-section, .exames-section, .despesas-section, .cargo-linha, .cargo-header, .cargo-resultados').forEach(el => {
-                            if (el) el.style.display = 'none';
-                        });
-                        
-                        // Aviso de visualização
-                        const aviso = document.createElement('div');
-                        aviso.className = 'aviso-visualizacao';
-                        aviso.innerHTML = `
-                            <div style="background: #c10404; color: #fff; text-align: center; padding: 0.8rem; border-radius: 8px; margin-bottom: 1rem;">
-                                <i class="fas fa-eye"></i> <strong>Modo de visualização</strong> - Versão resumida da proposta
-                            </div>
-                        `;
-                        const containerDiv = document.querySelector('.container');
-                        if (containerDiv && !containerDiv.querySelector('.aviso-visualizacao')) {
-                            containerDiv.insertBefore(aviso, containerDiv.firstChild);
-                        }
-                        
-                    } else {
-                        document.getElementById('cargos-container').innerHTML = `
-                            <div style="text-align: center; padding: 2rem;">
-                                <i class="bx bx-file" style="font-size: 3rem; color: #c10404;"></i>
-                                <h3>Proposta não encontrada</h3>
-                                <p>A proposta que você está tentando visualizar não existe ou foi removida.</p>
-                                <button onclick="window.location.href='menu.html'" class="btn-primary" style="margin-top: 1rem;">
-                                    <i class="bx bx-arrow-back"></i> Voltar ao menu
-                                </button>
-                            </div>
-                        `;
-                    }
-                })
-                .catch((error) => {
-                    console.error('❌ Erro ao carregar proposta:', error);
-                    document.getElementById('cargos-container').innerHTML = `
-                        <div style="text-align: center; padding: 2rem; color: #c10404;">
-                            <i class="bx bx-error-circle" style="font-size: 3rem;"></i>
-                            <h3>Erro ao carregar proposta</h3>
-                            <p>${error.message}</p>
-                            <button onclick="window.location.href='menu.html'" class="btn-primary" style="margin-top: 1rem;">
-                                <i class="bx bx-arrow-back"></i> Voltar ao menu
-                            </button>
-                        </div>
-                    `;
-                });
+            // Aguardar o DOM carregar completamente
+            setTimeout(() => {
+                ativarModoVisualizacao();
+            }, 500);
         }
     }
 
