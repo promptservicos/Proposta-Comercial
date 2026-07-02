@@ -299,6 +299,16 @@ function carregarPropostas() {
                 let cargosLista = [];
                 let totalGeral = data.totalGeral || 0;
                 
+                // 🔥 LIDAR COM TIMESTAMP DO FIREBASE
+                let dataProposta = data.data;
+                if (dataProposta && typeof dataProposta.toDate === 'function') {
+                    dataProposta = dataProposta.toDate();
+                } else if (dataProposta && !(dataProposta instanceof Date)) {
+                    dataProposta = new Date(dataProposta);
+                } else if (!dataProposta) {
+                    dataProposta = new Date(0);
+                }
+                
                 if (data.dadosCriptografados) {
                     const dadosDescriptografados = decryptData(data.dadosCriptografados);
                     if (dadosDescriptografados) {
@@ -320,8 +330,8 @@ function carregarPropostas() {
                     vendedor: vendedorNome,
                     tipo: data.tipo || 'efetivo',
                     colecao: 'propostas',
-                    data: data.data || new Date(0),
-                    dataOrdenacao: data.data || new Date(0),
+                    data: dataProposta,
+                    dataOrdenacao: dataProposta,
                     totalGeral: totalGeral,
                     cargos: cargosLista
                 });
@@ -335,22 +345,31 @@ function carregarPropostas() {
                 }
                 const tituloCarta = data.nome || 'Carta sem nome';
                 
+                // 🔥 LIDAR COM TIMESTAMP DAS CARTAS
+                let dataCarta = data.dataAtualizacao || data.dataGeracao || new Date();
+                if (dataCarta && typeof dataCarta.toDate === 'function') {
+                    dataCarta = dataCarta.toDate();
+                } else if (dataCarta && !(dataCarta instanceof Date)) {
+                    dataCarta = new Date(dataCarta);
+                }
+                
                 propostas.push({ 
                     id: doc.id, 
                     cliente: tituloCarta,
                     vendedor: vendedorNome || 'Não informado',
-                    data: data.dataAtualizacao || data.dataGeracao || new Date(),
+                    data: dataCarta,
                     tipo: 'carta',
                     totalGeral: 0,
                     cargos: [],
                     colecao: 'cartas',
-                    dataOrdenacao: data.dataAtualizacao || data.dataGeracao || new Date(0)
+                    dataOrdenacao: dataCarta
                 });
             });
             
+            // 🔥 ORDENAR POR DATA (MAIS RECENTE PRIMEIRO)
             propostas.sort((a, b) => {
-                const dateA = a.dataOrdenacao ? new Date(a.dataOrdenacao) : new Date(0);
-                const dateB = b.dataOrdenacao ? new Date(b.dataOrdenacao) : new Date(0);
+                const dateA = a.dataOrdenacao instanceof Date ? a.dataOrdenacao : new Date(0);
+                const dateB = b.dataOrdenacao instanceof Date ? b.dataOrdenacao : new Date(0);
                 return dateB - dateA;
             });
             
@@ -464,6 +483,7 @@ async function excluirProposta(propostaId, colecao) {
 }
 
 // ========== APLICAR FILTROS ==========
+// ========== APLICAR FILTROS ==========
 function aplicarFiltros() {
     const filtroClienteVal = filtroCliente ? filtroCliente.value.toLowerCase().trim() : '';
     const filtroVendedorVal = (isAdmin && filtroVendedor) ? filtroVendedor.value : usuarioNome;
@@ -480,7 +500,16 @@ function aplicarFiltros() {
         
         let dataMatch = true;
         if (p.data) {
-            const dataProposta = new Date(p.data);
+            // 🔥 GARANTIR QUE DATA É UM OBJETO DATE VÁLIDO
+            let dataProposta = p.data;
+            if (dataProposta instanceof Date) {
+                dataProposta = dataProposta;
+            } else if (dataProposta && typeof dataProposta.toDate === 'function') {
+                dataProposta = dataProposta.toDate();
+            } else {
+                dataProposta = new Date(dataProposta);
+            }
+            
             if (dataInicioVal && dataProposta < dataInicioVal) dataMatch = false;
             if (dataFimVal && dataProposta > dataFimVal) dataMatch = false;
         }
@@ -496,7 +525,16 @@ function aplicarFiltros() {
 
     let html = '';
     filtradas.forEach(p => {
-        const data = p.data ? new Date(p.data) : new Date();
+        // 🔥 FORMATAR DATA CORRETAMENTE
+        let data = p.data;
+        if (data instanceof Date) {
+            data = data;
+        } else if (data && typeof data.toDate === 'function') {
+            data = data.toDate();
+        } else {
+            data = new Date(data);
+        }
+        
         const dataStr = data.toLocaleDateString('pt-BR');
         const totalCargos = p.cargos ? p.cargos.length : 0;
         const totalGeral = p.totalGeral ? p.totalGeral.toFixed(2).replace('.', ',') : '0,00';
@@ -538,40 +576,6 @@ function aplicarFiltros() {
         `;
     });
     cardsContainer.innerHTML = html;
-
-    document.querySelectorAll('.proposta-card').forEach(card => {
-        card.addEventListener('click', (e) => {
-            if (e.target.closest('.btn-duplicar') || e.target.closest('.btn-excluir')) return;
-            propostaSelecionada = { 
-                id: card.dataset.id, 
-                tipo: card.dataset.tipo || 'efetivo',
-                colecao: card.dataset.colecao || 'propostas'
-            };
-            confirmModal.style.display = 'flex';
-        });
-    });
-
-    document.querySelectorAll('.btn-duplicar').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const id = btn.dataset.id;
-            const tipo = btn.dataset.tipo;
-            const colecao = btn.dataset.colecao;
-            if (confirm('Deseja duplicar esta proposta?')) {
-                await duplicarProposta(id, tipo, colecao);
-            }
-        });
-    });
-
-    document.querySelectorAll('.btn-excluir').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const id = btn.dataset.id;
-            const colecao = btn.dataset.colecao;
-            propostaSelecionada = { id, colecao };
-            deleteModal.style.display = 'flex';
-        });
-    });
 }
 
 function escapeHtml(text) {
