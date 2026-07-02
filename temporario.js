@@ -776,11 +776,52 @@ async function gerarImagemPorCargo() {
 
 // ================== INICIALIZAÇÃO ==================
 document.addEventListener('DOMContentLoaded', async function() {
+    
     // ========== GARANTIR MODAIS OCULTOS NO CARREGAMENTO ==========
     document.querySelectorAll('.modal').forEach(modal => {
         modal.classList.add('hidden');
         modal.style.display = 'none';
     });
+    
+    // ========== CONFIGURAR MODAIS ==========
+    // Fechar modal de confirmação com o botão "Entendi"
+    document.getElementById('modal-ok')?.addEventListener('click', function() {
+        fecharModal();
+    });
+
+    // Fechar modal de confirmação clicando fora
+    document.getElementById('messageModal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            fecharModal();
+        }
+    });
+
+    // Fechar modal de compartilhamento com o botão "Fechar"
+    document.getElementById('modal-share-ok')?.addEventListener('click', function() {
+        fecharModalShare();
+    });
+
+    // Fechar modal de compartilhamento clicando fora
+    document.getElementById('modal-share')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            fecharModalShare();
+        }
+    });
+
+    // Fechar modal de compartilhamento com o botão "Copiar"
+    document.getElementById('btn-copiar-link')?.addEventListener('click', function() {
+        const shareLinkInput = document.getElementById('share-link');
+        if (shareLinkInput) {
+            shareLinkInput.select();
+            navigator.clipboard.writeText(shareLinkInput.value).then(() => {
+                showToast('✅ Link copiado!');
+            }).catch(() => {
+                showToast('✅ Link copiado! (copie manualmente)');
+            });
+            fecharModalShare();
+        }
+    });
+
     if (window.isLoading) return;
     window.isLoading = true;
 
@@ -805,12 +846,20 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // ========== FUNÇÃO MOSTRAR MODAL CORRIGIDA ==========
     function mostrarModal(mensagem, isError = false, duracao = 3000) {
+        console.log('🔵 mostrarModal chamada:', mensagem);
+        
         const messageModal = document.getElementById('messageModal');
         const modalMensagem = document.getElementById('modal-mensagem');
         const modalIcon = document.getElementById('modal-icon');
         
-        if (!messageModal || !modalMensagem) {
-            // Fallback: usar alert se o modal não existir
+        if (!messageModal) {
+            console.error('❌ Modal não encontrado!');
+            alert(mensagem);
+            return;
+        }
+        
+        if (!modalMensagem) {
+            console.error('❌ modal-mensagem não encontrado!');
             alert(mensagem);
             return;
         }
@@ -825,9 +874,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             modalIcon.style.color = '#28a745';
         }
         
-        // Remove a classe hidden e força display flex
-        messageModal.classList.remove('hidden');
+        // 🔥 FORÇA A EXIBIÇÃO DO MODAL
         messageModal.style.display = 'flex';
+        messageModal.classList.remove('hidden');
         
         // Limpa timeout anterior
         if (window._modalTimeout) {
@@ -837,9 +886,26 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Fecha automaticamente após a duração
         if (duracao > 0) {
             window._modalTimeout = setTimeout(() => {
-                messageModal.classList.add('hidden');
                 messageModal.style.display = 'none';
+                messageModal.classList.add('hidden');
             }, duracao);
+        }
+    }
+
+    // ========== FECHAR MODAL ==========
+    function fecharModal() {
+        const messageModal = document.getElementById('messageModal');
+        if (messageModal) {
+            messageModal.style.display = 'none';
+            messageModal.classList.add('hidden');
+        }
+    }
+
+    function fecharModalShare() {
+        const modalShare = document.getElementById('modal-share');
+        if (modalShare) {
+            modalShare.style.display = 'none';
+            modalShare.classList.add('hidden');
         }
     }
 
