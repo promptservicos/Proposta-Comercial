@@ -776,6 +776,11 @@ async function gerarImagemPorCargo() {
 
 // ================== INICIALIZAÇÃO ==================
 document.addEventListener('DOMContentLoaded', async function() {
+    // ========== GARANTIR MODAIS OCULTOS NO CARREGAMENTO ==========
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    });
     if (window.isLoading) return;
     window.isLoading = true;
 
@@ -798,31 +803,44 @@ document.addEventListener('DOMContentLoaded', async function() {
     const modalMensagem = document.getElementById('modal-mensagem');
     const modalOk = document.getElementById('modal-ok');
 
+    // ========== FUNÇÃO MOSTRAR MODAL CORRIGIDA ==========
     function mostrarModal(mensagem, isError = false, duracao = 3000) {
-        // Usar messageModal em vez de modal-overlay
         const messageModal = document.getElementById('messageModal');
         const modalMensagem = document.getElementById('modal-mensagem');
+        const modalIcon = document.getElementById('modal-icon');
         
-        if (modalMensagem) modalMensagem.textContent = mensagem;
-        if (messageModal) messageModal.classList.remove('hidden');
-        
-        if (isError) {
-            const modalIcon = document.getElementById('modal-icon');
-            if (modalIcon) {
-                modalIcon.className = 'bx bx-error-circle modal-icon';
-                modalIcon.style.color = '#ff4444';
-            }
-        } else {
-            const modalIcon = document.getElementById('modal-icon');
-            if (modalIcon) {
-                modalIcon.className = 'bx bx-check-circle modal-icon';
-                modalIcon.style.color = 'var(--link-color)';
-            }
+        if (!messageModal || !modalMensagem) {
+            // Fallback: usar alert se o modal não existir
+            alert(mensagem);
+            return;
         }
         
-        setTimeout(() => {
-            if (messageModal) messageModal.classList.add('hidden');
-        }, duracao);
+        modalMensagem.textContent = mensagem;
+        
+        if (isError) {
+            modalIcon.className = 'bx bx-error-circle modal-icon';
+            modalIcon.style.color = '#ff4444';
+        } else {
+            modalIcon.className = 'bx bx-check-circle modal-icon';
+            modalIcon.style.color = '#28a745';
+        }
+        
+        // Remove a classe hidden e força display flex
+        messageModal.classList.remove('hidden');
+        messageModal.style.display = 'flex';
+        
+        // Limpa timeout anterior
+        if (window._modalTimeout) {
+            clearTimeout(window._modalTimeout);
+        }
+        
+        // Fecha automaticamente após a duração
+        if (duracao > 0) {
+            window._modalTimeout = setTimeout(() => {
+                messageModal.classList.add('hidden');
+                messageModal.style.display = 'none';
+            }, duracao);
+        }
     }
 
     if (modalOk) {
@@ -3880,4 +3898,36 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (el) el.disabled = true;
         });
     }
+
+    // ========== FECHAR MODAL DE CONFIRMAÇÃO ==========
+    document.getElementById('modal-ok')?.addEventListener('click', function() {
+        const messageModal = document.getElementById('messageModal');
+        if (messageModal) {
+            messageModal.classList.add('hidden');
+            messageModal.style.display = 'none';
+        }
+    });
+
+    document.getElementById('messageModal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.add('hidden');
+            this.style.display = 'none';
+        }
+    });
+
+    // ========== FECHAR MODAL DE COMPARTILHAMENTO ==========
+    document.getElementById('modal-share-ok')?.addEventListener('click', function() {
+        const modalShare = document.getElementById('modal-share');
+        if (modalShare) {
+            modalShare.classList.add('hidden');
+            modalShare.style.display = 'none';
+        }
+    });
+
+    document.getElementById('modal-share')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.add('hidden');
+            this.style.display = 'none';
+        }
+    });
 });
