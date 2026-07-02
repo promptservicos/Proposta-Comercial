@@ -712,46 +712,57 @@ document.addEventListener('DOMContentLoaded', async function() {
     const modalMensagem = document.getElementById('modal-mensagem');
     const modalOk = document.getElementById('modal-ok');
 
+    // Função mostrarModal melhorada
     function mostrarModal(mensagem, isError = false, duracao = 3000) {
-        if (modalMensagem) modalMensagem.textContent = mensagem;
-        if (messageModal) messageModal.classList.remove('hidden');
+        const messageModal = document.getElementById('messageModal');
+        const modalMensagem = document.getElementById('modal-mensagem');
+        const modalIcon = document.getElementById('modal-icon');
         
-        if (isError) {
-            const modalIcon = document.getElementById('modal-icon');
-            if (modalIcon) {
-                modalIcon.className = 'bx bx-error-circle modal-icon';
-                modalIcon.style.color = '#ff4444';
-            }
+        if (!messageModal || !modalMensagem) {
+            // Fallback: usar alert se o modal não existir
+            alert(mensagem);
+            return;
         }
         
-        setTimeout(() => {
-            if (messageModal) messageModal.classList.add('hidden');
-        }, duracao);
+        modalMensagem.textContent = mensagem;
+        
+        if (isError) {
+            modalIcon.className = 'bx bx-error-circle modal-icon';
+            modalIcon.style.color = '#ff4444';
+        } else {
+            modalIcon.className = 'bx bx-check-circle modal-icon';
+            modalIcon.style.color = '#28a745';
+        }
+        
+        messageModal.style.display = 'flex';
+        messageModal.classList.remove('hidden');
+        
+        // Fecha automaticamente após a duração
+        if (duracao > 0) {
+            clearTimeout(window._modalTimeout);
+            window._modalTimeout = setTimeout(() => {
+                messageModal.style.display = 'none';
+                messageModal.classList.add('hidden');
+            }, duracao);
+        }
     }
 
-    if (modalOk) {
-        modalOk.addEventListener('click', () => {
-            if (messageModal) messageModal.classList.add('hidden');
-        });
-    }
-
-    if (messageModal) {
-        messageModal.addEventListener('click', (e) => {
-            if (e.target === messageModal) messageModal.classList.add('hidden');
-        });
-    }
-
-    btnVoltar.addEventListener('click', () => {
-        localStorage.removeItem(DRAFT_KEY);
-        window.location.href = 'menu.html';
+    // Fechar modal ao clicar no botão OK
+    document.getElementById('modal-ok')?.addEventListener('click', function() {
+        const messageModal = document.getElementById('messageModal');
+        if (messageModal) {
+            messageModal.style.display = 'none';
+            messageModal.classList.add('hidden');
+        }
     });
 
-    clienteInput.addEventListener('input', function() {
-        this.value = this.value.toUpperCase();
-        salvarRascunho();
+    // Fechar modal ao clicar fora
+    document.getElementById('messageModal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.style.display = 'none';
+            this.classList.add('hidden');
+        }
     });
-
-    // ... resto do código continua igual
 
     function calcularTotalGeral() {
         let total = 0;

@@ -2041,3 +2041,143 @@ body:not(.dark) .beneficio-dias::placeholder {
 .box-header i:last-child {
     font-size: 1rem !important;
 }
+
+/* ===== CORREÇÃO: ÍCONES DE EXPANSÃO ===== */
+/* Garantir que os ícones de toggle sejam visíveis em todos os modos */
+.section-toggle,
+.exames-toggle,
+.despesas-toggle {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    font-size: 1.2rem !important;
+    color: var(--link-color) !important;
+    transition: transform 0.3s ease !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+/* Ícones dos dropdowns (Uniformes, EPIs, Exames) */
+.box-header i:last-child {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    font-size: 1rem !important;
+    color: var(--link-color) !important;
+    transition: transform 0.3s ease !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+/* Ícone de toggle do cargo */
+.btn-toggle-cargo i {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    font-size: 1rem !important;
+    color: var(--link-color) !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+/* Botão de remover cargo */
+.btn-remover i {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    font-size: 1.1rem !important;
+    color: var(--text-light) !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+.btn-remover:hover i {
+    color: #ff4444 !important;
+}
+
+/* Corrigir ícones do Font Awesome (garantir que estão carregando) */
+.fa-chevron-up::before,
+.fa-chevron-down::before,
+.fa-trash-alt::before {
+    display: inline-block !important;
+    font-family: "Font Awesome 6 Free" !important;
+    font-weight: 900 !important;
+}
+
+/* ===== CORREÇÃO: MODAL DE CONFIRMAÇÃO ===== */
+.modal {
+    display: none !important;
+    position: fixed !important;
+    z-index: 10000 !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background-color: var(--modal-bg) !important;
+    backdrop-filter: blur(5px) !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.modal:not(.hidden) {
+    display: flex !important;
+}
+
+.modal-content {
+    background: var(--modal-content-bg) !important;
+    border: 1px solid var(--container-border) !important;
+    border-radius: 28px !important;
+    padding: 2rem !important;
+    max-width: 450px !important;
+    width: 90% !important;
+    text-align: center !important;
+    animation: modalFadeIn 0.3s ease !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.modal-icon {
+    font-size: 3.5rem !important;
+    color: var(--link-color) !important;
+    margin-bottom: 1rem !important;
+}
+
+.modal-content h3 {
+    font-size: 1.3rem !important;
+    margin-bottom: 0.5rem !important;
+    color: var(--text-color) !important;
+}
+
+.modal-text {
+    color: var(--text-light) !important;
+    font-size: 0.95rem !important;
+    margin-bottom: 1.5rem !important;
+    line-height: 1.5 !important;
+}
+
+.modal-btn-ok {
+    background: linear-gradient(135deg, var(--button-bg), var(--button-hover)) !important;
+    color: white !important;
+    border: none !important;
+    padding: 0.8rem 2.5rem !important;
+    border-radius: 40px !important;
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+}
+
+.modal-btn-ok:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 20px rgba(193, 4, 4, 0.4) !important;
+}
