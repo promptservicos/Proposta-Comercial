@@ -701,6 +701,11 @@ async function gerarImagemProposta() {
 
 // ================== INICIALIZAÇÃO ==================
 document.addEventListener('DOMContentLoaded', async function() {
+    // ========== GARANTIR MODAIS OCULTOS NO CARREGAMENTO ==========
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    });
     const container = document.getElementById('cargos-container');
     const btnAdicionar = document.getElementById('adicionar-cargo');
     const totalGeralEl = document.getElementById('total-geral');
@@ -713,21 +718,75 @@ document.addEventListener('DOMContentLoaded', async function() {
     const modalOk = document.getElementById('modal-ok');
 
     function mostrarModal(mensagem, isError = false, duracao = 3000) {
-        if (modalMensagem) modalMensagem.textContent = mensagem;
-        if (messageModal) messageModal.classList.remove('hidden');
+        const messageModal = document.getElementById('messageModal');
+        const modalMensagem = document.getElementById('modal-mensagem');
+        const modalIcon = document.getElementById('modal-icon');
         
-        if (isError) {
-            const modalIcon = document.getElementById('modal-icon');
-            if (modalIcon) {
-                modalIcon.className = 'bx bx-error-circle modal-icon';
-                modalIcon.style.color = '#ff4444';
-            }
+        if (!messageModal || !modalMensagem) {
+            alert(mensagem);
+            return;
         }
         
-        setTimeout(() => {
-            if (messageModal) messageModal.classList.add('hidden');
-        }, duracao);
+        modalMensagem.textContent = mensagem;
+        
+        if (isError) {
+            modalIcon.className = 'bx bx-error-circle modal-icon';
+            modalIcon.style.color = '#ff4444';
+        } else {
+            modalIcon.className = 'bx bx-check-circle modal-icon';
+            modalIcon.style.color = '#28a745';
+        }
+        
+        // 🔥 REMOVE A CLASSE HIDDEN E FORÇA DISPLAY FLEX
+        messageModal.classList.remove('hidden');
+        messageModal.style.display = 'flex';
+        
+        // Limpa timeout anterior
+        if (window._modalTimeout) {
+            clearTimeout(window._modalTimeout);
+        }
+        
+        // Fecha automaticamente após a duração
+        if (duracao > 0) {
+            window._modalTimeout = setTimeout(() => {
+                messageModal.classList.add('hidden');
+                messageModal.style.display = 'none';
+            }, duracao);
+        }
     }
+
+    // Fechar modal ao clicar no botão OK
+    document.getElementById('modal-ok')?.addEventListener('click', function() {
+        const messageModal = document.getElementById('messageModal');
+        if (messageModal) {
+            messageModal.classList.add('hidden');
+            messageModal.style.display = 'none';
+        }
+    });
+
+    // Fechar modal ao clicar fora
+    document.getElementById('messageModal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.add('hidden');
+            this.style.display = 'none';
+        }
+    });
+
+    // Fechar modal de compartilhamento
+    document.getElementById('modal-share-ok')?.addEventListener('click', function() {
+        const modalShare = document.getElementById('modal-share');
+        if (modalShare) {
+            modalShare.classList.add('hidden');
+            modalShare.style.display = 'none';
+        }
+    });
+
+    document.getElementById('modal-share')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.add('hidden');
+            this.style.display = 'none';
+        }
+    });
 
     if (modalOk) {
         modalOk.addEventListener('click', () => {
