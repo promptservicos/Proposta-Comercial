@@ -1927,3 +1927,117 @@ body::-webkit-scrollbar-thumb {
         max-height: 350px;
     }
 }
+
+/* ===== CORREÇÃO: BENEFÍCIOS TEMA CLARO ===== */
+/* Garantir que os campos de benefícios fiquem claros no tema claro */
+body:not(.dark) .beneficio-fixo-card,
+body:not(.dark) .beneficio-custom-card,
+body:not(.dark) .seguranca-item,
+body:not(.dark) .insumo-card,
+body:not(.dark) .despesa-card {
+    background: #f8f9fa !important;
+    border-color: #e0e0e0 !important;
+}
+
+body:not(.dark) .beneficio-fixo-card input,
+body:not(.dark) .beneficio-custom-card input,
+body:not(.dark) .seguranca-item input,
+body:not(.dark) .insumo-card input,
+body:not(.dark) .despesa-card input {
+    background: #ffffff !important;
+    border-color: #d0d0d0 !important;
+    color: #333333 !important;
+}
+
+body:not(.dark) .beneficio-fixo-card label,
+body:not(.dark) .beneficio-custom-card label,
+body:not(.dark) .seguranca-item label,
+body:not(.dark) .insumo-card label,
+body:not(.dark) .despesa-card label {
+    color: #666666 !important;
+}
+
+body:not(.dark) .beneficio-nome,
+body:not(.dark) .seguranca-nome,
+body:not(.dark) .insumo-nome,
+body:not(.dark) .despesa-nome {
+    color: #c10404 !important;
+}
+
+body:not(.dark) .beneficio-total,
+body:not(.dark) .seguranca-total,
+body:not(.dark) .insumo-total,
+body:not(.dark) .despesa-valor {
+    color: #c10404 !important;
+}
+
+body:not(.dark) .beneficio-custom-nome {
+    background: #ffffff !important;
+    border-color: #d0d0d0 !important;
+    color: #c10404 !important;
+}
+
+/* Corrigir fundo escuro dos inputs de benefícios personalizados */
+body:not(.dark) .beneficio-custom-valor,
+body:not(.dark) .beneficio-custom-dias,
+body:not(.dark) .beneficio-valor,
+body:not(.dark) .beneficio-dias {
+    background: #ffffff !important;
+    border-color: #d0d0d0 !important;
+    color: #333333 !important;
+}
+
+body:not(.dark) .beneficio-custom-valor::placeholder,
+body:not(.dark) .beneficio-custom-dias::placeholder,
+body:not(.dark) .beneficio-valor::placeholder,
+body:not(.dark) .beneficio-dias::placeholder {
+    color: #999999 !important;
+}
+
+/* ===== CORREÇÃO: ÍCONES DE MENU ===== */
+/* Garantir que os ícones de toggle apareçam */
+.section-toggle,
+.exames-toggle,
+.despesas-toggle {
+    display: inline-block !important;
+    font-size: 1rem !important;
+    color: var(--link-color) !important;
+    transition: transform 0.3s ease !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.box-header i:last-child {
+    display: inline-block !important;
+    font-size: 0.9rem !important;
+    color: var(--link-color) !important;
+    transition: transform 0.3s ease !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Modo visualização - manter ícones visíveis */
+.aviso-visualizacao ~ * .section-toggle,
+.aviso-visualizacao ~ * .exames-toggle,
+.aviso-visualizacao ~ * .despesas-toggle,
+.aviso-visualizacao ~ * .box-header i:last-child {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+/* Tamanho dos ícones de toggle */
+.section-toggle {
+    font-size: 1.2rem !important;
+}
+
+.exames-toggle,
+.despesas-toggle {
+    font-size: 1.2rem !important;
+}
+
+.box-header i:last-child {
+    font-size: 1rem !important;
+}

@@ -3811,7 +3811,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // ========== FUNÇÃO PARA ATIVAR MODO VISUALIZAÇÃO (COM NAVEGAÇÃO LIBERADA) ==========
+    // ========== FUNÇÃO PARA ATIVAR MODO VISUALIZAÇÃO ==========
     function ativarModoVisualizacao() {
         console.log('🔓 Ativando modo de visualização (com navegação liberada)...');
         
@@ -3867,11 +3867,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // 6. LIBERAR OS HEADERS DOS DROPDOWNS (Uniformes, EPIs, Exames)
         document.querySelectorAll('.box-header').forEach(header => {
-            // Remove o bloqueio de pointer-events
             header.style.pointerEvents = 'auto';
             header.style.cursor = 'pointer';
             header.style.opacity = '1';
             header.style.userSelect = 'none';
+            
+            // 🔥 GARANTIR QUE O ÍCONE ESTEJA VISÍVEL
+            const icon = header.querySelector('i:last-child');
+            if (icon) {
+                icon.style.display = 'inline-block';
+                icon.style.visibility = 'visible';
+                icon.style.opacity = '1';
+                icon.style.pointerEvents = 'auto';
+                icon.style.cursor = 'pointer';
+            }
         });
         
         // 7. GARANTIR QUE OS DROPDOWNS ESTEJAM FECHADOS INICIALMENTE
@@ -3883,7 +3892,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             menu.style.maxHeight = '300px';
             menu.style.overflowY = 'auto';
             
-            // Ajustar ícone para baixo (fechado)
             const header = menu.previousElementSibling;
             if (header && header.classList.contains('box-header')) {
                 const icon = header.querySelector('i:last-child');
@@ -3894,7 +3902,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         });
         
-        // 8. GARANTIR QUE AS SEÇÕES EXPANSÍVEIS ESTEJAM ABERTAS (mas com toggle funcionando)
+        // 8. GARANTIR QUE AS SEÇÕES EXPANSÍVEIS ESTEJAM ABERTAS
         document.querySelectorAll('.section-content.collapsed, .despesas-content.collapsed, .exames-content.collapsed').forEach(content => {
             if (content) {
                 content.classList.remove('collapsed');
@@ -3902,17 +3910,22 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         });
         
-        // 9. AJUSTAR OS TOGGLES DAS SEÇÕES (Adicionais, Benefícios, etc)
+        // 9. AJUSTAR OS TOGGLES DAS SEÇÕES
         document.querySelectorAll('.section-header, .exames-header, .despesas-header').forEach(header => {
             header.style.pointerEvents = 'auto';
             header.style.cursor = 'pointer';
             header.style.opacity = '1';
             header.style.userSelect = 'none';
             
-            // Garantir que o ícone está correto (aberto)
+            // 🔥 GARANTIR QUE O ÍCONE ESTEJA VISÍVEL
             const toggleIcon = header.querySelector('.section-toggle, .exames-toggle, .despesas-toggle');
             if (toggleIcon) {
-                // Verifica se o conteúdo está aberto
+                toggleIcon.style.display = 'inline-block';
+                toggleIcon.style.visibility = 'visible';
+                toggleIcon.style.opacity = '1';
+                toggleIcon.style.pointerEvents = 'auto';
+                toggleIcon.style.cursor = 'pointer';
+                
                 const content = header.nextElementSibling;
                 if (content && !content.classList.contains('collapsed')) {
                     toggleIcon.classList.remove('fa-chevron-down');
@@ -3924,7 +3937,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         });
         
-        // 10. ADICIONAR AVISO VISUAL (não bloqueia nada)
+        // 10. ADICIONAR AVISO VISUAL
         const aviso = document.createElement('div');
         aviso.className = 'aviso-visualizacao';
         aviso.id = 'aviso-visualizacao';
