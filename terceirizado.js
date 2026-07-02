@@ -3515,6 +3515,40 @@ document.addEventListener('DOMContentLoaded', async function() {
         const container = document.getElementById('cargos-container');
         if (!container) return;
         
+        // 🔴 DESCRIPTOGRAFA OS DADOS PRIMEIRO
+        let dadosProposta = null;
+        let cargos = [];
+        let cliente = 'Não informado';
+        
+        if (proposta.dadosCriptografados) {
+            dadosProposta = decryptData(proposta.dadosCriptografados);
+            if (dadosProposta) {
+                cargos = dadosProposta.cargos || [];
+                cliente = dadosProposta.cliente || 'Não informado';
+            }
+        }
+        
+        // Se não conseguiu descriptografar, tenta usar os dados antigos (sem criptografia)
+        if (!dadosProposta && proposta.cargos) {
+            cargos = proposta.cargos;
+            cliente = proposta.cliente || 'Não informado';
+        }
+        
+        // Se ainda não tem dados, mostra erro
+        if (cargos.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: #c10404;">
+                    <i class="bx bx-error-circle" style="font-size: 3rem;"></i>
+                    <h3>Erro ao carregar proposta</h3>
+                    <p>Os dados da proposta não puderam ser carregados.</p>
+                    <button onclick="window.location.href='menu.html'" class="btn-primary" style="margin-top: 1rem;">
+                        <i class="bx bx-arrow-back"></i> Voltar ao menu
+                    </button>
+                </div>
+            `;
+            return;
+        }
+        
         const formatMoney = (valor) => {
             return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         };
@@ -3530,7 +3564,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <div class="vis-info">
                     <div class="vis-info-item">
                         <span class="vis-label">Cliente:</span>
-                        <span class="vis-value">${escapeHtml(proposta.cliente || 'Não informado')}</span>
+                        <span class="vis-value">${escapeHtml(cliente)}</span>
                     </div>
                     <div class="vis-info-item">
                         <span class="vis-label">Vendedor:</span>
@@ -3538,7 +3572,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     </div>
                     <div class="vis-info-item">
                         <span class="vis-label">Data:</span>
-                        <span class="vis-value">${new Date(proposta.data).toLocaleDateString('pt-BR')}</span>
+                        <span class="vis-value">${proposta.data ? new Date(proposta.data.toDate ? proposta.data.toDate() : proposta.data).toLocaleDateString('pt-BR') : 'Não informada'}</span>
                     </div>
                 </div>
         `;
@@ -3546,7 +3580,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         let cargoIndex = 0;
         let totalGeralProposta = 0;
         
-        proposta.cargos.forEach(cargo => {
+        cargos.forEach(cargo => {
             cargoIndex++;
             const qtd = cargo.quantidade || 1;
             const totalVaga = cargo.totalVaga || 0;
@@ -3783,37 +3817,58 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         if (isVisualizacao) {
             const propostaId = urlParams.get('id');
-            if (!propostaId) return;
+            if (!propostaId) {
+                document.getElementById('cargos-container').innerHTML = '<p style="text-align:center;padding:2rem;">ID da proposta não fornecido.</p>';
+                return;
+            }
             
+            // 🔴 USA db.collection (Firestore compat)
             db.collection('propostas').doc(propostaId).get()
                 .then((doc) => {
                     if (doc.exists) {
                         const proposta = doc.data();
+                        console.log('📄 Proposta carregada:', proposta);
+                        
+                        // 🔴 PASSA A PROPOSTA COMPLETA (incluindo dadosCriptografados)
                         carregarVisualizacaoResumida(proposta);
                         
+                        // Oculta elementos de edição
                         const btnAdicionar = document.getElementById('adicionar-cargo');
                         const btnSalvar = document.getElementById('btn-salvar');
-                        const btnGerarPDF = document.getElementById('btn-gerar-pdf');
-                        const btnCompartilhar = document.getElementById('btn-compartilhar');
+                        const btnCompartilharLink = document.getElementById('btn-compartilhar-link');
+                        const btnBaixarProposta = document.getElementById('btn-baixar-proposta');
                         const clienteInput = document.getElementById('cliente-nome');
+                        const vendedorInfo = document.querySelector('.vendedor-info');
                         
                         if (btnAdicionar) btnAdicionar.style.display = 'none';
                         if (btnSalvar) btnSalvar.style.display = 'none';
-                        if (btnGerarPDF) btnGerarPDF.style.display = 'none';
-                        if (btnCompartilhar) btnCompartilhar.style.display = 'none';
-                        if (clienteInput) {
-                            clienteInput.disabled = true;
-                            clienteInput.value = proposta.cliente || '';
+                        if (btnCompartilharLink) btnCompartilharLink.style.display = 'none';
+                        if (btnBaixarProposta) btnBaixarProposta.style.display = 'none';
+                        
+                        if (vendedorInfo) {
+                            vendedorInfo.innerHTML = `
+                                <i class='bx bxs-user-tie'></i>
+                                <span>Vendedor: ${escapeHtml(proposta.vendedor || 'Não informado')}</span>
+                            `;
                         }
                         
+                        if (clienteInput) {
+                            clienteInput.disabled = true;
+                            // Tenta pegar o cliente dos dados criptografados
+                            if (proposta.dadosCriptografados) {
+                                const dados = decryptData(proposta.dadosCriptografados);
+                                if (dados && dados.cliente) {
+                                    clienteInput.value = dados.cliente;
+                                }
+                            }
+                        }
+                        
+                        // Oculta seções de edição
                         document.querySelectorAll('.expandable-section, .exames-section, .despesas-section, .cargo-linha, .cargo-header, .cargo-resultados').forEach(el => {
                             if (el) el.style.display = 'none';
                         });
                         
-                        document.querySelectorAll('.btn-remover, .btn-remover-beneficio, .btn-add-beneficio').forEach(btn => {
-                            if (btn) btn.style.display = 'none';
-                        });
-                        
+                        // Aviso de visualização
                         const aviso = document.createElement('div');
                         aviso.className = 'aviso-visualizacao';
                         aviso.innerHTML = `
@@ -3825,19 +3880,48 @@ document.addEventListener('DOMContentLoaded', async function() {
                         if (containerDiv && !containerDiv.querySelector('.aviso-visualizacao')) {
                             containerDiv.insertBefore(aviso, containerDiv.firstChild);
                         }
+                        
                     } else {
-                        document.getElementById('cargos-container').innerHTML = '<p style="text-align:center;padding:2rem;">Proposta não encontrada.</p>';
+                        document.getElementById('cargos-container').innerHTML = `
+                            <div style="text-align: center; padding: 2rem;">
+                                <i class="bx bx-file" style="font-size: 3rem; color: #c10404;"></i>
+                                <h3>Proposta não encontrada</h3>
+                                <p>A proposta que você está tentando visualizar não existe ou foi removida.</p>
+                                <button onclick="window.location.href='menu.html'" class="btn-primary" style="margin-top: 1rem;">
+                                    <i class="bx bx-arrow-back"></i> Voltar ao menu
+                                </button>
+                            </div>
+                        `;
                     }
                 })
                 .catch((error) => {
-                    console.error('Erro ao carregar proposta:', error);
-                    document.getElementById('cargos-container').innerHTML = '<p style="text-align:center;padding:2rem;">Erro ao carregar proposta.</p>';
+                    console.error('❌ Erro ao carregar proposta:', error);
+                    document.getElementById('cargos-container').innerHTML = `
+                        <div style="text-align: center; padding: 2rem; color: #c10404;">
+                            <i class="bx bx-error-circle" style="font-size: 3rem;"></i>
+                            <h3>Erro ao carregar proposta</h3>
+                            <p>${error.message}</p>
+                            <button onclick="window.location.href='menu.html'" class="btn-primary" style="margin-top: 1rem;">
+                                <i class="bx bx-arrow-back"></i> Voltar ao menu
+                            </button>
+                        </div>
+                    `;
                 });
         }
     }
-    
+
     // ========== SALVAR PROPOSTA (COM CRIPTOGRAFIA) ==========
     document.getElementById('btn-salvar').addEventListener('click', async function() {
+        // 🔴 VERIFICA USUÁRIO PRIMEIRO
+        const user = auth.currentUser;
+        if (!user) {
+            mostrarModal('❌ Faça login para salvar a proposta.', true);
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 2000);
+            return;
+        }
+        
         const cargos = document.querySelectorAll('.cargo-item');
         if (cargos.length === 0) {
             mostrarModal('Adicione pelo menos um cargo antes de salvar.', true);
@@ -3851,16 +3935,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         try {
-            await salvarPropostaAtual();  // Chama a função COM criptografia
+            await salvarPropostaAtual();
             mostrarModal('✅ Proposta salva com sucesso!');
             localStorage.removeItem(DRAFT_KEY);
         } catch (error) {
             console.error('Erro ao salvar:', error);
-            mostrarModal('❌ Erro ao salvar proposta.', true);
+            if (error.code === 'permission-denied') {
+                mostrarModal('❌ Erro de permissão. Verifique se você está logado.', true);
+            } else {
+                mostrarModal('❌ Erro ao salvar proposta: ' + error.message, true);
+            }
         }
     });
 
-        // ========== FUNÇÃO PARA GERAR LINK DE VISUALIZAÇÃO ==========
+    // ========== FUNÇÃO PARA GERAR LINK DE VISUALIZAÇÃO ==========
     async function gerarLinkVisualizacao() {
         try {
             const vendedor = document.getElementById('vendedor-nome').textContent;
@@ -3905,6 +3993,13 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // ========== SALVAR PROPOSTA ATUAL PARA COMPARTILHAR ==========
     async function salvarPropostaAtual() {
+        const user = auth.currentUser;
+        if (!user) {
+            console.error('❌ Usuário não autenticado');
+            mostrarModal('❌ Você precisa estar logado para salvar.', true);
+            throw new Error('Usuário não autenticado');
+        }
+        
         const vendedor = document.getElementById('vendedor-nome').textContent;
         const cliente = clienteInput.value || 'SEM CLIENTE';
         const urlParams = new URLSearchParams(window.location.search);
@@ -4150,6 +4245,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         const dadosPublicos = {
             vendedor: vendedor,
+            emailVendedor: user.email,
             tipo: 'terceirizado',
             data: firebase.firestore.FieldValue.serverTimestamp(),
             totalGeral: parseFloat(totalGeralEl.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')),
