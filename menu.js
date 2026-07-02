@@ -473,7 +473,6 @@ async function duplicarProposta(originalId, tipoProposta, colecao) {
 async function excluirProposta(propostaId, colecao) {
     try {
         await db.collection(colecao).doc(propostaId).delete();
-        await carregarPropostas();
         return true;
     } catch (error) {
         console.error('Erro ao excluir:', error);
@@ -500,7 +499,6 @@ function aplicarFiltros() {
         
         let dataMatch = true;
         if (p.data) {
-            // 🔥 GARANTIR QUE DATA É UM OBJETO DATE VÁLIDO
             let dataProposta = p.data;
             if (dataProposta instanceof Date) {
                 dataProposta = dataProposta;
@@ -525,7 +523,6 @@ function aplicarFiltros() {
 
     let html = '';
     filtradas.forEach(p => {
-        // 🔥 FORMATAR DATA CORRETAMENTE
         let data = p.data;
         if (data instanceof Date) {
             data = data;
@@ -576,6 +573,45 @@ function aplicarFiltros() {
         `;
     });
     cardsContainer.innerHTML = html;
+
+    // ========== EVENT LISTENERS DOS CARDS ==========
+    document.querySelectorAll('.proposta-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+            if (e.target.closest('.btn-duplicar') || e.target.closest('.btn-excluir')) return;
+            propostaSelecionada = { 
+                id: card.dataset.id, 
+                tipo: card.dataset.tipo || 'efetivo',
+                colecao: card.dataset.colecao || 'propostas'
+            };
+            confirmModal.style.display = 'flex';
+        });
+    });
+
+    // ========== EVENT LISTENERS DOS BOTÕES DE DUPLICAR ==========
+    document.querySelectorAll('.btn-duplicar').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const id = btn.dataset.id;
+            const tipo = btn.dataset.tipo;
+            const colecao = btn.dataset.colecao;
+            if (confirm('Deseja duplicar esta proposta?')) {
+                await duplicarProposta(id, tipo, colecao);
+            }
+        });
+    });
+
+    // ========== EVENT LISTENERS DOS BOTÕES DE EXCLUIR ==========
+    document.querySelectorAll('.btn-excluir').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const id = btn.dataset.id;
+            const colecao = btn.dataset.colecao;
+            
+            // 🔥 ABRE O MODAL DE CONFIRMAÇÃO
+            propostaSelecionada = { id, colecao };
+            deleteModal.style.display = 'flex';
+        });
+    });
 }
 
 function escapeHtml(text) {
@@ -611,6 +647,40 @@ modalCancelBtns.forEach(btn => {
         deleteModal.style.display = 'none';
         propostaSelecionada = null;
     });
+});
+
+// 🔥 Botão "Sim, excluir" no modal de exclusão
+modalDeleteBtn.addEventListener('click', async () => {
+    if (propostaSelecionada) {
+        const sucesso = await excluirProposta(propostaSelecionada.id, propostaSelecionada.colecao);
+        if (sucesso) {
+            // Recarrega a lista após excluir
+            await carregarPropostas();
+        }
+    }
+    deleteModal.style.display = 'none';
+    propostaSelecionada = null;
+});
+
+// 🔥 Botão "Cancelar" nos modais
+modalCancelBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        confirmModal.style.display = 'none';
+        deleteModal.style.display = 'none';
+        propostaSelecionada = null;
+    });
+});
+
+// 🔥 Clicar fora do modal
+window.addEventListener('click', (e) => {
+    if (e.target === confirmModal) {
+        confirmModal.style.display = 'none';
+        propostaSelecionada = null;
+    }
+    if (e.target === deleteModal) {
+        deleteModal.style.display = 'none';
+        propostaSelecionada = null;
+    }
 });
 
 window.addEventListener('click', (e) => {
