@@ -3811,12 +3811,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // ========== FUNÇÃO PARA ATIVAR MODO VISUALIZAÇÃO ==========
+    // ========== FUNÇÃO PARA ATIVAR MODO VISUALIZAÇÃO (COM NAVEGAÇÃO LIBERADA) ==========
     function ativarModoVisualizacao() {
-        console.log('🔓 Ativando modo de visualização...');
+        console.log('🔓 Ativando modo de visualização (com navegação liberada)...');
         
-        // 1. DESABILITAR TODOS OS INPUTS
-        document.querySelectorAll('input, select, textarea').forEach(el => {
+        // 1. BLOQUEAR APENAS INPUTS EDITÁVEIS (valores)
+        document.querySelectorAll('input[type="text"], input[type="number"], input[type="email"], input[type="tel"], input[type="date"], textarea, select').forEach(el => {
             el.disabled = true;
             el.style.opacity = '0.85';
             el.style.cursor = 'default';
@@ -3825,22 +3825,23 @@ document.addEventListener('DOMContentLoaded', async function() {
             el.style.color = '#333';
         });
         
-        // 2. DESABILITAR CHECKBOXES
-        document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        // 2. BLOQUEAR CHECKBOXES (não pode marcar/desmarcar)
+        document.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(cb => {
             cb.disabled = true;
             cb.style.pointerEvents = 'none';
             cb.style.opacity = '0.7';
+            cb.style.cursor = 'default';
         });
         
-        // 3. DESABILITAR BOTÕES DE AÇÃO
-        document.querySelectorAll('.btn-add, .btn-remover, .btn-remover-beneficio, .btn-remover-custom, .btn-remover-exame-custom').forEach(btn => {
+        // 3. BLOQUEAR BOTÕES QUE ALTERAM DADOS
+        document.querySelectorAll('.btn-remover, .btn-remover-beneficio, .btn-remover-custom, .btn-remover-exame-custom, .btn-add-beneficio, .btn-add-custom, .btn-add-custom-uniforme, .btn-add-custom-epi, .btn-add-custom-exame').forEach(btn => {
             if (btn) {
                 btn.style.display = 'none';
                 btn.disabled = true;
             }
         });
         
-        // 4. OCULTAR BOTÕES PRINCIPAIS
+        // 4. OCULTAR BOTÕES PRINCIPAIS DE AÇÃO
         const botoesOcultar = [
             'adicionar-cargo',
             'btn-salvar',
@@ -3856,48 +3857,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         });
         
-        // 5. DESABILITAR DROPDOWNS
-        document.querySelectorAll('.box-header').forEach(header => {
-            header.style.pointerEvents = 'none';
-            header.style.cursor = 'default';
-            header.style.opacity = '0.8';
-        });
-        
-        // 6. EXPANDIR TODAS AS SEÇÕES
-        document.querySelectorAll('.section-content.collapsed, .despesas-content.collapsed, .exames-content.collapsed').forEach(content => {
-            if (content) {
-                content.classList.remove('collapsed');
-                content.style.display = 'block';
-            }
-        });
-        
-        // 7. EXPANDIR TODOS OS DROPDOWNS
-        document.querySelectorAll('.dropdown-menu').forEach(menu => {
-            menu.classList.add('open');
-            menu.style.display = 'block';
-            menu.style.position = 'relative';
-            menu.style.zIndex = '1';
-            menu.style.maxHeight = 'none';
-            
-            const header = menu.previousElementSibling;
-            if (header && header.classList.contains('box-header')) {
-                const icon = header.querySelector('i');
-                if (icon) {
-                    icon.classList.remove('fa-chevron-down');
-                    icon.classList.add('fa-chevron-up');
-                }
-            }
-        });
-        
-        // 8. DESABILITAR BOTÕES DE ADICIONAR
-        document.querySelectorAll('.btn-add-custom, .btn-add-custom-uniforme, .btn-add-custom-epi, .btn-add-custom-exame, .btn-add-beneficio').forEach(btn => {
-            if (btn) {
-                btn.style.display = 'none';
-                btn.disabled = true;
-            }
-        });
-        
-        // 9. DESABILITAR TOGGLE DO CARGO
+        // 5. OCULTAR TOGGLE DO CARGO (não pode recolher o cargo inteiro)
         document.querySelectorAll('.btn-toggle-cargo').forEach(btn => {
             if (btn) {
                 btn.style.display = 'none';
@@ -3905,7 +3865,66 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         });
         
-        // 10. ADICIONAR AVISO VISUAL
+        // 6. LIBERAR OS HEADERS DOS DROPDOWNS (Uniformes, EPIs, Exames)
+        document.querySelectorAll('.box-header').forEach(header => {
+            // Remove o bloqueio de pointer-events
+            header.style.pointerEvents = 'auto';
+            header.style.cursor = 'pointer';
+            header.style.opacity = '1';
+            header.style.userSelect = 'none';
+        });
+        
+        // 7. GARANTIR QUE OS DROPDOWNS ESTEJAM FECHADOS INICIALMENTE
+        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+            menu.classList.remove('open');
+            menu.style.display = 'none';
+            menu.style.position = 'absolute';
+            menu.style.zIndex = '10000';
+            menu.style.maxHeight = '300px';
+            menu.style.overflowY = 'auto';
+            
+            // Ajustar ícone para baixo (fechado)
+            const header = menu.previousElementSibling;
+            if (header && header.classList.contains('box-header')) {
+                const icon = header.querySelector('i:last-child');
+                if (icon) {
+                    icon.classList.remove('fa-chevron-up');
+                    icon.classList.add('fa-chevron-down');
+                }
+            }
+        });
+        
+        // 8. GARANTIR QUE AS SEÇÕES EXPANSÍVEIS ESTEJAM ABERTAS (mas com toggle funcionando)
+        document.querySelectorAll('.section-content.collapsed, .despesas-content.collapsed, .exames-content.collapsed').forEach(content => {
+            if (content) {
+                content.classList.remove('collapsed');
+                content.style.display = 'block';
+            }
+        });
+        
+        // 9. AJUSTAR OS TOGGLES DAS SEÇÕES (Adicionais, Benefícios, etc)
+        document.querySelectorAll('.section-header, .exames-header, .despesas-header').forEach(header => {
+            header.style.pointerEvents = 'auto';
+            header.style.cursor = 'pointer';
+            header.style.opacity = '1';
+            header.style.userSelect = 'none';
+            
+            // Garantir que o ícone está correto (aberto)
+            const toggleIcon = header.querySelector('.section-toggle, .exames-toggle, .despesas-toggle');
+            if (toggleIcon) {
+                // Verifica se o conteúdo está aberto
+                const content = header.nextElementSibling;
+                if (content && !content.classList.contains('collapsed')) {
+                    toggleIcon.classList.remove('fa-chevron-down');
+                    toggleIcon.classList.add('fa-chevron-up');
+                } else {
+                    toggleIcon.classList.remove('fa-chevron-up');
+                    toggleIcon.classList.add('fa-chevron-down');
+                }
+            }
+        });
+        
+        // 10. ADICIONAR AVISO VISUAL (não bloqueia nada)
         const aviso = document.createElement('div');
         aviso.className = 'aviso-visualizacao';
         aviso.id = 'aviso-visualizacao';
@@ -3922,10 +3941,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             justify-content: center;
             gap: 0.8rem;
             box-shadow: 0 4px 12px rgba(193, 4, 4, 0.3);
+            cursor: default;
+            user-select: none;
         `;
         aviso.innerHTML = `
             <i class="fas fa-eye" style="font-size: 1.2rem;"></i> 
-            <span><strong>Modo de visualização</strong> - Esta proposta é apenas para leitura</span>
+            <span><strong>Modo de visualização</strong> - Você pode navegar pelos menus, mas não pode editar valores</span>
         `;
         
         const containerDiv = document.querySelector('.container');
@@ -3933,10 +3954,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             containerDiv.insertBefore(aviso, containerDiv.firstChild);
         }
         
-        console.log('✅ Modo visualização ativado com sucesso!');
+        console.log('✅ Modo visualização ativado com navegação liberada!');
     }
 
-    // ========== VERIFICAR MODO DE VISUALIZAÇÃO (SUBSTITUA A EXISTENTE) ==========
+    // ========== VERIFICAR MODO DE VISUALIZAÇÃO ==========
     function checkVisualizacao() {
         const urlParams = new URLSearchParams(window.location.search);
         const isVisualizacao = urlParams.get('visualizacao') === 'true';
@@ -3947,8 +3968,94 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Aguardar o DOM carregar completamente
             setTimeout(() => {
                 ativarModoVisualizacao();
+                // Restaura os toggles após ativar o modo
+                setTimeout(() => {
+                    restaurarTogglesVisualizacao();
+                }, 100);
             }, 500);
         }
+    }
+
+    // ========== RESTAURAR TOGGLES DAS SEÇÕES (para modo visualização) ==========
+    function restaurarTogglesVisualizacao() {
+        // Seções expansíveis (Adicionais, Uniformes, Benefícios, etc)
+        document.querySelectorAll('.section-header, .exames-header, .despesas-header').forEach(header => {
+            // Remove listeners antigos para evitar duplicação
+            const newHeader = header.cloneNode(true);
+            header.parentNode.replaceChild(newHeader, header);
+            
+            // Adiciona o listener novamente
+            newHeader.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const content = this.nextElementSibling;
+                const toggleIcon = this.querySelector('.section-toggle, .exames-toggle, .despesas-toggle');
+                
+                if (content && toggleIcon) {
+                    const isCollapsed = content.classList.contains('collapsed');
+                    
+                    if (isCollapsed) {
+                        content.classList.remove('collapsed');
+                        content.style.display = 'block';
+                        toggleIcon.classList.remove('fa-chevron-down');
+                        toggleIcon.classList.add('fa-chevron-up');
+                    } else {
+                        content.classList.add('collapsed');
+                        content.style.display = 'none';
+                        toggleIcon.classList.remove('fa-chevron-up');
+                        toggleIcon.classList.add('fa-chevron-down');
+                    }
+                }
+            });
+        });
+        
+        // Dropdowns (Uniformes, EPIs, Exames)
+        document.querySelectorAll('.box-header').forEach(header => {
+            const newHeader = header.cloneNode(true);
+            header.parentNode.replaceChild(newHeader, header);
+            
+            newHeader.addEventListener('click', function(e) {
+                e.stopPropagation();
+                
+                // Fecha outros dropdowns abertos
+                document.querySelectorAll('.dropdown-menu.open').forEach(menu => {
+                    if (menu !== this.nextElementSibling) {
+                        menu.classList.remove('open');
+                        menu.style.display = 'none';
+                        const prevHeader = menu.previousElementSibling;
+                        if (prevHeader && prevHeader.classList.contains('box-header')) {
+                            const icon = prevHeader.querySelector('i:last-child');
+                            if (icon) {
+                                icon.classList.remove('fa-chevron-up');
+                                icon.classList.add('fa-chevron-down');
+                            }
+                        }
+                    }
+                });
+                
+                const menu = this.nextElementSibling;
+                const icon = this.querySelector('i:last-child');
+                
+                if (menu && menu.classList.contains('dropdown-menu')) {
+                    const isOpen = menu.classList.contains('open');
+                    
+                    if (isOpen) {
+                        menu.classList.remove('open');
+                        menu.style.display = 'none';
+                        if (icon) {
+                            icon.classList.remove('fa-chevron-up');
+                            icon.classList.add('fa-chevron-down');
+                        }
+                    } else {
+                        menu.classList.add('open');
+                        menu.style.display = 'block';
+                        if (icon) {
+                            icon.classList.remove('fa-chevron-down');
+                            icon.classList.add('fa-chevron-up');
+                        }
+                    }
+                }
+            });
+        });
     }
 
     // ========== SALVAR PROPOSTA (COM CRIPTOGRAFIA) ==========
