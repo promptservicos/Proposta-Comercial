@@ -1089,8 +1089,19 @@ document.addEventListener('DOMContentLoaded', async function() {
                     dadosRascunho.cargos.forEach(c => {
                         const examesObj = c.exames || {};
                         const despesasComTaxa = c.despesas || {};
-                        if (!despesasComTaxa.encargos_fiscais) {
-                            despesasComTaxa.encargos_fiscais = { porcentagem: 13.75 };
+                        
+                        // ========== CORREÇÃO: GARANTIR QUE A TAXA SEJA PRESERVADA ==========
+                        if (despesasComTaxa.encargos_fiscais) {
+                            // Verifica se a taxa existe e é um número válido
+                            const taxa = despesasComTaxa.encargos_fiscais.porcentagem;
+                            if (typeof taxa !== 'number' || isNaN(taxa)) {
+                                // Se for inválida, usa 0 (não 13.75)
+                                despesasComTaxa.encargos_fiscais.porcentagem = 0;
+                            }
+                            // Se for um número, mantém o valor (inclusive 0)
+                        } else {
+                            // Se não tiver encargos_fiscais, cria com 0
+                            despesasComTaxa.encargos_fiscais = { porcentagem: 0 };
                         }
                         
                         // Garantir que uniformes e epis existem
@@ -1102,13 +1113,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                             c.quantidade,
                             parseFloat(c.salario?.replace(/\./g, '').replace(',', '.')) || 0,
                             c.adicionais || {},
-                            uniformes,  // ← Passa os uniformes (incluindo custom)
-                            epis,       // ← Passa os EPIs (incluindo custom)
+                            uniformes,
+                            epis,
                             c.beneficios || {},
                             c.seguranca || {},
                             examesObj,
                             c.insumos || {},
-                            despesasComTaxa,
+                            despesasComTaxa,  // ← Passa com a taxa corrigida
                             c.treinamento || 0,
                             c.beneficiosPersonalizados || []
                         ));
@@ -2740,11 +2751,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             </div>
         `;
         
-        // Valor inicial da taxa: vindo de dadosDespesas (padrão 13.75)
-        let taxaInicial = 13.75;
-        if (dadosDespesas && dadosDespesas.encargos_fiscais && dadosDespesas.encargos_fiscais.porcentagem) {
-            taxaInicial = dadosDespesas.encargos_fiscais.porcentagem;
+        // CORREÇÃO: Garantir que a taxa seja 0 se foi salva como 0
+        let taxaInicial = 13.75; // valor padrão
+        
+        // Verifica se os dados de despesas existem
+        if (dadosDespesas && dadosDespesas.encargos_fiscais) {
+            // Pega a porcentagem, garantindo que seja um número
+            const taxaSalva = dadosDespesas.encargos_fiscais.porcentagem;
+            if (typeof taxaSalva === 'number' && !isNaN(taxaSalva)) {
+                taxaInicial = taxaSalva;
+            }
         }
+        
+        // Formata a taxa para exibição (0.00% em vez de 0.00% com vírgula)
         const taxaInicialFormatada = taxaInicial.toFixed(2).replace('.', ',');
         
         const content = document.createElement('div');
@@ -2796,11 +2815,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         const calculoSpan = content.querySelector('.despesa-calculo');
         const taxaInput = content.querySelector('.despesa-taxa');
         
-        // Função que calcula os encargos fiscais com base no subtotal e na taxa atual
-        function calcularDespesas(subtotalInsumosBeneficios) {
+        // CORREÇÃO: Garantir que a taxa nunca seja NaN
+        function getTaxa() {
             let taxaStr = taxaInput.value.replace('%', '').replace(',', '.');
             let taxa = parseFloat(taxaStr);
-            if (isNaN(taxa)) taxa = 13.75;
+            // Se for NaN, retorna 0 (em vez de 13.75)
+            return isNaN(taxa) ? 0 : taxa;
+        }
+        
+        function calcularDespesas(subtotalInsumosBeneficios) {
+            const taxa = getTaxa();
             const taxaDecimal = taxa / 100;
             const valorEncargos = subtotalInsumosBeneficios * taxaDecimal;
             
@@ -2812,13 +2836,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             return valorEncargos;
         }
         
-        // Atualiza o cálculo quando a taxa for alterada
+        // CORREÇÃO: Atualizar quando a taxa for alterada
         taxaInput.addEventListener('input', function(e) {
             let valor = e.target.value.replace(/\D/g, '');
             let valorNum = valor ? parseInt(valor) / 100 : 0;
-            if (valorNum > 100) valorNum = 100; // limite de 100%
+            if (valorNum > 100) valorNum = 100;
             e.target.value = valorNum.toFixed(2).replace('.', ',') + '%';
-            // Dispara um evento para que o cargo inteiro recalcule
+            
+            // Dispara evento para o cargo inteiro recalcular
             if (cargoItem && cargoItem.dispatchEvent) {
                 cargoItem.dispatchEvent(new Event('recalcular-despesas'));
             }
@@ -2829,11 +2854,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             section, 
             calcularDespesas, 
             getDados: () => {
-                let taxaStr = taxaInput.value.replace('%', '').replace(',', '.');
-                let taxa = parseFloat(taxaStr);
-                if (isNaN(taxa)) taxa = 13.75;
+                const taxa = getTaxa();
                 return { encargos_fiscais: { porcentagem: taxa } };
-            } 
+            },
+            // CORREÇÃO: Adicionar função para forçar atualização da taxa
+            setTaxa: (valor) => {
+                const taxaFormatada = valor.toFixed(2).replace('.', ',');
+                taxaInput.value = taxaFormatada + '%';
+            }
         };
     }
 
@@ -3347,8 +3375,19 @@ document.addEventListener('DOMContentLoaded', async function() {
                         dadosSensiveis.cargos.forEach(cargo => {
                             const examesObj = cargo.exames || {};
                             let despesasComTaxa = cargo.despesas || {};
-                            if (!despesasComTaxa.encargos_fiscais) {
-                                despesasComTaxa.encargos_fiscais = { porcentagem: 13.75 };
+                            
+                            // ========== CORREÇÃO: GARANTIR QUE A TAXA SEJA PRESERVADA ==========
+                            if (despesasComTaxa.encargos_fiscais) {
+                                const taxa = despesasComTaxa.encargos_fiscais.porcentagem;
+                                // Verifica se é um número válido
+                                if (typeof taxa !== 'number' || isNaN(taxa)) {
+                                    // Se for inválida, usa 0
+                                    despesasComTaxa.encargos_fiscais.porcentagem = 0;
+                                }
+                                // Se for um número, mantém (inclusive 0)
+                            } else {
+                                // Se não tiver encargos_fiscais, cria com 0
+                                despesasComTaxa.encargos_fiscais = { porcentagem: 0 };
                             }
                             
                             container.appendChild(criarCargoItem(
@@ -3362,7 +3401,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 cargo.seguranca || {},
                                 examesObj,
                                 cargo.insumos || {},
-                                despesasComTaxa,
+                                despesasComTaxa,  // ← Passa com a taxa corrigida
                                 cargo.treinamento || 0,
                                 cargo.beneficiosPersonalizados || []
                             ));
@@ -3387,8 +3426,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                             }
                             
                             let despesasComTaxa = c.despesas || {};
-                            if (!despesasComTaxa.encargos_fiscais) {
-                                despesasComTaxa.encargos_fiscais = { porcentagem: 13.75 };
+                            
+                            // ========== CORREÇÃO: GARANTIR QUE A TAXA SEJA PRESERVADA ==========
+                            if (despesasComTaxa.encargos_fiscais) {
+                                const taxa = despesasComTaxa.encargos_fiscais.porcentagem;
+                                if (typeof taxa !== 'number' || isNaN(taxa)) {
+                                    despesasComTaxa.encargos_fiscais.porcentagem = 0;
+                                }
+                            } else {
+                                despesasComTaxa.encargos_fiscais = { porcentagem: 0 };
                             }
                             
                             container.appendChild(criarCargoItem(
@@ -3402,7 +3448,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 c.seguranca || {},
                                 examesObj,
                                 c.insumos || {},
-                                despesasComTaxa,
+                                despesasComTaxa,  // ← Passa com a taxa corrigida
                                 c.treinamento || 0,
                                 c.beneficiosPersonalizados || []
                             ));
@@ -3410,25 +3456,29 @@ document.addEventListener('DOMContentLoaded', async function() {
                         calcularTotalGeral();
                         localStorage.removeItem(DRAFT_KEY);
                     } else if (!carregarRascunho()) {
-                        const despesasPadrao = { encargos_fiscais: { porcentagem: 13.75 } };
+                        // ========== CORREÇÃO: USAR 0% EM VEZ DE 13.75% ==========
+                        const despesasPadrao = { encargos_fiscais: { porcentagem: 0 } };
                         container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, despesasPadrao, 0, []));
                     }
                 } else {
                     if (!carregarRascunho()) {
-                        const despesasPadrao = { encargos_fiscais: { porcentagem: 13.75 } };
+                        // ========== CORREÇÃO: USAR 0% EM VEZ DE 13.75% ==========
+                        const despesasPadrao = { encargos_fiscais: { porcentagem: 0 } };
                         container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, despesasPadrao, 0, []));
                     }
                 }
             } catch (error) {
                 console.error('Erro ao carregar proposta:', error);
                 if (!carregarRascunho()) {
-                    const despesasPadrao = { encargos_fiscais: { porcentagem: 13.75 } };
+                    // ========== CORREÇÃO: USAR 0% EM VEZ DE 13.75% ==========
+                    const despesasPadrao = { encargos_fiscais: { porcentagem: 0 } };
                     container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, despesasPadrao, 0, []));
                 }
             }
         } else {
             if (!carregarRascunho()) {
-                const despesasPadrao = { encargos_fiscais: { porcentagem: 13.75 } };
+                // ========== CORREÇÃO: USAR 0% EM VEZ DE 13.75% ==========
+                const despesasPadrao = { encargos_fiscais: { porcentagem: 0 } };
                 container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, despesasPadrao, 0, []));
             }
         }
@@ -4408,21 +4458,28 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
             
-            // Capturar despesas
+            // ========== CORREÇÃO: CAPTURAR DESPESAS COM TAXA CORRETA ==========
             let despesas = {};
             const despesasSection = item.querySelector('.despesas-section');
             if (despesasSection) {
                 const taxaInput = despesasSection.querySelector('.despesa-taxa');
                 if (taxaInput) {
+                    // Remove o % e converte para número
                     let taxaStr = taxaInput.value.replace('%', '').replace(',', '.');
                     let taxaNum = parseFloat(taxaStr);
-                    if (isNaN(taxaNum)) taxaNum = 13.75;
+                    // ========== CORREÇÃO: Se for NaN, salva como 0 (não 13.75) ==========
+                    if (isNaN(taxaNum)) {
+                        taxaNum = 0;
+                    }
+                    // ========== CORREÇÃO: Garantir que 0 seja salvo como 0 ==========
                     despesas = { encargos_fiscais: { porcentagem: taxaNum } };
                 } else {
-                    despesas = { encargos_fiscais: { porcentagem: 13.75 } };
+                    // Se não encontrar o input, salva como 0
+                    despesas = { encargos_fiscais: { porcentagem: 0 } };
                 }
             } else {
-                despesas = { encargos_fiscais: { porcentagem: 13.75 } };
+                // Se não tiver seção de despesas, salva como 0
+                despesas = { encargos_fiscais: { porcentagem: 0 } };
             }
             
             const totalVagaElem = item.querySelector('.total-prestacao .valor');
@@ -4451,7 +4508,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 exames,
                 treinamento,
                 insumos,
-                despesas,
+                despesas,  // ← Passa com a taxa corrigida
                 totalVaga
             });
         }
