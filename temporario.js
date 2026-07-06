@@ -2166,11 +2166,25 @@ document.addEventListener('DOMContentLoaded', async function() {
         const { section, updateSummary, content } = criarSecaoExpansivel('Segurança e Seguro', 'fa-shield-alt', conteudoHtml, true);
         const grid = content.querySelector('.seguranca-grid');
         
+        // ========== CORREÇÃO: USAR VALOR SALVO OU 0 ==========
         SEGURANCA.forEach(s => {
             const card = document.createElement('div');
             card.className = 'seguranca-item';
-            const valorUnitario = dadosSeguranca[s.campo]?.valor ?? 0;
-            const depreciacao = dadosSeguranca[s.campo]?.depreciacao ?? 0;
+            
+            // Verifica se o campo existe nos dados salvos
+            let valorUnitario = 0;
+            let depreciacao = 1; // valor padrão
+            
+            if (dadosSeguranca && dadosSeguranca[s.campo] !== undefined) {
+                const valorSalvo = dadosSeguranca[s.campo].valor;
+                if (typeof valorSalvo === 'number' && !isNaN(valorSalvo)) {
+                    valorUnitario = valorSalvo;
+                }
+                if (dadosSeguranca[s.campo].depreciacao !== undefined) {
+                    depreciacao = dadosSeguranca[s.campo].depreciacao;
+                }
+            }
+            
             card.innerHTML = `
                 <div class="seguranca-nome">${s.nome}</div>
                 <div class="seguranca-campos">
@@ -2228,81 +2242,26 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         calcularTotal();
         
-        return { section, calcularTotal: () => calcularTotal().totalMensal, getDados: () => {
-            const seguranca = {};
-            grid.querySelectorAll('.seguranca-item').forEach(card => {
-                const campo = card.querySelector('.seguranca-valor').dataset.campo;
-                const valorInput = card.querySelector('.seguranca-valor');
-                const depreciacaoInput = card.querySelector('.seguranca-depreciacao');
-                const valor = parseFloat(valorInput.value.replace(/\./g, '').replace(',', '.')) || 0;
-                const depreciacao = parseInt(depreciacaoInput.value) || 1;
-                if (valor > 0) {
-                    seguranca[campo] = { valor: valor, depreciacao: depreciacao };
-                }
-            });
-            return seguranca;
-        } };
-    }
-
-    function criarInsumosSection(cargoItem, dadosInsumos = {}) {
-        const conteudoHtml = `<div class="insumos-grid"></div>`;
-        const { section, updateSummary, content } = criarSecaoExpansivel('Insumos', 'fa-boxes', conteudoHtml, true);
-        const grid = content.querySelector('.insumos-grid');
-        
-        INSUMOS.forEach(i => {
-            const card = document.createElement('div');
-            card.className = 'insumo-card';
-            const valor = dadosInsumos[i.campo]?.valor ?? 0;
-            card.innerHTML = `
-                <div class="insumo-nome">${i.nome}</div>
-                <div class="insumo-campo">
-                    <label>Valor (R$)</label>
-                    <input type="text" class="insumo-valor" data-campo="${i.campo}" placeholder="0,00" value="${valor.toFixed(2).replace('.', ',')}">
-                </div>
-                <div class="insumo-total">R$ 0,00</div>
-            `;
-            grid.appendChild(card);
-        });
-        
-        function calcularTotal() {
-            let total = 0;
-            grid.querySelectorAll('.insumo-card').forEach(card => {
-                const valorInput = card.querySelector('.insumo-valor');
-                let valor = parseFloat(valorInput.value.replace(/\./g, '').replace(',', '.')) || 0;
-                total += valor;
-                const totalSpan = card.querySelector('.insumo-total');
-                totalSpan.textContent = formatarMoeda(valor);
-            });
-            updateSummary(total);
-            return total;
-        }
-        
-        grid.querySelectorAll('.insumo-valor').forEach(input => {
-            input.addEventListener('input', function(e) {
-                let valor = e.target.value.replace(/\D/g, '');
-                e.target.value = valor ? (parseInt(valor) / 100).toFixed(2).replace('.', ',') : '';
-                calcularTotal();
-                salvarRascunho();
-                if (cargoItem && cargoItem.dispatchEvent) {
-                    cargoItem.dispatchEvent(new Event('recalcular'));
-                }
-            });
-        });
-        
-        calcularTotal();
-        
-        return { section, calcularTotal, getDados: () => {
-            const insumos = {};
-            grid.querySelectorAll('.insumo-card').forEach(card => {
-                const campo = card.querySelector('.insumo-valor').dataset.campo;
-                const valorInput = card.querySelector('.insumo-valor');
-                const valor = parseFloat(valorInput.value.replace(/\./g, '').replace(',', '.')) || 0;
-                if (valor > 0) {
-                    insumos[campo] = { valor: valor };
-                }
-            });
-            return insumos;
-        } };
+        return { 
+            section, 
+            calcularTotal: () => calcularTotal().totalMensal, 
+            getDados: () => {
+                const seguranca = {};
+                grid.querySelectorAll('.seguranca-item').forEach(card => {
+                    const campo = card.querySelector('.seguranca-valor').dataset.campo;
+                    const valorInput = card.querySelector('.seguranca-valor');
+                    const depreciacaoInput = card.querySelector('.seguranca-depreciacao');
+                    const valor = parseFloat(valorInput.value.replace(/\./g, '').replace(',', '.')) || 0;
+                    const depreciacao = parseInt(depreciacaoInput.value) || 1;
+                    // ========== CORREÇÃO: SALVAR SEMPRE, MESMO SE FOR 0 ==========
+                    seguranca[campo] = { 
+                        valor: valor, 
+                        depreciacao: depreciacao 
+                    };
+                });
+                return seguranca;
+            } 
+        };
     }
 
     function criarDespesasSection(cargoItem, dadosDespesas = {}) {
@@ -3280,14 +3239,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                         document.getElementById('vendedor-nome').textContent = propostaData.vendedor || 'Não informado';
                     }
                     
-                    // Tenta descriptografar
+                    // Tenta descriptografar os dados
                     let dadosSensiveis = null;
                     if (propostaData.dadosCriptografados) {
                         dadosSensiveis = decryptData(propostaData.dadosCriptografados);
                     }
                     
                     if (dadosSensiveis && dadosSensiveis.cargos) {
-                        // Dados criptografados
+                        // ========== DADOS CRIPTOGRAFADOS ==========
                         clienteInput.value = dadosSensiveis.cliente || '';
                         container.innerHTML = '';
                         
@@ -3302,6 +3261,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 anHoras: 0
                             };
                             
+                            // ========== CORREÇÃO: GARANTIR QUE OS DADOS DE SEGURANÇA SEJAM PRESERVADOS ==========
+                            const seguranca = c.seguranca || {};
+                            
                             container.appendChild(criarCargoItem(
                                 c.nome,
                                 c.quantidade,
@@ -3310,7 +3272,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 c.uniformes || {},
                                 c.epis || {},
                                 c.beneficios || {},
-                                c.seguranca || {},
+                                seguranca,  // ← Passa os dados de segurança (incluindo 0)
                                 c.insumos || {},
                                 c.despesas || {},
                                 examesObj,
@@ -3321,8 +3283,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                         });
                         calcularTotalGeral();
                         localStorage.removeItem(DRAFT_KEY);
+                        
                     } else if (propostaData.cargos) {
-                        // Dados antigos (sem criptografia)
+                        // ========== DADOS ANTIGOS (SEM CRIPTOGRAFIA) ==========
                         clienteInput.value = propostaData.cliente || '';
                         container.innerHTML = '';
                         
@@ -3330,7 +3293,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                             let examesObj = {};
                             if (c.exames) {
                                 if (Array.isArray(c.exames)) {
-                                    c.exames.forEach(nomeExame => { examesObj[nomeExame] = true; });
+                                    c.exames.forEach(nomeExame => { 
+                                        examesObj[nomeExame] = true; 
+                                    });
                                 } else {
                                     examesObj = c.exames;
                                 }
@@ -3345,6 +3310,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 anHoras: 0
                             };
                             
+                            // ========== CORREÇÃO: GARANTIR QUE OS DADOS DE SEGURANÇA SEJAM PRESERVADOS ==========
+                            const seguranca = c.seguranca || {};
+                            
                             container.appendChild(criarCargoItem(
                                 c.nome,
                                 c.quantidade,
@@ -3353,7 +3321,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 c.uniformes || {},
                                 c.epis || {},
                                 c.beneficios || {},
-                                c.seguranca || {},
+                                seguranca,  // ← Passa os dados de segurança (incluindo 0)
                                 c.insumos || {},
                                 c.despesas || {},
                                 examesObj,
@@ -3364,31 +3332,58 @@ document.addEventListener('DOMContentLoaded', async function() {
                         });
                         calcularTotalGeral();
                         localStorage.removeItem(DRAFT_KEY);
+                        
                     } else if (!carregarRascunho()) {
-                        container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, {}, 0, 55.83, []));
+                        // ========== SEM DADOS - CRIA CARGO PADRÃO COM SEGURANÇA ZERADA ==========
+                        const segurancaZerada = {
+                            sst: { valor: 0, depreciacao: 1 },
+                            seguro_vida: { valor: 0, depreciacao: 1 }
+                        };
+                        container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, segurancaZerada, {}, {}, {}, 0, 55.83, []));
                     }
                 } else {
+                    // ========== DOCUMENTO NÃO ENCONTRADO ==========
                     if (!carregarRascunho()) {
-                        container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, {}, 0, 55.83, []));
+                        const segurancaZerada = {
+                            sst: { valor: 0, depreciacao: 1 },
+                            seguro_vida: { valor: 0, depreciacao: 1 }
+                        };
+                        container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, segurancaZerada, {}, {}, {}, 0, 55.83, []));
                     }
                 }
             } catch (error) {
                 console.error('Erro ao carregar proposta:', error);
                 if (!carregarRascunho()) {
-                    container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, {}, 0, 55.83, []));
+                    // ========== ERRO - CRIA CARGO PADRÃO COM SEGURANÇA ZERADA ==========
+                    const segurancaZerada = {
+                        sst: { valor: 0, depreciacao: 1 },
+                        seguro_vida: { valor: 0, depreciacao: 1 }
+                    };
+                    container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, segurancaZerada, {}, {}, {}, 0, 55.83, []));
                 }
             }
         } else {
+            // ========== SEM ID - CARREGA RASCUNHO OU CRIA CARGO PADRÃO ==========
             if (!carregarRascunho()) {
-                container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, {}, 0, 55.83, []));
+                const segurancaZerada = {
+                    sst: { valor: 0, depreciacao: 1 },
+                    seguro_vida: { valor: 0, depreciacao: 1 }
+                };
+                container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, segurancaZerada, {}, {}, {}, 0, 55.83, []));
             }
         }
     }
     
     await carregarPropostaExistente();
     
+    // ========== BOTÃO ADICIONAR CARGO - CORREÇÃO ==========
     btnAdicionar.addEventListener('click', function() {
-        const novoCargo = criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, {}, 0, 55.83);
+        // ========== CORREÇÃO: SEGURANÇA COM VALORES ZERADOS ==========
+        const segurancaZerada = {
+            sst: { valor: 0, depreciacao: 1 },
+            seguro_vida: { valor: 0, depreciacao: 1 }
+        };
+        const novoCargo = criarCargoItem('', 1, 0, {}, {}, {}, {}, segurancaZerada, {}, {}, {}, 0, 55.83, []);
         container.appendChild(novoCargo);
         calcularTotalGeral();
         salvarRascunho();
@@ -3618,6 +3613,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
             
             // Segurança
+            // ========== CAPTURAR SEGURANÇA - CORREÇÃO ==========
             let seguranca = {};
             item.querySelectorAll('.seguranca-item').forEach(card => {
                 const campo = card.querySelector('.seguranca-valor')?.dataset.campo;
@@ -3626,11 +3622,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (campo) {
                     const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
                     const depreciacao = parseInt(depInput?.value) || 1;
-                    if (valor > 0) {
-                        seguranca[campo] = { valor: valor, depreciacao: depreciacao };
-                    }
+                    // ========== CORREÇÃO: SALVAR SEMPRE, MESMO SE FOR 0 ==========
+                    seguranca[campo] = { 
+                        valor: valor, 
+                        depreciacao: depreciacao 
+                    };
                 }
             });
+            cargo.seguranca = seguranca;
             
             // Insumos
             let insumos = {};
