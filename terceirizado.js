@@ -50,8 +50,8 @@ const BENEFICIOS_FIXOS = [
 ];
 
 const SEGURANCA_FIXOS = [
-    { nome: "SST (Segurança e Saúde do Trabalho)", campo: "sst", valor: 18.00, depreciacao: 1 },
-    { nome: "Seguro de Vida", campo: "seguro_vida", valor: 15.00, depreciacao: 1 }
+    { nome: "SST (Segurança e Saúde do Trabalho)", campo: "sst", valor: 0, depreciacao: 1 },
+    { nome: "Seguro de Vida", campo: "seguro_vida", valor: 0, depreciacao: 1 }
 ];
 
 const INSUMOS = [
@@ -2120,11 +2120,29 @@ document.addEventListener('DOMContentLoaded', async function() {
             return totalGeral;
         }
         
+        // ========== CORREÇÃO: VERIFICAR SE O VALOR EXISTE NOS DADOS ==========
         SEGURANCA_FIXOS.forEach(s => {
             const card = document.createElement('div');
             card.className = 'seguranca-item';
-            const valorUnitario = dadosSeguranca[s.campo]?.valor ?? s.valor;
-            const depreciacao = dadosSeguranca[s.campo]?.depreciacao ?? s.depreciacao;
+            
+            // ========== CORREÇÃO: USAR O VALOR SALVO OU 0 ==========
+            let valorUnitario = 0;
+            let depreciacao = s.depreciacao; // padrão 1
+            
+            // Verifica se o campo existe nos dados salvos
+            if (dadosSeguranca && dadosSeguranca[s.campo] !== undefined) {
+                const valorSalvo = dadosSeguranca[s.campo].valor;
+                // Se for um número válido, usa ele (pode ser 0)
+                if (typeof valorSalvo === 'number' && !isNaN(valorSalvo)) {
+                    valorUnitario = valorSalvo;
+                }
+                // Se tiver depreciacao salva, usa ela
+                if (dadosSeguranca[s.campo].depreciacao !== undefined) {
+                    depreciacao = dadosSeguranca[s.campo].depreciacao;
+                }
+            }
+            // Se não tiver dados salvos, mantém 0 (não usa o valor padrão)
+            
             card.innerHTML = `
                 <div class="seguranca-nome">${s.nome}</div>
                 <div class="seguranca-campos">
@@ -2194,20 +2212,27 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         calcularTotal();
         
-        return { section, calcularTotal: () => calcularTotal().totalMensal, getDados: () => {
-            const seguranca = {};
-            grid.querySelectorAll('.seguranca-item').forEach(card => {
-                const campo = card.querySelector('.seguranca-valor').dataset.campo;
-                const valorInput = card.querySelector('.seguranca-valor');
-                const depreciacaoInput = card.querySelector('.seguranca-depreciacao');
-                const valor = parseFloat(valorInput.value.replace(/\./g, '').replace(',', '.')) || 0;
-                const depreciacao = parseInt(depreciacaoInput.value) || 1;
-                if (valor > 0) {
-                    seguranca[campo] = { valor: valor, depreciacao: depreciacao };
-                }
-            });
-            return seguranca;
-        } };
+        return { 
+            section, 
+            calcularTotal: () => calcularTotal().totalMensal, 
+            getDados: () => {
+                const seguranca = {};
+                grid.querySelectorAll('.seguranca-item').forEach(card => {
+                    const campo = card.querySelector('.seguranca-valor').dataset.campo;
+                    const valorInput = card.querySelector('.seguranca-valor');
+                    const depreciacaoInput = card.querySelector('.seguranca-depreciacao');
+                    const valor = parseFloat(valorInput.value.replace(/\./g, '').replace(',', '.')) || 0;
+                    const depreciacao = parseInt(depreciacaoInput.value) || 1;
+                    // ========== CORREÇÃO: SALVAR MESMO SE FOR 0 ==========
+                    // Sempre salva o valor, mesmo se for 0
+                    seguranca[campo] = { 
+                        valor: valor, 
+                        depreciacao: depreciacao 
+                    };
+                });
+                return seguranca;
+            } 
+        };
     }
 
     function criarExamesSection(cargoItem, dadosExames = {}, treinamentoValor = 0) {
@@ -3488,8 +3513,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Botão adicionar cargo (já com despesas padrão)
     btnAdicionar.addEventListener('click', function() {
-        const despesasPadrao = { encargos_fiscais: { porcentagem: 13.75 } };
-        const novoCargo = criarCargoItem('', 1, 0, {}, {}, {}, {}, {}, {}, {}, despesasPadrao, 0, []);
+        const despesasPadrao = { encargos_fiscais: { porcentagem: 0 } };
+        // ========== CORREÇÃO: SEGURANÇA COM VALORES ZERADOS ==========
+        const segurancaZerada = {
+            sst: { valor: 0, depreciacao: 1 },
+            seguro_vida: { valor: 0, depreciacao: 1 }
+        };
+      
+        const novoCargo = criarCargoItem('', 1, 0, {}, {}, {}, {}, segurancaZerada, {}, {}, despesasPadrao, 0, []);
         container.appendChild(novoCargo);
         calcularTotalGeral();
         salvarRascunho();
@@ -4402,9 +4433,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                     if (campo) {
                         const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
                         const depreciacao = parseInt(depInput?.value) || 1;
-                        if (valor > 0) {
-                            seguranca[campo] = { valor: valor, depreciacao: depreciacao };
-                        }
+                        // ========== CORREÇÃO: SALVAR SEMPRE, MESMO SE FOR 0 ==========
+                        // Remove o if (valor > 0) para salvar sempre
+                        seguranca[campo] = { 
+                            valor: valor, 
+                            depreciacao: depreciacao 
+                        };
                     }
                 });
             }
