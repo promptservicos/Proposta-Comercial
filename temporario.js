@@ -2789,6 +2789,92 @@ document.addEventListener('DOMContentLoaded', async function() {
         };
     }
 
+    // ========== FUNÇÃO CRIAR INSUMOS SECTION ==========
+    function criarInsumosSection(cargoItem, dadosInsumos = {}) {
+        const conteudoHtml = `<div class="insumos-grid"></div>`;
+        const { section, updateSummary, content } = criarSecaoExpansivel('Insumos', 'fa-boxes', conteudoHtml, true);
+        const grid = content.querySelector('.insumos-grid');
+        
+        // ========== CORREÇÃO: USAR VALOR SALVO OU 0 ==========
+        INSUMOS.forEach(s => {
+            const card = document.createElement('div');
+            card.className = 'insumo-card';
+            
+            // Verifica se o campo existe nos dados salvos
+            let valorUnitario = 0;
+            if (dadosInsumos && dadosInsumos[s.campo] !== undefined) {
+                const valorSalvo = dadosInsumos[s.campo].valor;
+                if (typeof valorSalvo === 'number' && !isNaN(valorSalvo)) {
+                    valorUnitario = valorSalvo;
+                }
+            }
+            
+            card.innerHTML = `
+                <div class="insumo-nome">${s.nome}</div>
+                <div class="insumo-campos">
+                    <div class="insumo-campo">
+                        <label>Valor (R$)</label>
+                        <input type="text" class="insumo-valor" data-campo="${s.campo}" placeholder="0,00" value="${valorUnitario.toFixed(2).replace('.', ',')}">
+                    </div>
+                </div>
+                <div class="insumo-total">
+                    <div>Total: R$ 0,00</div>
+                    <div class="insumo-mensal">Mensal: R$ 0,00</div>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+        
+        function calcularTotal() {
+            let totalMensal = 0;
+            let totalGeral = 0;
+            grid.querySelectorAll('.insumo-card').forEach(card => {
+                const valorInput = card.querySelector('.insumo-valor');
+                let valor = parseFloat(valorInput.value.replace(/\./g, '').replace(',', '.')) || 0;
+                totalMensal += valor;
+                totalGeral += valor;
+                const totalSpan = card.querySelector('.insumo-total');
+                totalSpan.innerHTML = `
+                    <div>Total: ${formatarMoeda(valor)}</div>
+                    <div class="insumo-mensal">Mensal: ${formatarMoeda(valor)}</div>
+                `;
+            });
+            updateSummary(totalMensal);
+            return { totalMensal, totalGeral };
+        }
+        
+        grid.querySelectorAll('.insumo-valor').forEach(input => {
+            input.addEventListener('input', function(e) {
+                let valor = e.target.value.replace(/\D/g, '');
+                e.target.value = valor ? (parseInt(valor) / 100).toFixed(2).replace('.', ',') : '';
+                calcularTotal();
+                salvarRascunho();
+                if (cargoItem && cargoItem.dispatchEvent) {
+                    cargoItem.dispatchEvent(new Event('recalcular'));
+                }
+            });
+        });
+        
+        calcularTotal();
+        
+        return { 
+            section, 
+            calcularTotal: () => calcularTotal().totalMensal, 
+            getDados: () => {
+                const insumos = {};
+                grid.querySelectorAll('.insumo-card').forEach(card => {
+                    const campo = card.querySelector('.insumo-valor').dataset.campo;
+                    const valorInput = card.querySelector('.insumo-valor');
+                    const valor = parseFloat(valorInput.value.replace(/\./g, '').replace(',', '.')) || 0;
+                    if (valor > 0) {
+                        insumos[campo] = { valor: valor };
+                    }
+                });
+                return insumos;
+            } 
+        };
+    }
+
     function criarCargoItem(cargo = '', quantidade = 1, salario = 0, dadosAdicionais = {}, dadosUniformes = {}, dadosEpis = {}, dadosBeneficios = {}, dadosSeguranca = {}, dadosInsumos = {}, dadosDespesas = {}, dadosExames = {}, treinamentoValor = 0, encargosPercentual = 55.83, dadosBeneficiosPersonalizados = []) {
         
         console.log('🔵 criarCargoItem - ADICIONAIS RECEBIDOS:', {
