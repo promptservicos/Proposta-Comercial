@@ -4292,7 +4292,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // ========== SALVAR PROPOSTA ATUAL PARA COMPARTILHAR ==========
     // ========== SALVAR PROPOSTA ATUAL (COM CRIPTOGRAFIA) ==========
     async function salvarPropostaAtual() {
         const vendedor = document.getElementById('vendedor-nome').textContent;

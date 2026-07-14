@@ -3698,8 +3698,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             });
             
-            // Segurança
-            // ========== CAPTURAR SEGURANÇA - CORREÇÃO ==========
+            // ========== CORREÇÃO: SEGURANÇA - USAR 'item' em vez de 'cargo' ==========
             let seguranca = {};
             item.querySelectorAll('.seguranca-item').forEach(card => {
                 const campo = card.querySelector('.seguranca-valor')?.dataset.campo;
@@ -3708,14 +3707,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (campo) {
                     const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
                     const depreciacao = parseInt(depInput?.value) || 1;
-                    // ========== CORREÇÃO: SALVAR SEMPRE, MESMO SE FOR 0 ==========
+                    // SALVAR SEMPRE, MESMO SE FOR 0
                     seguranca[campo] = { 
                         valor: valor, 
                         depreciacao: depreciacao 
                     };
                 }
             });
-            cargo.seguranca = seguranca;
+            // NÃO use 'cargo.seguranca = seguranca' - isso é o que causa o erro!
+            // Em vez disso, guardamos em uma variável local e usamos abaixo
             
             // Insumos
             let insumos = {};
@@ -3781,6 +3781,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const totalVagaElem = item.querySelector('.total-prestacao .valor');
             const totalVaga = totalVagaElem ? parseFloat(totalVagaElem.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0 : 0;
             
+            // ========== CORREÇÃO: ADICIONAR O CARGO AO ARRAY ==========
             dadosSensiveis.cargos.push({
                 nome,
                 quantidade: qtd,
@@ -3798,7 +3799,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 epis,
                 beneficios,
                 beneficiosPersonalizados,
-                seguranca,
+                seguranca,  // ← Agora 'seguranca' está definido corretamente
                 insumos,
                 despesas,
                 exames,
@@ -3806,39 +3807,30 @@ document.addEventListener('DOMContentLoaded', async function() {
                 totalVaga
             });
         }
-        
+
         const dadosCriptografados = encryptData(dadosSensiveis);
         if (!dadosCriptografados) {
             console.error('Falha ao criptografar os dados');
-            mostrarModal('Erro ao criptografar os dados da proposta', true);
+            mostrarModal('Erro ao salvar proposta. Tente novamente.', true);
             return;
         }
 
-        // 🔥 PARTE MODIFICADA: Adicionado o campo emailVendedor
         const dadosPublicos = {
             vendedor: vendedor,
-            emailVendedor: emailVendedor,  // ← CAMPO OBRIGATÓRIO PARA AS REGRAS
-            tipo: 'temporario',
+            emailVendedor: user.email,
+            tipo: 'terceirizado',
             data: firebase.firestore.FieldValue.serverTimestamp(),
             totalGeral: parseFloat(totalGeralEl.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')),
             dadosCriptografados: dadosCriptografados
         };
         
-        console.log('📦 Enviando para o Firebase:', { 
-            vendedor, 
-            emailVendedor, 
-            tipo: 'temporario',
-            totalGeral: dadosPublicos.totalGeral 
-        });
-        
         if (propostaId) {
             await db.collection('propostas').doc(propostaId).update(dadosPublicos);
-            console.log('✅ Proposta atualizada com sucesso! ID:', propostaId);
         } else {
             const docRef = await db.collection('propostas').add(dadosPublicos);
             window.history.replaceState(null, '', `?id=${docRef.id}`);
-            console.log('✅ Nova proposta criada com sucesso! ID:', docRef.id);
         }
+
     }
 
     // ========== BAIXAR IMAGENS ==========
