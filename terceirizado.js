@@ -1052,14 +1052,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                 cargo.despesas = {};
                 const despesasSection = item.querySelector('.despesas-section');
                 if (despesasSection) {
-                    const taxaInput = despesasSection.querySelector('.despesa-taxa');
-                    if (taxaInput) {
-                        let taxaStr = taxaInput.value.replace('%', '').replace(',', '.');
+                    const taxaAdmInput = despesasSection.querySelector('.despesa-porcentagem-taxa-adm');
+                    const encargosInput = despesasSection.querySelector('.despesa-porcentagem-encargos');
+                    
+                    if (taxaAdmInput) {
+                        let taxaStr = taxaAdmInput.value.replace('%', '').replace(',', '.');
                         let taxaNum = parseFloat(taxaStr);
-                        if (!isNaN(taxaNum)) {
+                        if (!isNaN(taxaNum) && taxaNum > 0) {
+                            cargo.despesas.taxa_adm = { porcentagem: taxaNum };
+                        }
+                    }
+                    
+                    if (encargosInput) {
+                        let taxaStr = encargosInput.value.replace('%', '').replace(',', '.');
+                        let taxaNum = parseFloat(taxaStr);
+                        if (!isNaN(taxaNum) && taxaNum > 0) {
                             cargo.despesas.encargos_fiscais = { porcentagem: taxaNum };
-                        } else {
-                            cargo.despesas.encargos_fiscais = { porcentagem: 13.75 };
                         }
                     }
                 }
@@ -2757,7 +2765,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         } };
     }
 
-    // ========== SEÇÃO DESPESAS MODIFICADA (TAXA EDITÁVEL) ==========
+    // ========== SEÇÃO DESPESAS COM TAXA ADM + ENCARGOS FISCAIS ==========
     function criarDespesasSection(cargoItem, dadosDespesas = {}) {
         const section = document.createElement('div');
         section.className = 'despesas-section';
@@ -2770,45 +2778,59 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <span>Despesas</span>
             </div>
             <div class="despesas-summary">
-                <span class="summary-label">Total Encargos Fiscais:</span>
+                <span class="summary-label">Subtotal da prestação:</span>
                 <span class="summary-value">R$ 0,00</span>
                 <i class="fas fa-chevron-down despesas-toggle"></i>
             </div>
         `;
         
-        // CORREÇÃO: Garantir que a taxa seja 0 se foi salva como 0
-        let taxaInicial = 13.75; // valor padrão
+        // Taxa Adm inicial (vem dos dados salvos ou 0)
+        let taxaAdmInicial = 0;
+        let encargosFiscaisInicial = 0;
         
-        // Verifica se os dados de despesas existem
-        if (dadosDespesas && dadosDespesas.encargos_fiscais) {
-            // Pega a porcentagem, garantindo que seja um número
-            const taxaSalva = dadosDespesas.encargos_fiscais.porcentagem;
+        if (dadosDespesas && dadosDespesas.taxa_adm) {
+            const taxaSalva = dadosDespesas.taxa_adm.porcentagem;
             if (typeof taxaSalva === 'number' && !isNaN(taxaSalva)) {
-                taxaInicial = taxaSalva;
+                taxaAdmInicial = taxaSalva;
             }
         }
         
-        // Formata a taxa para exibição (0.00% em vez de 0.00% com vírgula)
-        const taxaInicialFormatada = taxaInicial.toFixed(2).replace('.', ',');
+        if (dadosDespesas && dadosDespesas.encargos_fiscais) {
+            const taxaSalva = dadosDespesas.encargos_fiscais.porcentagem;
+            if (typeof taxaSalva === 'number' && !isNaN(taxaSalva)) {
+                encargosFiscaisInicial = taxaSalva;
+            }
+        }
         
         const content = document.createElement('div');
         content.className = 'despesas-content';
         content.innerHTML = `
             <div class="despesas-grid">
                 <div class="despesa-card">
-                    <div class="despesa-nome">Encargos Fiscais (Benefícios)</div>
+                    <div class="despesa-nome">Taxa Adm (Sob salário + encargos)</div>
                     <div class="despesa-campos">
                         <div class="despesa-campo">
-                            <label>Taxa (%)</label>
-                            <input type="text" class="despesa-taxa" value="${taxaInicialFormatada}%">
+                            <label>%</label>
+                            <input type="text" class="despesa-porcentagem-taxa-adm" data-campo="taxa_adm" placeholder="0,00" value="${taxaAdmInicial.toFixed(2).replace('.', ',')}">
                         </div>
                     </div>
-                    <div class="despesa-valor">R$ 0,00</div>
-                    <div class="despesa-calculo"></div>
+                    <div class="despesa-valor-taxa-adm">R$ 0,00</div>
+                    <div class="despesa-calculo-taxa-adm"></div>
+                </div>
+                <div class="despesa-card">
+                    <div class="despesa-nome">Encargos fiscais (Sob valor bruto)</div>
+                    <div class="despesa-campos">
+                        <div class="despesa-campo">
+                            <label>%</label>
+                            <input type="text" class="despesa-porcentagem-encargos" data-campo="encargos_fiscais" placeholder="0,00" value="${encargosFiscaisInicial.toFixed(2).replace('.', ',')}">
+                        </div>
+                    </div>
+                    <div class="despesa-valor-encargos">R$ 0,00</div>
+                    <div class="despesa-calculo-encargos"></div>
                 </div>
             </div>
             <div class="despesas-total">
-                <span>Total Encargos Fiscais:</span>
+                <span>Subtotal da prestação de serviço:</span>
                 <span>R$ 0,00</span>
             </div>
         `;
@@ -2836,39 +2858,70 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
         
         const totalSpan = content.querySelector('.despesas-total span:last-child');
-        const valorSpan = content.querySelector('.despesa-valor');
-        const calculoSpan = content.querySelector('.despesa-calculo');
-        const taxaInput = content.querySelector('.despesa-taxa');
+        const taxaAdmInput = content.querySelector('.despesa-porcentagem-taxa-adm');
+        const encargosInput = content.querySelector('.despesa-porcentagem-encargos');
+        const taxaAdmValorSpan = content.querySelector('.despesa-valor-taxa-adm');
+        const encargosValorSpan = content.querySelector('.despesa-valor-encargos');
+        const taxaAdmCalculoSpan = content.querySelector('.despesa-calculo-taxa-adm');
+        const encargosCalculoSpan = content.querySelector('.despesa-calculo-encargos');
         
-        // CORREÇÃO: Garantir que a taxa nunca seja NaN
-        function getTaxa() {
-            let taxaStr = taxaInput.value.replace('%', '').replace(',', '.');
+        function getTaxaAdm() {
+            let taxaStr = taxaAdmInput.value.replace('%', '').replace(',', '.');
             let taxa = parseFloat(taxaStr);
-            // Se for NaN, retorna 0 (em vez de 13.75)
             return isNaN(taxa) ? 0 : taxa;
         }
         
-        function calcularDespesas(subtotalInsumosBeneficios) {
-            const taxa = getTaxa();
-            const taxaDecimal = taxa / 100;
-            const valorEncargos = subtotalInsumosBeneficios * taxaDecimal;
-            
-            valorSpan.textContent = formatarMoeda(valorEncargos);
-            calculoSpan.textContent = `(${formatarMoeda(subtotalInsumosBeneficios)} × ${taxa.toFixed(2)}%)`;
-            totalSpan.textContent = formatarMoeda(valorEncargos);
-            header.querySelector('.summary-value').textContent = formatarMoeda(valorEncargos);
-            
-            return valorEncargos;
+        function getEncargos() {
+            let taxaStr = encargosInput.value.replace('%', '').replace(',', '.');
+            let taxa = parseFloat(taxaStr);
+            return isNaN(taxa) ? 0 : taxa;
         }
         
-        // CORREÇÃO: Atualizar quando a taxa for alterada
-        taxaInput.addEventListener('input', function(e) {
+        function calcularDespesas(subtotalSalarioEncargosAdicionais, subtotalInsumosBeneficios) {
+            const taxaAdm = getTaxaAdm();
+            const taxaEncargos = getEncargos();
+            
+            // Taxa Adm sobre Salário+Encargos+Adicionais + Insumos+Benefícios
+            const baseTaxaAdm = subtotalSalarioEncargosAdicionais + subtotalInsumosBeneficios;
+            const valorTaxaAdm = baseTaxaAdm * (taxaAdm / 100);
+            
+            // Encargos fiscais sobre (baseTaxaAdm + Taxa Adm)
+            const baseEncargos = baseTaxaAdm + valorTaxaAdm;
+            const valorEncargos = baseEncargos * (taxaEncargos / 100);
+            
+            // Atualiza os spans
+            taxaAdmValorSpan.textContent = formatarMoeda(valorTaxaAdm);
+            taxaAdmCalculoSpan.textContent = `(${formatarMoeda(baseTaxaAdm)} × ${taxaAdm.toFixed(2)}%)`;
+            
+            encargosValorSpan.textContent = formatarMoeda(valorEncargos);
+            encargosCalculoSpan.textContent = `(${formatarMoeda(baseEncargos)} × ${taxaEncargos.toFixed(2)}%)`;
+            
+            const totalPrestacao = baseTaxaAdm + valorTaxaAdm + valorEncargos;
+            totalSpan.textContent = formatarMoeda(totalPrestacao);
+            header.querySelector('.summary-value').textContent = formatarMoeda(totalPrestacao);
+            
+            return { taxaAdm: valorTaxaAdm, encargosFiscais: valorEncargos, totalPrestacao };
+        }
+        
+        // Event listeners
+        taxaAdmInput.addEventListener('input', function(e) {
             let valor = e.target.value.replace(/\D/g, '');
             let valorNum = valor ? parseInt(valor) / 100 : 0;
             if (valorNum > 100) valorNum = 100;
             e.target.value = valorNum.toFixed(2).replace('.', ',') + '%';
             
-            // Dispara evento para o cargo inteiro recalcular
+            if (cargoItem && cargoItem.dispatchEvent) {
+                cargoItem.dispatchEvent(new Event('recalcular-despesas'));
+            }
+            salvarRascunho();
+        });
+        
+        encargosInput.addEventListener('input', function(e) {
+            let valor = e.target.value.replace(/\D/g, '');
+            let valorNum = valor ? parseInt(valor) / 100 : 0;
+            if (valorNum > 100) valorNum = 100;
+            e.target.value = valorNum.toFixed(2).replace('.', ',') + '%';
+            
             if (cargoItem && cargoItem.dispatchEvent) {
                 cargoItem.dispatchEvent(new Event('recalcular-despesas'));
             }
@@ -2879,13 +2932,18 @@ document.addEventListener('DOMContentLoaded', async function() {
             section, 
             calcularDespesas, 
             getDados: () => {
-                const taxa = getTaxa();
-                return { encargos_fiscais: { porcentagem: taxa } };
-            },
-            // CORREÇÃO: Adicionar função para forçar atualização da taxa
-            setTaxa: (valor) => {
-                const taxaFormatada = valor.toFixed(2).replace('.', ',');
-                taxaInput.value = taxaFormatada + '%';
+                const taxaAdm = getTaxaAdm();
+                const encargos = getEncargos();
+                const despesas = {};
+                
+                if (taxaAdm > 0) {
+                    despesas.taxa_adm = { porcentagem: taxaAdm };
+                }
+                if (encargos > 0) {
+                    despesas.encargos_fiscais = { porcentagem: encargos };
+                }
+                
+                return despesas;
             }
         };
     }
