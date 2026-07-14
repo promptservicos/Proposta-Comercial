@@ -3715,7 +3715,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     };
                 }
             });
-            cargo.seguranca = seguranca;
             
             // Insumos
             let insumos = {};
