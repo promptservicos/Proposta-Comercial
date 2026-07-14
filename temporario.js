@@ -2789,92 +2789,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         };
     }
 
-    // ========== FUNÇÃO CRIAR INSUMOS SECTION ==========
-    function criarInsumosSection(cargoItem, dadosInsumos = {}) {
-        const conteudoHtml = `<div class="insumos-grid"></div>`;
-        const { section, updateSummary, content } = criarSecaoExpansivel('Insumos', 'fa-boxes', conteudoHtml, true);
-        const grid = content.querySelector('.insumos-grid');
-        
-        // ========== CORREÇÃO: USAR VALOR SALVO OU 0 ==========
-        INSUMOS.forEach(s => {
-            const card = document.createElement('div');
-            card.className = 'insumo-card';
-            
-            // Verifica se o campo existe nos dados salvos
-            let valorUnitario = 0;
-            if (dadosInsumos && dadosInsumos[s.campo] !== undefined) {
-                const valorSalvo = dadosInsumos[s.campo].valor;
-                if (typeof valorSalvo === 'number' && !isNaN(valorSalvo)) {
-                    valorUnitario = valorSalvo;
-                }
-            }
-            
-            card.innerHTML = `
-                <div class="insumo-nome">${s.nome}</div>
-                <div class="insumo-campos">
-                    <div class="insumo-campo">
-                        <label>Valor (R$)</label>
-                        <input type="text" class="insumo-valor" data-campo="${s.campo}" placeholder="0,00" value="${valorUnitario.toFixed(2).replace('.', ',')}">
-                    </div>
-                </div>
-                <div class="insumo-total">
-                    <div>Total: R$ 0,00</div>
-                    <div class="insumo-mensal">Mensal: R$ 0,00</div>
-                </div>
-            `;
-            grid.appendChild(card);
-        });
-        
-        function calcularTotal() {
-            let totalMensal = 0;
-            let totalGeral = 0;
-            grid.querySelectorAll('.insumo-card').forEach(card => {
-                const valorInput = card.querySelector('.insumo-valor');
-                let valor = parseFloat(valorInput.value.replace(/\./g, '').replace(',', '.')) || 0;
-                totalMensal += valor;
-                totalGeral += valor;
-                const totalSpan = card.querySelector('.insumo-total');
-                totalSpan.innerHTML = `
-                    <div>Total: ${formatarMoeda(valor)}</div>
-                    <div class="insumo-mensal">Mensal: ${formatarMoeda(valor)}</div>
-                `;
-            });
-            updateSummary(totalMensal);
-            return { totalMensal, totalGeral };
-        }
-        
-        grid.querySelectorAll('.insumo-valor').forEach(input => {
-            input.addEventListener('input', function(e) {
-                let valor = e.target.value.replace(/\D/g, '');
-                e.target.value = valor ? (parseInt(valor) / 100).toFixed(2).replace('.', ',') : '';
-                calcularTotal();
-                salvarRascunho();
-                if (cargoItem && cargoItem.dispatchEvent) {
-                    cargoItem.dispatchEvent(new Event('recalcular'));
-                }
-            });
-        });
-        
-        calcularTotal();
-        
-        return { 
-            section, 
-            calcularTotal: () => calcularTotal().totalMensal, 
-            getDados: () => {
-                const insumos = {};
-                grid.querySelectorAll('.insumo-card').forEach(card => {
-                    const campo = card.querySelector('.insumo-valor').dataset.campo;
-                    const valorInput = card.querySelector('.insumo-valor');
-                    const valor = parseFloat(valorInput.value.replace(/\./g, '').replace(',', '.')) || 0;
-                    if (valor > 0) {
-                        insumos[campo] = { valor: valor };
-                    }
-                });
-                return insumos;
-            } 
-        };
-    }
-
     function criarCargoItem(cargo = '', quantidade = 1, salario = 0, dadosAdicionais = {}, dadosUniformes = {}, dadosEpis = {}, dadosBeneficios = {}, dadosSeguranca = {}, dadosInsumos = {}, dadosDespesas = {}, dadosExames = {}, treinamentoValor = 0, encargosPercentual = 55.83, dadosBeneficiosPersonalizados = []) {
         
         console.log('🔵 criarCargoItem - ADICIONAIS RECEBIDOS:', {
@@ -3698,7 +3612,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             });
             
-            // ========== CORREÇÃO: SEGURANÇA - USAR 'item' em vez de 'cargo' ==========
+            // Segurança
+            // ========== CAPTURAR SEGURANÇA - CORREÇÃO ==========
             let seguranca = {};
             item.querySelectorAll('.seguranca-item').forEach(card => {
                 const campo = card.querySelector('.seguranca-valor')?.dataset.campo;
@@ -3707,15 +3622,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (campo) {
                     const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
                     const depreciacao = parseInt(depInput?.value) || 1;
-                    // SALVAR SEMPRE, MESMO SE FOR 0
+                    // ========== CORREÇÃO: SALVAR SEMPRE, MESMO SE FOR 0 ==========
                     seguranca[campo] = { 
                         valor: valor, 
                         depreciacao: depreciacao 
                     };
                 }
             });
-            // NÃO use 'cargo.seguranca = seguranca' - isso é o que causa o erro!
-            // Em vez disso, guardamos em uma variável local e usamos abaixo
+            cargo.seguranca = seguranca;
             
             // Insumos
             let insumos = {};
@@ -3781,7 +3695,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             const totalVagaElem = item.querySelector('.total-prestacao .valor');
             const totalVaga = totalVagaElem ? parseFloat(totalVagaElem.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0 : 0;
             
-            // ========== CORREÇÃO: ADICIONAR O CARGO AO ARRAY ==========
             dadosSensiveis.cargos.push({
                 nome,
                 quantidade: qtd,
@@ -3799,7 +3712,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 epis,
                 beneficios,
                 beneficiosPersonalizados,
-                seguranca,  // ← Agora 'seguranca' está definido corretamente
+                seguranca,
                 insumos,
                 despesas,
                 exames,
@@ -3807,30 +3720,39 @@ document.addEventListener('DOMContentLoaded', async function() {
                 totalVaga
             });
         }
-
+        
         const dadosCriptografados = encryptData(dadosSensiveis);
         if (!dadosCriptografados) {
             console.error('Falha ao criptografar os dados');
-            mostrarModal('Erro ao salvar proposta. Tente novamente.', true);
+            mostrarModal('Erro ao criptografar os dados da proposta', true);
             return;
         }
 
+        // 🔥 PARTE MODIFICADA: Adicionado o campo emailVendedor
         const dadosPublicos = {
             vendedor: vendedor,
-            emailVendedor: user.email,
-            tipo: 'terceirizado',
+            emailVendedor: emailVendedor,  // ← CAMPO OBRIGATÓRIO PARA AS REGRAS
+            tipo: 'temporario',
             data: firebase.firestore.FieldValue.serverTimestamp(),
             totalGeral: parseFloat(totalGeralEl.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')),
             dadosCriptografados: dadosCriptografados
         };
         
+        console.log('📦 Enviando para o Firebase:', { 
+            vendedor, 
+            emailVendedor, 
+            tipo: 'temporario',
+            totalGeral: dadosPublicos.totalGeral 
+        });
+        
         if (propostaId) {
             await db.collection('propostas').doc(propostaId).update(dadosPublicos);
+            console.log('✅ Proposta atualizada com sucesso! ID:', propostaId);
         } else {
             const docRef = await db.collection('propostas').add(dadosPublicos);
             window.history.replaceState(null, '', `?id=${docRef.id}`);
+            console.log('✅ Nova proposta criada com sucesso! ID:', docRef.id);
         }
-
     }
 
     // ========== BAIXAR IMAGENS ==========

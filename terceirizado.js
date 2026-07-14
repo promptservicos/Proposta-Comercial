@@ -1052,22 +1052,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 cargo.despesas = {};
                 const despesasSection = item.querySelector('.despesas-section');
                 if (despesasSection) {
-                    const taxaAdmInput = despesasSection.querySelector('.despesa-porcentagem-taxa-adm');
-                    const encargosInput = despesasSection.querySelector('.despesa-porcentagem-encargos');
-                    
-                    if (taxaAdmInput) {
-                        let taxaStr = taxaAdmInput.value.replace('%', '').replace(',', '.');
+                    const taxaInput = despesasSection.querySelector('.despesa-taxa');
+                    if (taxaInput) {
+                        let taxaStr = taxaInput.value.replace('%', '').replace(',', '.');
                         let taxaNum = parseFloat(taxaStr);
-                        if (!isNaN(taxaNum) && taxaNum > 0) {
-                            cargo.despesas.taxa_adm = { porcentagem: taxaNum };
-                        }
-                    }
-                    
-                    if (encargosInput) {
-                        let taxaStr = encargosInput.value.replace('%', '').replace(',', '.');
-                        let taxaNum = parseFloat(taxaStr);
-                        if (!isNaN(taxaNum) && taxaNum > 0) {
+                        if (!isNaN(taxaNum)) {
                             cargo.despesas.encargos_fiscais = { porcentagem: taxaNum };
+                        } else {
+                            cargo.despesas.encargos_fiscais = { porcentagem: 13.75 };
                         }
                     }
                 }
@@ -2765,7 +2757,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         } };
     }
 
-    // ========== SEÇÃO DESPESAS COM TAXA ADM + ENCARGOS FISCAIS ==========
+    // ========== SEÇÃO DESPESAS MODIFICADA (TAXA EDITÁVEL) ==========
     function criarDespesasSection(cargoItem, dadosDespesas = {}) {
         const section = document.createElement('div');
         section.className = 'despesas-section';
@@ -2778,59 +2770,45 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <span>Despesas</span>
             </div>
             <div class="despesas-summary">
-                <span class="summary-label">Subtotal da prestação:</span>
+                <span class="summary-label">Total Encargos Fiscais:</span>
                 <span class="summary-value">R$ 0,00</span>
                 <i class="fas fa-chevron-down despesas-toggle"></i>
             </div>
         `;
         
-        // Taxa Adm inicial (vem dos dados salvos ou 0)
-        let taxaAdmInicial = 0;
-        let encargosFiscaisInicial = 0;
+        // CORREÇÃO: Garantir que a taxa seja 0 se foi salva como 0
+        let taxaInicial = 13.75; // valor padrão
         
-        if (dadosDespesas && dadosDespesas.taxa_adm) {
-            const taxaSalva = dadosDespesas.taxa_adm.porcentagem;
-            if (typeof taxaSalva === 'number' && !isNaN(taxaSalva)) {
-                taxaAdmInicial = taxaSalva;
-            }
-        }
-        
+        // Verifica se os dados de despesas existem
         if (dadosDespesas && dadosDespesas.encargos_fiscais) {
+            // Pega a porcentagem, garantindo que seja um número
             const taxaSalva = dadosDespesas.encargos_fiscais.porcentagem;
             if (typeof taxaSalva === 'number' && !isNaN(taxaSalva)) {
-                encargosFiscaisInicial = taxaSalva;
+                taxaInicial = taxaSalva;
             }
         }
+        
+        // Formata a taxa para exibição (0.00% em vez de 0.00% com vírgula)
+        const taxaInicialFormatada = taxaInicial.toFixed(2).replace('.', ',');
         
         const content = document.createElement('div');
         content.className = 'despesas-content';
         content.innerHTML = `
             <div class="despesas-grid">
                 <div class="despesa-card">
-                    <div class="despesa-nome">Taxa Adm (Sob salário + encargos)</div>
+                    <div class="despesa-nome">Encargos Fiscais (Benefícios)</div>
                     <div class="despesa-campos">
                         <div class="despesa-campo">
-                            <label>%</label>
-                            <input type="text" class="despesa-porcentagem-taxa-adm" data-campo="taxa_adm" placeholder="0,00" value="${taxaAdmInicial.toFixed(2).replace('.', ',')}">
+                            <label>Taxa (%)</label>
+                            <input type="text" class="despesa-taxa" value="${taxaInicialFormatada}%">
                         </div>
                     </div>
-                    <div class="despesa-valor-taxa-adm">R$ 0,00</div>
-                    <div class="despesa-calculo-taxa-adm"></div>
-                </div>
-                <div class="despesa-card">
-                    <div class="despesa-nome">Encargos fiscais (Sob valor bruto)</div>
-                    <div class="despesa-campos">
-                        <div class="despesa-campo">
-                            <label>%</label>
-                            <input type="text" class="despesa-porcentagem-encargos" data-campo="encargos_fiscais" placeholder="0,00" value="${encargosFiscaisInicial.toFixed(2).replace('.', ',')}">
-                        </div>
-                    </div>
-                    <div class="despesa-valor-encargos">R$ 0,00</div>
-                    <div class="despesa-calculo-encargos"></div>
+                    <div class="despesa-valor">R$ 0,00</div>
+                    <div class="despesa-calculo"></div>
                 </div>
             </div>
             <div class="despesas-total">
-                <span>Subtotal da prestação de serviço:</span>
+                <span>Total Encargos Fiscais:</span>
                 <span>R$ 0,00</span>
             </div>
         `;
@@ -2858,70 +2836,39 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
         
         const totalSpan = content.querySelector('.despesas-total span:last-child');
-        const taxaAdmInput = content.querySelector('.despesa-porcentagem-taxa-adm');
-        const encargosInput = content.querySelector('.despesa-porcentagem-encargos');
-        const taxaAdmValorSpan = content.querySelector('.despesa-valor-taxa-adm');
-        const encargosValorSpan = content.querySelector('.despesa-valor-encargos');
-        const taxaAdmCalculoSpan = content.querySelector('.despesa-calculo-taxa-adm');
-        const encargosCalculoSpan = content.querySelector('.despesa-calculo-encargos');
+        const valorSpan = content.querySelector('.despesa-valor');
+        const calculoSpan = content.querySelector('.despesa-calculo');
+        const taxaInput = content.querySelector('.despesa-taxa');
         
-        function getTaxaAdm() {
-            let taxaStr = taxaAdmInput.value.replace('%', '').replace(',', '.');
+        // CORREÇÃO: Garantir que a taxa nunca seja NaN
+        function getTaxa() {
+            let taxaStr = taxaInput.value.replace('%', '').replace(',', '.');
             let taxa = parseFloat(taxaStr);
+            // Se for NaN, retorna 0 (em vez de 13.75)
             return isNaN(taxa) ? 0 : taxa;
         }
         
-        function getEncargos() {
-            let taxaStr = encargosInput.value.replace('%', '').replace(',', '.');
-            let taxa = parseFloat(taxaStr);
-            return isNaN(taxa) ? 0 : taxa;
+        function calcularDespesas(subtotalInsumosBeneficios) {
+            const taxa = getTaxa();
+            const taxaDecimal = taxa / 100;
+            const valorEncargos = subtotalInsumosBeneficios * taxaDecimal;
+            
+            valorSpan.textContent = formatarMoeda(valorEncargos);
+            calculoSpan.textContent = `(${formatarMoeda(subtotalInsumosBeneficios)} × ${taxa.toFixed(2)}%)`;
+            totalSpan.textContent = formatarMoeda(valorEncargos);
+            header.querySelector('.summary-value').textContent = formatarMoeda(valorEncargos);
+            
+            return valorEncargos;
         }
         
-        function calcularDespesas(subtotalSalarioEncargosAdicionais, subtotalInsumosBeneficios) {
-            const taxaAdm = getTaxaAdm();
-            const taxaEncargos = getEncargos();
-            
-            // Taxa Adm sobre Salário+Encargos+Adicionais + Insumos+Benefícios
-            const baseTaxaAdm = subtotalSalarioEncargosAdicionais + subtotalInsumosBeneficios;
-            const valorTaxaAdm = baseTaxaAdm * (taxaAdm / 100);
-            
-            // Encargos fiscais sobre (baseTaxaAdm + Taxa Adm)
-            const baseEncargos = baseTaxaAdm + valorTaxaAdm;
-            const valorEncargos = baseEncargos * (taxaEncargos / 100);
-            
-            // Atualiza os spans
-            taxaAdmValorSpan.textContent = formatarMoeda(valorTaxaAdm);
-            taxaAdmCalculoSpan.textContent = `(${formatarMoeda(baseTaxaAdm)} × ${taxaAdm.toFixed(2)}%)`;
-            
-            encargosValorSpan.textContent = formatarMoeda(valorEncargos);
-            encargosCalculoSpan.textContent = `(${formatarMoeda(baseEncargos)} × ${taxaEncargos.toFixed(2)}%)`;
-            
-            const totalPrestacao = baseTaxaAdm + valorTaxaAdm + valorEncargos;
-            totalSpan.textContent = formatarMoeda(totalPrestacao);
-            header.querySelector('.summary-value').textContent = formatarMoeda(totalPrestacao);
-            
-            return { taxaAdm: valorTaxaAdm, encargosFiscais: valorEncargos, totalPrestacao };
-        }
-        
-        // Event listeners
-        taxaAdmInput.addEventListener('input', function(e) {
+        // CORREÇÃO: Atualizar quando a taxa for alterada
+        taxaInput.addEventListener('input', function(e) {
             let valor = e.target.value.replace(/\D/g, '');
             let valorNum = valor ? parseInt(valor) / 100 : 0;
             if (valorNum > 100) valorNum = 100;
             e.target.value = valorNum.toFixed(2).replace('.', ',') + '%';
             
-            if (cargoItem && cargoItem.dispatchEvent) {
-                cargoItem.dispatchEvent(new Event('recalcular-despesas'));
-            }
-            salvarRascunho();
-        });
-        
-        encargosInput.addEventListener('input', function(e) {
-            let valor = e.target.value.replace(/\D/g, '');
-            let valorNum = valor ? parseInt(valor) / 100 : 0;
-            if (valorNum > 100) valorNum = 100;
-            e.target.value = valorNum.toFixed(2).replace('.', ',') + '%';
-            
+            // Dispara evento para o cargo inteiro recalcular
             if (cargoItem && cargoItem.dispatchEvent) {
                 cargoItem.dispatchEvent(new Event('recalcular-despesas'));
             }
@@ -2932,18 +2879,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             section, 
             calcularDespesas, 
             getDados: () => {
-                const taxaAdm = getTaxaAdm();
-                const encargos = getEncargos();
-                const despesas = {};
-                
-                if (taxaAdm > 0) {
-                    despesas.taxa_adm = { porcentagem: taxaAdm };
-                }
-                if (encargos > 0) {
-                    despesas.encargos_fiscais = { porcentagem: encargos };
-                }
-                
-                return despesas;
+                const taxa = getTaxa();
+                return { encargos_fiscais: { porcentagem: taxa } };
+            },
+            // CORREÇÃO: Adicionar função para forçar atualização da taxa
+            setTaxa: (valor) => {
+                const taxaFormatada = valor.toFixed(2).replace('.', ',');
+                taxaInput.value = taxaFormatada + '%';
             }
         };
     }
@@ -4350,24 +4292,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // ========== SALVAR PROPOSTA ATUAL (COM CRIPTOGRAFIA) ==========
+    // ========== SALVAR PROPOSTA ATUAL PARA COMPARTILHAR ==========
     async function salvarPropostaAtual() {
+        const user = auth.currentUser;
+        if (!user) {
+            console.error('❌ Usuário não autenticado');
+            mostrarModal('❌ Você precisa estar logado para salvar.', true);
+            throw new Error('Usuário não autenticado');
+        }
+        
         const vendedor = document.getElementById('vendedor-nome').textContent;
         const cliente = clienteInput.value || 'SEM CLIENTE';
         const urlParams = new URLSearchParams(window.location.search);
         const propostaId = urlParams.get('id');
-        
-        // Obter email do usuário logado
-        const user = auth.currentUser;
-        const emailVendedor = user ? user.email : null;
-        
-        if (!emailVendedor) {
-            console.error('Usuário não está logado');
-            mostrarModal('Você precisa estar logado para salvar!', true);
-            return;
-        }
-        
-        console.log('📧 Salvando proposta para email:', emailVendedor);
         
         // --- Dados que serão criptografados ---
         const dadosSensiveis = {
@@ -4376,25 +4313,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         };
 
         for (const item of document.querySelectorAll('.cargo-item')) {
-            const nome = item.querySelector('.cargo-nome').value.trim() || 'Cargo sem nome';
-            const qtd = parseInt(item.querySelector('.cargo-quantidade').value) || 1;
-            const salarioInput = item.querySelector('.cargo-salario').value;
+            const nome = item.querySelector('.cargo-nome')?.value.trim() || 'Cargo sem nome';
+            const qtd = parseInt(item.querySelector('.cargo-quantidade')?.value) || 1;
+            const salarioInput = item.querySelector('.cargo-salario')?.value;
             const salario = parseFloat(salarioInput.replace(/\./g, '').replace(',', '.')) || 0;
             const encargosPercentualInput = item.querySelector('.encargos-percentual');
-            const encargosPercentual = parseFloat(encargosPercentualInput?.value.replace(/\./g, '').replace(',', '.')) || 55.83;
+            const encargosPercentual = parseFloat(encargosPercentualInput?.value.replace(/\./g, '').replace(',', '.')) || 113.00;
             
-            // Adicionais
-            const heCheck = item.querySelector('.he-check');
-            const anCheck = item.querySelector('.an-check');
-            const perCheck = item.querySelector('.per-check');
-            const insCheck = item.querySelector('.ins-check');
-            const heHorasInput = item.querySelector('.he-horas');
-            const anHorasInput = item.querySelector('.an-horas');
+            const adicionaisSection = item.querySelector('.expandable-section .adicionais-grid')?.closest('.expandable-section') 
+                || item.querySelector('.expandable-section:first-child');
+            const adicionaisContent = adicionaisSection?.querySelector('.section-content');
             
-            // Uniformes e EPIs
+            // Capturar uniformes
             let uniformes = {};
-            let epis = {};
-            
             const uniformesBox = item.querySelector('.uniformes-box');
             if (uniformesBox) {
                 uniformesBox.querySelectorAll('.item-lista:not(.item-custom)').forEach(lista => {
@@ -4422,9 +4353,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                         uniformesCustom.push({ nome: nomeCustom, preco, quantidade: qtdCustom, depreciacao: depCustom });
                     }
                 });
-                if (uniformesCustom.length > 0) uniformes.custom = uniformesCustom;
+                if (uniformesCustom.length > 0) {
+                    uniformes.custom = uniformesCustom;
+                }
             }
             
+            // Capturar EPIs
+            let epis = {};
             const episBox = item.querySelector('.epis-box');
             if (episBox) {
                 episBox.querySelectorAll('.item-lista:not(.item-custom)').forEach(lista => {
@@ -4452,89 +4387,64 @@ document.addEventListener('DOMContentLoaded', async function() {
                         episCustom.push({ nome: nomeCustom, preco, quantidade: qtdCustom, depreciacao: depCustom });
                     }
                 });
-                if (episCustom.length > 0) epis.custom = episCustom;
+                if (episCustom.length > 0) {
+                    epis.custom = episCustom;
+                }
             }
             
-            // Benefícios
-            let beneficios = {};
-            let beneficiosPersonalizados = [];
-            
-            item.querySelectorAll('.beneficio-card').forEach(card => {
-                const campo = card.querySelector('.beneficio-valor')?.dataset.campo;
-                const valorInput = card.querySelector('.beneficio-valor');
-                const diasInput = card.querySelector('.beneficio-dias');
-                if (campo) {
+            // Capturar benefícios
+            let beneficios = {}, beneficiosPersonalizados = [];
+            const beneficiosSection = item.querySelectorAll('.expandable-section')[2];
+            if (beneficiosSection) {
+                beneficiosSection.querySelectorAll('.beneficio-fixo-card').forEach(card => {
+                    const campo = card.querySelector('.beneficio-valor')?.dataset.campo;
+                    const valorInput = card.querySelector('.beneficio-valor');
+                    const diasInput = card.querySelector('.beneficio-dias');
+                    if (campo) {
+                        const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
+                        const dias = parseInt(diasInput?.value) || 0;
+                        if (valor > 0 || dias > 0) {
+                            beneficios[campo] = { valorDiario: valor, dias: dias };
+                        }
+                    }
+                });
+                
+                beneficiosSection.querySelectorAll('.beneficio-custom-card').forEach(card => {
+                    const nomeInput = card.querySelector('.beneficio-custom-nome');
+                    const valorInput = card.querySelector('.beneficio-custom-valor');
+                    const diasInput = card.querySelector('.beneficio-custom-dias');
+                    const nome = nomeInput?.value || '';
                     const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
                     const dias = parseInt(diasInput?.value) || 0;
-                    if (valor > 0 || dias > 0) {
-                        beneficios[campo] = { valorDiario: valor, dias: dias };
-                    }
-                }
-            });
-            
-            item.querySelectorAll('.beneficio-custom-card').forEach(card => {
-                const nomeInput = card.querySelector('.beneficio-custom-nome');
-                const valorInput = card.querySelector('.beneficio-custom-valor');
-                const diasInput = card.querySelector('.beneficio-custom-dias');
-                const nome = nomeInput?.value.trim() || '';
-                const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
-                const dias = parseInt(diasInput?.value) || 0;
-                if (nome && (valor > 0 || dias > 0)) {
-                    beneficiosPersonalizados.push({ nome, valorDiario: valor, dias: dias });
-                }
-            });
-            
-            // ========== CORREÇÃO: SEGURANÇA - USAR 'item' em vez de 'cargo' ==========
-            let seguranca = {};
-            item.querySelectorAll('.seguranca-item').forEach(card => {
-                const campo = card.querySelector('.seguranca-valor')?.dataset.campo;
-                const valorInput = card.querySelector('.seguranca-valor');
-                const depInput = card.querySelector('.seguranca-depreciacao');
-                if (campo) {
-                    const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
-                    const depreciacao = parseInt(depInput?.value) || 1;
-                    // SALVAR SEMPRE, MESMO SE FOR 0
-                    seguranca[campo] = { 
-                        valor: valor, 
-                        depreciacao: depreciacao 
-                    };
-                }
-            });
-            // NÃO use 'cargo.seguranca = seguranca' - isso é o que causa o erro!
-            // Em vez disso, guardamos em uma variável local e usamos abaixo
-            
-            // Insumos
-            let insumos = {};
-            item.querySelectorAll('.insumo-card').forEach(card => {
-                const campo = card.querySelector('.insumo-valor')?.dataset.campo;
-                const valorInput = card.querySelector('.insumo-valor');
-                if (campo) {
-                    const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
-                    if (valor > 0) {
-                        insumos[campo] = { valor: valor };
-                    }
-                }
-            });
-            
-            // Despesas
-            let despesas = {};
-            const despesasSection = item.querySelector('.despesas-section');
-            if (despesasSection) {
-                despesasSection.querySelectorAll('.despesa-card').forEach(card => {
-                    const campo = card.querySelector('.despesa-porcentagem')?.dataset.campo;
-                    const porcentagemInput = card.querySelector('.despesa-porcentagem');
-                    if (campo && porcentagemInput) {
-                        const porcentagem = parseFloat(porcentagemInput.value.replace(/\./g, '').replace(',', '.')) || 0;
-                        if (porcentagem > 0) {
-                            despesas[campo] = { porcentagem: porcentagem };
-                        }
+                    if (nome && (valor > 0 || dias > 0)) {
+                        beneficiosPersonalizados.push({ nome, valorDiario: valor, dias: dias });
                     }
                 });
             }
             
-            // Exames
-            let exames = {};
-            let treinamento = 0;
+            // Capturar segurança
+            let seguranca = {};
+            const segurancaSection = item.querySelectorAll('.expandable-section')[3];
+            if (segurancaSection) {
+                segurancaSection.querySelectorAll('.seguranca-item').forEach(card => {
+                    const campo = card.querySelector('.seguranca-valor')?.dataset.campo;
+                    const valorInput = card.querySelector('.seguranca-valor');
+                    const depInput = card.querySelector('.seguranca-depreciacao');
+                    if (campo) {
+                        const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
+                        const depreciacao = parseInt(depInput?.value) || 1;
+                        // ========== CORREÇÃO: SALVAR SEMPRE, MESMO SE FOR 0 ==========
+                        // Remove o if (valor > 0) para salvar sempre
+                        seguranca[campo] = { 
+                            valor: valor, 
+                            depreciacao: depreciacao 
+                        };
+                    }
+                });
+            }
+            
+            // Capturar exames
+            let exames = {}, treinamento = 0;
             const examesSection = item.querySelector('.exames-section');
             if (examesSection) {
                 examesSection.querySelectorAll('.exame-checkbox').forEach(cb => {
@@ -4556,44 +4466,87 @@ document.addEventListener('DOMContentLoaded', async function() {
                         examesCustom.push({ nome, preco: 0, checked });
                     }
                 });
-                if (examesCustom.length > 0) exames.custom = examesCustom;
-                
-                const treinamentoInputExames = examesSection.querySelector('.treinamento-valor');
-                if (treinamentoInputExames) {
-                    treinamento = parseFloat(treinamentoInputExames.value.replace(/\./g, '').replace(',', '.')) || 0;
+                if (examesCustom.length > 0) {
+                    exames.custom = examesCustom;
                 }
+                
+                const treinamentoInput = examesSection.querySelector('.treinamento-valor');
+                if (treinamentoInput) {
+                    treinamento = parseFloat(treinamentoInput.value.replace(/\./g, '').replace(',', '.')) || 0;
+                }
+            }
+            
+            // Capturar insumos
+            let insumos = {};
+            const insumosSection = item.querySelectorAll('.expandable-section')[5];
+            if (insumosSection) {
+                insumosSection.querySelectorAll('.insumo-card').forEach(card => {
+                    const campo = card.querySelector('.insumo-valor')?.dataset.campo;
+                    const valorInput = card.querySelector('.insumo-valor');
+                    if (campo) {
+                        const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
+                        if (valor > 0) {
+                            insumos[campo] = { valor: valor };
+                        }
+                    }
+                });
+            }
+            
+            // ========== CORREÇÃO: CAPTURAR DESPESAS COM TAXA CORRETA ==========
+            let despesas = {};
+            const despesasSection = item.querySelector('.despesas-section');
+            if (despesasSection) {
+                const taxaInput = despesasSection.querySelector('.despesa-taxa');
+                if (taxaInput) {
+                    // Remove o % e converte para número
+                    let taxaStr = taxaInput.value.replace('%', '').replace(',', '.');
+                    let taxaNum = parseFloat(taxaStr);
+                    // ========== CORREÇÃO: Se for NaN, salva como 0 (não 13.75) ==========
+                    if (isNaN(taxaNum)) {
+                        taxaNum = 0;
+                    }
+                    // ========== CORREÇÃO: Garantir que 0 seja salvo como 0 ==========
+                    despesas = { encargos_fiscais: { porcentagem: taxaNum } };
+                } else {
+                    // Se não encontrar o input, salva como 0
+                    despesas = { encargos_fiscais: { porcentagem: 0 } };
+                }
+            } else {
+                // Se não tiver seção de despesas, salva como 0
+                despesas = { encargos_fiscais: { porcentagem: 0 } };
             }
             
             const totalVagaElem = item.querySelector('.total-prestacao .valor');
             const totalVaga = totalVagaElem ? parseFloat(totalVagaElem.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0 : 0;
             
-            // ========== CORREÇÃO: ADICIONAR O CARGO AO ARRAY ==========
             dadosSensiveis.cargos.push({
                 nome,
                 quantidade: qtd,
                 salario,
                 adicionais: {
-                    horasExtras: heCheck ? heCheck.checked : false,
-                    noturno: anCheck ? anCheck.checked : false,
-                    periculosidade: perCheck ? perCheck.checked : false,
-                    insalubridade: insCheck ? insCheck.checked : false,
-                    heHoras: heHorasInput ? parseFloat(heHorasInput.value) || 0 : 0,
-                    anHoras: anHorasInput ? parseFloat(anHorasInput.value) || 0 : 0,
+                    horasExtras: adicionaisContent?.querySelector('.he-check')?.checked || false,
+                    noturno: adicionaisContent?.querySelector('.an-check')?.checked || false,
+                    periculosidade: adicionaisContent?.querySelector('.per-check')?.checked || false,
+                    insalubridade: adicionaisContent?.querySelector('.ins-check')?.checked || false,
+                    heHoras: parseFloat(adicionaisContent?.querySelector('.he-horas')?.value) || 0,
+                    anHoras: parseFloat(adicionaisContent?.querySelector('.an-horas')?.value) || 0,
+                    acumulo: adicionaisContent?.querySelector('.acumulo-check')?.checked || false,
+                    acumuloQuantidade: parseInt(adicionaisContent?.querySelector('.acumulo-quantidade')?.value) || 0,
                     encargosPercentual: encargosPercentual
                 },
                 uniformes,
                 epis,
                 beneficios,
                 beneficiosPersonalizados,
-                seguranca,  // ← Agora 'seguranca' está definido corretamente
-                insumos,
-                despesas,
+                seguranca,
                 exames,
                 treinamento,
+                insumos,
+                despesas,  // ← Passa com a taxa corrigida
                 totalVaga
             });
         }
-
+        
         const dadosCriptografados = encryptData(dadosSensiveis);
         if (!dadosCriptografados) {
             console.error('Falha ao criptografar os dados');
@@ -4616,7 +4569,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             const docRef = await db.collection('propostas').add(dadosPublicos);
             window.history.replaceState(null, '', `?id=${docRef.id}`);
         }
-
     }
 
     // ========== COMPARTILHAR LINK ==========
