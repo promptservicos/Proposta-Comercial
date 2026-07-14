@@ -79,7 +79,7 @@ function encryptData(data) {
 const emailToName = {
     'marketing@promptservicos.com.br': 'Luca',
     'fabiomansur@promptservicos.com.br': 'Fabio',
-    'comercial1@promptservicos.com.br': 'Leila',
+    'comercial1@promptservicos.com.br': 'Michael',
     'comercial3@promptservicos.com.br': 'Ricardo',
     'ass.comercial@promptservicos.com.br': 'Gabriella',
     'promptcoordenacao@gmail.com': 'Val'
@@ -90,7 +90,7 @@ const ADMIN_EMAILS = [
     'fabiomansur@promptservicos.com.br',
 ];
 
-const VENDEDORES = ['Ricardo', 'Leila', 'Moriela', 'Val', 'Fabio'];
+const VENDEDORES = ['Ricardo', 'Michael', 'Moriela', 'Val', 'Fabio'];
 
 // ========== DADOS DO USUÁRIO ==========
 let usuarioNome = null;
