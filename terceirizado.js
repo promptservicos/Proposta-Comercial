@@ -220,9 +220,26 @@ async function gerarImagemProposta() {
             // Verifica se a seção está visível (não oculta)
             if (secaoElement.style.display === 'none') return false;
             
-            // PARA TESTE: vê se é a seção de Benefícios 
+            // Em vez de usar :contains(), verifica o texto do elemento
+            let nomeSecao = '';
             const titulo = secaoElement.querySelector('.section-title span, .exames-title span, .despesas-title span');
-            const nomeSecao = titulo ? titulo.textContent : '';
+            if (titulo) {
+                nomeSecao = titulo.textContent.trim() || '';
+            }
+            
+            // Se não encontrou título por esses seletores, tenta encontrar qualquer span com texto
+            if (!nomeSecao) {
+                const allSpans = secaoElement.querySelectorAll('span');
+                for (const span of allSpans) {
+                    const texto = span.textContent.trim();
+                    if (texto === 'Benefícios' || texto === 'Adicionais' || texto === 'Insumos' || 
+                        texto === 'Segurança' || texto === 'Uniformes e EPIs' || texto === 'Despesas' || 
+                        texto === 'Exames e Treinamentos') {
+                        nomeSecao = texto;
+                        break;
+                    }
+                }
+            }
             
             // 1. Verificar inputs de valor (exceto uniformes/EPIs)
             const valorInputs = secaoElement.querySelectorAll('input[type="text"], input[type="number"]');
@@ -281,7 +298,7 @@ async function gerarImagemProposta() {
                 const texto = span.textContent;
                 if (texto && texto.includes('R$')) {
                     const valor = parseFloat(texto.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
-                    if (valor > 0.01) { // Mais de 1 centavo
+                    if (valor > 0.01) {
                         console.log(`Seção "${nomeSecao}" tem total exibido: ${formatarMoeda(valor)}`);
                         return true;
                     }
@@ -328,13 +345,19 @@ async function gerarImagemProposta() {
                 const parentCargo = secaoElement.closest('.cargo-item');
                 if (parentCargo) {
                     // Verifica se há benefícios ou insumos com valor
-                    const beneficiosSection = parentCargo.querySelector('.expandable-section .section-title span:contains("Benefícios")')?.closest('.expandable-section');
-                    if (beneficiosSection && secaoTemValores(beneficiosSection)) {
-                        return true;
-                    }
-                    const insumosSection = parentCargo.querySelector('.expandable-section .section-title span:contains("Insumos")')?.closest('.expandable-section');
-                    if (insumosSection && secaoTemValores(insumosSection)) {
-                        return true;
+                    const allSections = parentCargo.querySelectorAll('.expandable-section');
+                    for (const section of allSections) {
+                        const sectionTitle = section.querySelector('.section-title span');
+                        if (sectionTitle) {
+                            const title = sectionTitle.textContent.trim();
+                            // Verifica se é a seção de Benefícios ou Insumos
+                            if (title === 'Benefícios' || title === 'Insumos') {
+                                // Usa a própria função para verificar se a seção tem valores
+                                if (secaoTemValores(section)) {
+                                    return true;
+                                }
+                            }
+                        }
                     }
                 }
                 // Se não tem benefícios nem insumos, não mostra despesas
