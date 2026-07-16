@@ -166,7 +166,6 @@ function escapeHtml(text) {
 }
 
 // ========== FUNÇÃO PARA GERAR IMAGEM POR CARGO E DO TOTAL (DIRETO, SEM ZIP) ==========
-// ========== FUNÇÃO PARA GERAR IMAGEM POR CARGO E DO TOTAL (DIRETO, SEM ZIP) ==========
 async function gerarImagemPorCargo() {
     const btnCompartilhar = document.getElementById('btn-compartilhar');
     const textoOriginal = btnCompartilhar ? btnCompartilhar.innerHTML : '';
@@ -368,16 +367,22 @@ async function gerarImagemPorCargo() {
             return clone;
         }
         
-        // Calcular total geral da proposta
+        // ========== CORREÇÃO: Calcular total geral da proposta multiplicando pela quantidade ==========
         let totalGeralProposta = 0;
         cargos.forEach(cargo => {
             const totalVagaElem = cargo.querySelector('.total-prestacao .valor');
+            const qtdInput = cargo.querySelector('.cargo-quantidade');
+            const quantidade = parseInt(qtdInput?.value) || 1;
+            
             if (totalVagaElem) {
                 const totalText = totalVagaElem.textContent;
                 const totalValor = parseFloat(totalText.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
-                totalGeralProposta += totalValor;
+                // MULTIPLICA PELA QUANTIDADE DE FUNCIONÁRIOS
+                totalGeralProposta += totalValor * quantidade;
             }
         });
+        
+        console.log(`💰 Total geral da proposta calculado: ${formatarMoeda(totalGeralProposta)}`);
         
         const wasDarkMode = document.body.classList.contains('dark');
         if (wasDarkMode) {
@@ -560,9 +565,12 @@ async function gerarImagemPorCargo() {
                 elementoImagem.style.color = '#333333';
                 elementoImagem.style.background = '#ffffff';
 
-                // NOVO: Calcular o total deste cargo específico
+                // Calcular o total deste cargo específico
                 let totalCargo = 0;
                 const totalVagaElemClone = cloneCargo.querySelector('.total-prestacao .valor');
+                const qtdClone = cloneCargo.querySelector('.cargo-quantidade');
+                const quantidadeClone = parseInt(qtdClone?.value) || 1;
+                
                 if (totalVagaElemClone) {
                     const totalText = totalVagaElemClone.textContent;
                     totalCargo = parseFloat(totalText.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
@@ -586,7 +594,7 @@ async function gerarImagemPorCargo() {
                     </div>
                     ${cloneCargo.outerHTML}
                     
-                    <!-- ========== NOVO: TOTAL DA PROPOSTA NO RODAPÉ ========== -->
+                    <!-- ========== TOTAL DA PROPOSTA NO RODAPÉ ========== -->
                     <div style="margin-top: 20px; padding: 15px 20px; background: linear-gradient(135deg, #c10404 0%, #8b0303 100%); border-radius: 12px; display: flex; justify-content: space-between; align-items: center; color: #fff;">
                         <div style="font-size: 14px; opacity: 0.9;">
                             <i class="fas fa-file-invoice" style="margin-right: 8px;"></i>
@@ -594,6 +602,31 @@ async function gerarImagemPorCargo() {
                         </div>
                         <div style="font-size: 24px; font-weight: bold;">
                             ${formatarMoeda(totalGeralProposta)}
+                        </div>
+                    </div>
+                    
+                    <!-- ========== DETALHAMENTO DOS CARGOS ========== -->
+                    <div style="margin-top: 10px; padding: 10px 15px; background: #f8f8f8; border-radius: 8px; border-left: 3px solid #c10404;">
+                        <div style="font-size: 11px; color: #666; font-weight: 600; margin-bottom: 5px;">RESUMO DA PROPOSTA:</div>
+                        ${Array.from(cargos).map((c, idx) => {
+                            const nomeCargo = c.querySelector('.cargo-nome')?.value || 'Cargo sem nome';
+                            const qtd = parseInt(c.querySelector('.cargo-quantidade')?.value) || 1;
+                            const totalVaga = c.querySelector('.total-prestacao .valor');
+                            let valorVaga = 0;
+                            if (totalVaga) {
+                                valorVaga = parseFloat(totalVaga.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
+                            }
+                            const totalCargoComQuantidade = valorVaga * qtd;
+                            return `
+                                <div style="display: flex; justify-content: space-between; padding: 3px 0; font-size: 10px; color: #555; border-bottom: 1px solid #eee;">
+                                    <span>${idx + 1}. ${escapeHtml(nomeCargo)} (${qtd} vaga${qtd > 1 ? 's' : ''})</span>
+                                    <span style="font-weight: 600; color: #c10404;">${formatarMoeda(totalCargoComQuantidade)}</span>
+                                </div>
+                            `;
+                        }).join('')}
+                        <div style="display: flex; justify-content: space-between; padding: 5px 0; font-size: 11px; font-weight: 700; color: #333; border-top: 2px solid #c10404; margin-top: 3px;">
+                            <span>TOTAL GERAL:</span>
+                            <span style="color: #c10404;">${formatarMoeda(totalGeralProposta)}</span>
                         </div>
                     </div>
                     
