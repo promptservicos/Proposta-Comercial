@@ -166,6 +166,7 @@ function escapeHtml(text) {
 }
 
 // ========== FUNÇÃO PARA GERAR IMAGEM POR CARGO E DO TOTAL (DIRETO, SEM ZIP) ==========
+// ========== FUNÇÃO PARA GERAR IMAGEM POR CARGO E DO TOTAL (DIRETO, SEM ZIP) ==========
 async function gerarImagemPorCargo() {
     const btnCompartilhar = document.getElementById('btn-compartilhar');
     const textoOriginal = btnCompartilhar ? btnCompartilhar.innerHTML : '';
@@ -559,6 +560,14 @@ async function gerarImagemPorCargo() {
                 elementoImagem.style.color = '#333333';
                 elementoImagem.style.background = '#ffffff';
 
+                // NOVO: Calcular o total deste cargo específico
+                let totalCargo = 0;
+                const totalVagaElemClone = cloneCargo.querySelector('.total-prestacao .valor');
+                if (totalVagaElemClone) {
+                    const totalText = totalVagaElemClone.textContent;
+                    totalCargo = parseFloat(totalText.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
+                }
+
                 elementoImagem.innerHTML = `
                     <div style="margin-bottom: 20px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #c10404;">
@@ -576,7 +585,19 @@ async function gerarImagemPorCargo() {
                         </div>
                     </div>
                     ${cloneCargo.outerHTML}
-                    <div style="margin-top: 20px; text-align: center; padding-top: 10px; border-top: 1px solid #e0e0e0; font-size: 9px; color: #888;">
+                    
+                    <!-- ========== NOVO: TOTAL DA PROPOSTA NO RODAPÉ ========== -->
+                    <div style="margin-top: 20px; padding: 15px 20px; background: linear-gradient(135deg, #c10404 0%, #8b0303 100%); border-radius: 12px; display: flex; justify-content: space-between; align-items: center; color: #fff;">
+                        <div style="font-size: 14px; opacity: 0.9;">
+                            <i class="fas fa-file-invoice" style="margin-right: 8px;"></i>
+                            TOTAL DA PROPOSTA
+                        </div>
+                        <div style="font-size: 24px; font-weight: bold;">
+                            ${formatarMoeda(totalGeralProposta)}
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 10px; text-align: center; font-size: 9px; color: #888;">
                         Documento gerado em ${dataAtual} - Proposta válida por 30 dias
                     </div>
                 `;
@@ -666,8 +687,6 @@ async function gerarImagemPorCargo() {
                 `;
                 elementoImagem.appendChild(style);
 
-                document.body.appendChild(elementoImagem);
-                
                 document.body.appendChild(elementoImagem);
                 
                 // Ajustes de estilo
