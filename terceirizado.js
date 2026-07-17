@@ -4274,16 +4274,24 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // ========== FUNÇÃO PARA GERAR LINK DE VISUALIZAÇÃO ==========
     async function gerarLinkVisualizacao() {
+        const btn = document.getElementById('btn-compartilhar-link');
+        const textoOriginal = btn ? btn.innerHTML : '';
+        
+        if (btn) {
+            btn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Gerando link...';
+            btn.disabled = true;
+        }
+        
         try {
             const vendedor = document.getElementById('vendedor-nome').textContent;
             const cliente = document.getElementById('cliente-nome').value || 'SEM CLIENTE';
             const urlParams = new URLSearchParams(window.location.search);
             let propostaId = urlParams.get('id');
             
+            // 🔥 SE NÃO TIVER ID, SALVA A PROPOSTA PRIMEIRO
             if (!propostaId) {
-                await salvarPropostaAtual();
-                const newUrlParams = new URLSearchParams(window.location.search);
-                propostaId = newUrlParams.get('id');
+                console.log('🔄 Proposta sem ID, salvando primeiro...');
+                propostaId = await salvarPropostaAtual();
                 if (!propostaId) {
                     throw new Error('Não foi possível gerar o link. Tente salvar a proposta primeiro.');
                 }
@@ -4298,12 +4306,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (shareLinkInput && modalShare) {
                 shareLinkInput.value = linkVisualizacao;
                 modalShare.classList.remove('hidden');
+                modalShare.style.display = 'flex';
             }
             
+            // Tenta copiar automaticamente
             try {
                 await navigator.clipboard.writeText(linkVisualizacao);
                 showToast('✅ Link copiado para a área de transferência!');
-                setTimeout(() => { if (modalShare) modalShare.classList.add('hidden'); }, 1500);
+                setTimeout(() => { 
+                    if (modalShare) {
+                        modalShare.classList.add('hidden');
+                        modalShare.style.display = 'none';
+                    }
+                }, 1500);
             } catch (err) {
                 console.log('Não foi possível copiar automaticamente');
                 showToast('📋 Clique no botão copiar para copiar o link', false);
@@ -4311,12 +4326,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             
         } catch (error) {
             console.error('Erro ao gerar link:', error);
-            mostrarModal('Erro ao gerar link. Tente salvar a proposta primeiro.');
+            mostrarModal('❌ ' + error.message, true);
+        } finally {
+            if (btn) {
+                btn.innerHTML = textoOriginal;
+                btn.disabled = false;
+            }
         }
     }
 
-    // ========== SALVAR PROPOSTA ATUAL PARA COMPARTILHAR ==========
-    // ========== SALVAR PROPOSTA ATUAL (COM CRIPTOGRAFIA) ==========
+    // ========== SALVAR PROPOSTA ATUAL (COMPLETA - COM FIREBASE) ==========
     async function salvarPropostaAtual() {
         const vendedor = document.getElementById('vendedor-nome').textContent;
         const cliente = clienteInput.value || 'SEM CLIENTE';
@@ -4356,11 +4375,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             const insCheck = item.querySelector('.ins-check');
             const heHorasInput = item.querySelector('.he-horas');
             const anHorasInput = item.querySelector('.an-horas');
+            const acumuloCheck = item.querySelector('.acumulo-check');
+            const acumuloQuantidadeInput = item.querySelector('.acumulo-quantidade');
             
             // Uniformes e EPIs
             let uniformes = {};
             let epis = {};
             
+            // Capturar uniformes (padrão e personalizados)
             const uniformesBox = item.querySelector('.uniformes-box');
             if (uniformesBox) {
                 uniformesBox.querySelectorAll('.item-lista:not(.item-custom)').forEach(lista => {
@@ -4391,6 +4413,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (uniformesCustom.length > 0) uniformes.custom = uniformesCustom;
             }
             
+            // Capturar EPIs (padrão e personalizados)
             const episBox = item.querySelector('.epis-box');
             if (episBox) {
                 episBox.querySelectorAll('.item-lista:not(.item-custom)').forEach(lista => {
@@ -4425,80 +4448,87 @@ document.addEventListener('DOMContentLoaded', async function() {
             let beneficios = {};
             let beneficiosPersonalizados = [];
             
-            item.querySelectorAll('.beneficio-card').forEach(card => {
-                const campo = card.querySelector('.beneficio-valor')?.dataset.campo;
-                const valorInput = card.querySelector('.beneficio-valor');
-                const diasInput = card.querySelector('.beneficio-dias');
-                if (campo) {
+            const beneficiosSection = item.querySelectorAll('.expandable-section')[2];
+            if (beneficiosSection) {
+                beneficiosSection.querySelectorAll('.beneficio-fixo-card').forEach(card => {
+                    const campo = card.querySelector('.beneficio-valor')?.dataset.campo;
+                    const valorInput = card.querySelector('.beneficio-valor');
+                    const diasInput = card.querySelector('.beneficio-dias');
+                    if (campo) {
+                        const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
+                        const dias = parseInt(diasInput?.value) || 0;
+                        if (valor > 0 || dias > 0) {
+                            beneficios[campo] = { valorDiario: valor, dias: dias };
+                        }
+                    }
+                });
+                
+                beneficiosSection.querySelectorAll('.beneficio-custom-card').forEach(card => {
+                    const nomeInput = card.querySelector('.beneficio-custom-nome');
+                    const valorInput = card.querySelector('.beneficio-custom-valor');
+                    const diasInput = card.querySelector('.beneficio-custom-dias');
+                    const nome = nomeInput?.value.trim() || '';
                     const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
                     const dias = parseInt(diasInput?.value) || 0;
-                    if (valor > 0 || dias > 0) {
-                        beneficios[campo] = { valorDiario: valor, dias: dias };
+                    if (nome && (valor > 0 || dias > 0)) {
+                        beneficiosPersonalizados.push({ nome, valorDiario: valor, dias: dias });
                     }
-                }
-            });
+                });
+            }
             
-            item.querySelectorAll('.beneficio-custom-card').forEach(card => {
-                const nomeInput = card.querySelector('.beneficio-custom-nome');
-                const valorInput = card.querySelector('.beneficio-custom-valor');
-                const diasInput = card.querySelector('.beneficio-custom-dias');
-                const nome = nomeInput?.value.trim() || '';
-                const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
-                const dias = parseInt(diasInput?.value) || 0;
-                if (nome && (valor > 0 || dias > 0)) {
-                    beneficiosPersonalizados.push({ nome, valorDiario: valor, dias: dias });
-                }
-            });
-            
-            // ========== CORREÇÃO: SEGURANÇA - USAR 'item' em vez de 'cargo' ==========
+            // Segurança
             let seguranca = {};
-            item.querySelectorAll('.seguranca-item').forEach(card => {
-                const campo = card.querySelector('.seguranca-valor')?.dataset.campo;
-                const valorInput = card.querySelector('.seguranca-valor');
-                const depInput = card.querySelector('.seguranca-depreciacao');
-                if (campo) {
-                    const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
-                    const depreciacao = parseInt(depInput?.value) || 1;
-                    // SALVAR SEMPRE, MESMO SE FOR 0
-                    seguranca[campo] = { 
-                        valor: valor, 
-                        depreciacao: depreciacao 
-                    };
-                }
-            });
-            // NÃO use 'cargo.seguranca = seguranca' - isso é o que causa o erro!
-            // Em vez disso, guardamos em uma variável local e usamos abaixo
+            const segurancaSection = item.querySelectorAll('.expandable-section')[3];
+            if (segurancaSection) {
+                segurancaSection.querySelectorAll('.seguranca-item').forEach(card => {
+                    const campo = card.querySelector('.seguranca-valor')?.dataset.campo;
+                    const valorInput = card.querySelector('.seguranca-valor');
+                    const depInput = card.querySelector('.seguranca-depreciacao');
+                    if (campo) {
+                        const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
+                        const depreciacao = parseInt(depInput?.value) || 1;
+                        seguranca[campo] = { valor: valor, depreciacao: depreciacao };
+                    }
+                });
+            }
             
             // Insumos
             let insumos = {};
-            item.querySelectorAll('.insumo-card').forEach(card => {
-                const campo = card.querySelector('.insumo-valor')?.dataset.campo;
-                const valorInput = card.querySelector('.insumo-valor');
-                if (campo) {
-                    const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
-                    if (valor > 0) {
-                        insumos[campo] = { valor: valor };
-                    }
-                }
-            });
-            
-            // Despesas
-            let despesas = {};
-            const despesasSection = item.querySelector('.despesas-section');
-            if (despesasSection) {
-                despesasSection.querySelectorAll('.despesa-card').forEach(card => {
-                    const campo = card.querySelector('.despesa-porcentagem')?.dataset.campo;
-                    const porcentagemInput = card.querySelector('.despesa-porcentagem');
-                    if (campo && porcentagemInput) {
-                        const porcentagem = parseFloat(porcentagemInput.value.replace(/\./g, '').replace(',', '.')) || 0;
-                        if (porcentagem > 0) {
-                            despesas[campo] = { porcentagem: porcentagem };
+            const insumosSection = item.querySelectorAll('.expandable-section')[5];
+            if (insumosSection) {
+                insumosSection.querySelectorAll('.insumo-card').forEach(card => {
+                    const campo = card.querySelector('.insumo-valor')?.dataset.campo;
+                    const valorInput = card.querySelector('.insumo-valor');
+                    if (campo) {
+                        const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
+                        if (valor > 0) {
+                            insumos[campo] = { valor: valor };
                         }
                     }
                 });
             }
             
-            // Exames
+            // Despesas (taxa de encargos fiscais)
+            let despesas = {};
+            const despesasSection = item.querySelector('.despesas-section');
+            if (despesasSection) {
+                const taxaInput = despesasSection.querySelector('.despesa-taxa');
+                if (taxaInput) {
+                    let taxaStr = taxaInput.value.replace('%', '').replace(',', '.');
+                    let taxaNum = parseFloat(taxaStr);
+                    if (!isNaN(taxaNum)) {
+                        despesas.encargos_fiscais = { porcentagem: taxaNum };
+                    } else {
+                        despesas.encargos_fiscais = { porcentagem: 0 };
+                    }
+                } else {
+                    despesas.encargos_fiscais = { porcentagem: 0 };
+                }
+            } else {
+                despesas.encargos_fiscais = { porcentagem: 0 };
+            }
+            
+            // Exames e Treinamentos
             let exames = {};
             let treinamento = 0;
             const examesSection = item.querySelector('.exames-section');
@@ -4530,28 +4560,33 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
             
+            // Total da vaga
             const totalVagaElem = item.querySelector('.total-prestacao .valor');
             const totalVaga = totalVagaElem ? parseFloat(totalVagaElem.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0 : 0;
             
-            // ========== CORREÇÃO: ADICIONAR O CARGO AO ARRAY ==========
+            // Adicionais completo
+            const adicionais = {
+                horasExtras: heCheck ? heCheck.checked : false,
+                noturno: anCheck ? anCheck.checked : false,
+                periculosidade: perCheck ? perCheck.checked : false,
+                insalubridade: insCheck ? insCheck.checked : false,
+                heHoras: heHorasInput ? parseFloat(heHorasInput.value) || 0 : 0,
+                anHoras: anHorasInput ? parseFloat(anHorasInput.value) || 0 : 0,
+                acumulo: acumuloCheck ? acumuloCheck.checked : false,
+                acumuloQuantidade: acumuloQuantidadeInput ? parseInt(acumuloQuantidadeInput.value) || 0 : 0,
+                encargosPercentual: encargosPercentual
+            };
+            
             dadosSensiveis.cargos.push({
                 nome,
                 quantidade: qtd,
                 salario,
-                adicionais: {
-                    horasExtras: heCheck ? heCheck.checked : false,
-                    noturno: anCheck ? anCheck.checked : false,
-                    periculosidade: perCheck ? perCheck.checked : false,
-                    insalubridade: insCheck ? insCheck.checked : false,
-                    heHoras: heHorasInput ? parseFloat(heHorasInput.value) || 0 : 0,
-                    anHoras: anHorasInput ? parseFloat(anHorasInput.value) || 0 : 0,
-                    encargosPercentual: encargosPercentual
-                },
+                adicionais,
                 uniformes,
                 epis,
                 beneficios,
                 beneficiosPersonalizados,
-                seguranca,  // ← Agora 'seguranca' está definido corretamente
+                seguranca,
                 insumos,
                 despesas,
                 exames,
@@ -4560,6 +4595,44 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         }
 
+        // ========== CRIPTOGRAFAR DADOS SENSÍVEIS ==========
+        const dadosCriptografados = encryptData(dadosSensiveis);
+        if (!dadosCriptografados) {
+            throw new Error('Erro ao criptografar dados');
+        }
+
+        // ========== PREPARAR DADOS PARA O FIREBASE ==========
+        const dadosProposta = {
+            vendedor: vendedor,
+            emailVendedor: emailVendedor,
+            dadosCriptografados: dadosCriptografados,
+            dataAtualizacao: firebase.firestore.FieldValue.serverTimestamp(),
+            tipo: 'terceirizado',
+            totalGeral: parseFloat(totalGeralEl.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0,
+            modoVisualizacao: true
+        };
+
+        // ========== SALVAR NO FIREBASE ==========
+        let docRef;
+        if (propostaId) {
+            // Atualizar proposta existente
+            docRef = db.collection('propostas').doc(propostaId);
+            await docRef.update(dadosProposta);
+            console.log('📝 Proposta atualizada com sucesso! ID:', propostaId);
+            return propostaId;
+        } else {
+            // Criar nova proposta
+            docRef = await db.collection('propostas').add(dadosProposta);
+            const novoId = docRef.id;
+            console.log('✅ Nova proposta criada com sucesso! ID:', novoId);
+            
+            // Atualizar URL com o ID sem recarregar a página
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.set('id', novoId);
+            window.history.replaceState({}, '', newUrl);
+            
+            return novoId;
+        }
     }
 
     // ========== COMPARTILHAR LINK ==========

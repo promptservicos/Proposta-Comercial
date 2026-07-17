@@ -824,7 +824,7 @@ async function gerarImagemPorCargo() {
             btnCompartilhar.disabled = false;
         }
     }
-}
+} 
 
 // ================== INICIALIZAÇÃO ==================
 document.addEventListener('DOMContentLoaded', async function() {
