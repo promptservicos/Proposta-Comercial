@@ -311,12 +311,15 @@ function carregarPropostas() {
                 }
                 
                 // ✅ CORREÇÃO: Processar dados criptografados sem sobrescrever totalGeral
+                // totalGeral já foi definido ANTES como data.totalGeral
+                let totalGeral = data.totalGeral || 0;  // ← Mantenha isso ANTES do if
+
                 if (data.dadosCriptografados) {
                     const dadosDescriptografados = decryptData(data.dadosCriptografados);
                     if (dadosDescriptografados) {
                         clienteNome = dadosDescriptografados.cliente || '';
                         cargosLista = dadosDescriptografados.cargos || [];
-                        // ✅ NÃO SOBRESCREVER totalGeral - usar o valor do documento
+                        // ✅ NÃO SOBRESCREVER totalGeral
                     } else {
                         clienteNome = data.cliente || 'Erro ao descriptografar';
                         cargosLista = data.cargos || [];
