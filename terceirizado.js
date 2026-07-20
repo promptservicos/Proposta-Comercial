@@ -1089,8 +1089,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 } else {
                     console.warn('⚠️ Seção de insumos NÃO encontrada!');
                 }
-
-                console.log('📦 INSUMOS FINAL:', insumos);
                 
                 // ========== CAPTURAR DESPESAS ==========
                 cargo.despesas = {};
@@ -4546,8 +4544,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             } else {
                 console.warn('⚠️ Seção de insumos NÃO encontrada!');
             }
-
-            console.log('📦 INSUMOS FINAL:', insumos);
             
             // Despesas (taxa de encargos fiscais)
             let despesas = {};
