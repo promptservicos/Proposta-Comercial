@@ -1055,21 +1055,42 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 }
                 
-                // ========== CAPTURAR INSUMOS ==========
-                cargo.insumos = {};
-                const insumosSection = item.querySelectorAll('.expandable-section')[5];
+                // ========== CAPTURAR INSUMOS (BUSCA POR TÍTULO) ==========
+                let insumos = {};
+
+                // 🔥 CORREÇÃO: Buscar a seção pelo título "Insumos"
+                const todasSecoes = item.querySelectorAll('.expandable-section');
+                let insumosSection = null;
+                for (const secao of todasSecoes) {
+                    const tituloSpan = secao.querySelector('.section-title span');
+                    if (tituloSpan && tituloSpan.textContent.trim() === 'Insumos') {
+                        insumosSection = secao;
+                        break;
+                    }
+                }
+
+                // Fallback: tentar pelo índice 5
+                if (!insumosSection) {
+                    insumosSection = item.querySelectorAll('.expandable-section')[5];
+                }
+
                 if (insumosSection) {
+                    console.log('✅ Seção de insumos ENCONTRADA!');
                     insumosSection.querySelectorAll('.insumo-card').forEach(card => {
                         const campo = card.querySelector('.insumo-valor')?.dataset.campo;
                         const valorInput = card.querySelector('.insumo-valor');
-                        if (campo) {
-                            const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
-                            if (valor > 0) {
-                                cargo.insumos[campo] = { valor: valor };
-                            }
+                        if (campo && valorInput) {
+                            // 🔥 PEGA O VALOR DIRETAMENTE DO INPUT
+                            const valor = parseFloat(valorInput.value.replace(/\./g, '').replace(',', '.')) || 0;
+                            insumos[campo] = { valor: valor };
+                            console.log(`📦 Insumo capturado: ${campo} = ${valor}`);
                         }
                     });
+                } else {
+                    console.warn('⚠️ Seção de insumos NÃO encontrada!');
                 }
+
+                console.log('📦 INSUMOS FINAL:', insumos);
                 
                 // ========== CAPTURAR DESPESAS ==========
                 cargo.despesas = {};
@@ -4492,25 +4513,41 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
             
-            // Insumos
+            // ========== CAPTURAR INSUMOS (BUSCA POR TÍTULO) ==========
             let insumos = {};
-            const insumosSection = item.querySelectorAll('.expandable-section')[5];
+
+            // 🔥 Buscar a seção pelo título "Insumos"
+            const todasSecoes = item.querySelectorAll('.expandable-section');
+            let insumosSection = null;
+            for (const secao of todasSecoes) {
+                const tituloSpan = secao.querySelector('.section-title span');
+                if (tituloSpan && tituloSpan.textContent.trim() === 'Insumos') {
+                    insumosSection = secao;
+                    break;
+                }
+            }
+
+            // Fallback: tentar pelo índice 4 (corrigido)
+            if (!insumosSection) {
+                insumosSection = item.querySelectorAll('.expandable-section')[4];
+            }
+
             if (insumosSection) {
-                console.log('🔍 Seção de insumos encontrada:', insumosSection);
-                
+                console.log('✅ Seção de insumos ENCONTRADA!');
                 insumosSection.querySelectorAll('.insumo-card').forEach(card => {
                     const campo = card.querySelector('.insumo-valor')?.dataset.campo;
                     const valorInput = card.querySelector('.insumo-valor');
                     if (campo && valorInput) {
                         const valor = parseFloat(valorInput.value.replace(/\./g, '').replace(',', '.')) || 0;
-                        // 🔥 SALVAR SEMPRE
                         insumos[campo] = { valor: valor };
                         console.log(`📦 Insumo capturado: ${campo} = ${valor}`);
                     }
                 });
+            } else {
+                console.warn('⚠️ Seção de insumos NÃO encontrada!');
             }
 
-console.log('📦 INSUMOS FINAL:', insumos);
+            console.log('📦 INSUMOS FINAL:', insumos);
             
             // Despesas (taxa de encargos fiscais)
             let despesas = {};
