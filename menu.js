@@ -336,6 +336,29 @@ function carregarPropostas() {
                     if (cargosLista.length === 0 && dadosDescriptografados?.cargos) {
                         cargosLista = dadosDescriptografados.cargos;
                     }
+
+                    // 🔥 VERIFICAR SE A PROPOSTA SERÁ ADICIONADA
+                    if (doc.id === 'X1Vt3HFxbTwMfW09fJMG') {
+                        console.log('✅ Proposta será adicionada com:', {
+                            cliente: clienteNome,
+                            vendedor: vendedorNome,
+                            tipo: data.tipo,
+                            totalGeral: totalGeral
+                        });
+                    }
+                    
+                    propostas.push({ 
+                        id: doc.id, 
+                        cliente: clienteNome,
+                        vendedor: vendedorNome,
+                        tipo: data.tipo || 'efetivo',
+                        colecao: 'propostas',
+                        data: dataProposta,
+                        dataOrdenacao: dataProposta,
+                        totalGeral: totalGeral,
+                        cargos: cargosLista
+                    });    
+
                 }
                 
                 // 🔥 LOG PARA DEBUG (remova depois)
