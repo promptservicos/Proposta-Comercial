@@ -1083,7 +1083,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                             // 🔥 PEGA O VALOR DIRETAMENTE DO INPUT
                             const valor = parseFloat(valorInput.value.replace(/\./g, '').replace(',', '.')) || 0;
                             insumos[campo] = { valor: valor };
-                            console.log(`📦 Insumo capturado: ${campo} = ${valor}`);
                         }
                     });
                 } else {
@@ -4538,7 +4537,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     if (campo && valorInput) {
                         const valor = parseFloat(valorInput.value.replace(/\./g, '').replace(',', '.')) || 0;
                         insumos[campo] = { valor: valor };
-                        console.log(`📦 Insumo capturado: ${campo} = ${valor}`);
                     }
                 });
             } else {
