@@ -297,10 +297,10 @@ function carregarPropostas() {
                 
                 let clienteNome = '';
                 let cargosLista = [];
-                // ✅ totalGeral vem do documento principal
+                // ✅ DECLARADO UMA ÚNICA VEZ
                 let totalGeral = data.totalGeral || 0;
                 
-                // LIDAR COM TIMESTAMP DO FIREBASE
+                // LIDAR COM TIMESTAMP
                 let dataProposta = data.data;
                 if (dataProposta && typeof dataProposta.toDate === 'function') {
                     dataProposta = dataProposta.toDate();
@@ -310,16 +310,13 @@ function carregarPropostas() {
                     dataProposta = new Date(0);
                 }
                 
-                // ✅ CORREÇÃO: Processar dados criptografados sem sobrescrever totalGeral
-                // totalGeral já foi definido ANTES como data.totalGeral
-                let totalGeral = data.totalGeral || 0;  // ← Mantenha isso ANTES do if
-
+                // Processar dados criptografados
                 if (data.dadosCriptografados) {
                     const dadosDescriptografados = decryptData(data.dadosCriptografados);
                     if (dadosDescriptografados) {
                         clienteNome = dadosDescriptografados.cliente || '';
                         cargosLista = dadosDescriptografados.cargos || [];
-                        // ✅ NÃO SOBRESCREVER totalGeral
+                        // ✅ totalGeral NÃO é sobrescrito
                     } else {
                         clienteNome = data.cliente || 'Erro ao descriptografar';
                         cargosLista = data.cargos || [];
@@ -337,7 +334,7 @@ function carregarPropostas() {
                     colecao: 'propostas',
                     data: dataProposta,
                     dataOrdenacao: dataProposta,
-                    totalGeral: totalGeral,  // ✅ Usa o valor do documento
+                    totalGeral: totalGeral,
                     cargos: cargosLista
                 });
             });
