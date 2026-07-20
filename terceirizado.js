@@ -4494,16 +4494,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             // Insumos
             let insumos = {};
+            // 🔥 CORREÇÃO: Usar a classe .insumo-card dentro da seção correta
             const insumosSection = item.querySelectorAll('.expandable-section')[5];
             if (insumosSection) {
                 insumosSection.querySelectorAll('.insumo-card').forEach(card => {
                     const campo = card.querySelector('.insumo-valor')?.dataset.campo;
                     const valorInput = card.querySelector('.insumo-valor');
-                    if (campo) {
-                        const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
-                        if (valor > 0) {
-                            insumos[campo] = { valor: valor };
-                        }
+                    if (campo && valorInput) {
+                        const valor = parseFloat(valorInput.value.replace(/\./g, '').replace(',', '.')) || 0;
+                        // 🔥 CORREÇÃO: Salvar SEMPRE, mesmo se for 0 (para preservar o campo)
+                        insumos[campo] = { valor: valor };
                     }
                 });
             }
