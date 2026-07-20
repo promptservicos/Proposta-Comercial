@@ -4605,7 +4605,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         const dadosProposta = {
             vendedor: vendedor,
             emailVendedor: emailVendedor,
+            cliente: cliente,  // ← ADICIONAR PARA FALLBACK
             dadosCriptografados: dadosCriptografados,
+            data: firebase.firestore.FieldValue.serverTimestamp(),  // ← ADICIONAR ESTA LINHA
             dataAtualizacao: firebase.firestore.FieldValue.serverTimestamp(),
             tipo: 'terceirizado',
             totalGeral: parseFloat(totalGeralEl.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0,
