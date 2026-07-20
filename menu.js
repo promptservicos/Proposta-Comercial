@@ -297,7 +297,6 @@ function carregarPropostas() {
                 
                 let clienteNome = '';
                 let cargosLista = [];
-                // ✅ DECLARADO UMA ÚNICA VEZ
                 let totalGeral = data.totalGeral || 0;
                 
                 // LIDAR COM TIMESTAMP
@@ -310,20 +309,44 @@ function carregarPropostas() {
                     dataProposta = new Date(0);
                 }
                 
-                // Processar dados criptografados
+                // ✅ PRIMEIRO: TENTAR DESCRIPTOGRAFAR
+                let dadosDescriptografados = null;
                 if (data.dadosCriptografados) {
-                    const dadosDescriptografados = decryptData(data.dadosCriptografados);
-                    if (dadosDescriptografados) {
-                        clienteNome = dadosDescriptografados.cliente || '';
-                        cargosLista = dadosDescriptografados.cargos || [];
-                        // ✅ totalGeral NÃO é sobrescrito
-                    } else {
-                        clienteNome = data.cliente || 'Erro ao descriptografar';
-                        cargosLista = data.cargos || [];
+                    try {
+                        dadosDescriptografados = decryptData(data.dadosCriptografados);
+                    } catch (e) {
+                        console.warn('Erro ao descriptografar proposta', doc.id, e);
                     }
-                } else {
+                }
+                
+                // ✅ SEGUNDO: USAR OS DADOS DISPONÍVEIS
+                if (dadosDescriptografados) {
+                    // Dados criptografados disponíveis
+                    clienteNome = dadosDescriptografados.cliente || '';
+                    cargosLista = dadosDescriptografados.cargos || [];
+                } else if (data.cliente) {
+                    // Dados sem criptografia (propostas antigas)
                     clienteNome = data.cliente || '';
                     cargosLista = data.cargos || [];
+                } else {
+                    // Fallback - usa o que tem
+                    clienteNome = data.cliente || 'Sem cliente';
+                    cargosLista = data.cargos || [];
+                    // Se ainda não tem cargos, tenta extrair do cliente (caso especial)
+                    if (cargosLista.length === 0 && dadosDescriptografados?.cargos) {
+                        cargosLista = dadosDescriptografados.cargos;
+                    }
+                }
+                
+                // 🔥 LOG PARA DEBUG (remova depois)
+                if (doc.id === 'X1Vt3HFxbTwMfW09fJMG') {
+                    console.log('✅ Proposta encontrada!', {
+                        id: doc.id,
+                        clienteNome,
+                        totalGeral,
+                        tipo: data.tipo,
+                        vendedor: vendedorNome
+                    });
                 }
                 
                 propostas.push({ 
