@@ -297,9 +297,10 @@ function carregarPropostas() {
                 
                 let clienteNome = '';
                 let cargosLista = [];
+                // ✅ totalGeral vem do documento principal
                 let totalGeral = data.totalGeral || 0;
                 
-                // 🔥 LIDAR COM TIMESTAMP DO FIREBASE
+                // LIDAR COM TIMESTAMP DO FIREBASE
                 let dataProposta = data.data;
                 if (dataProposta && typeof dataProposta.toDate === 'function') {
                     dataProposta = dataProposta.toDate();
@@ -309,12 +310,13 @@ function carregarPropostas() {
                     dataProposta = new Date(0);
                 }
                 
+                // ✅ CORREÇÃO: Processar dados criptografados sem sobrescrever totalGeral
                 if (data.dadosCriptografados) {
                     const dadosDescriptografados = decryptData(data.dadosCriptografados);
                     if (dadosDescriptografados) {
                         clienteNome = dadosDescriptografados.cliente || '';
                         cargosLista = dadosDescriptografados.cargos || [];
-                        totalGeral = dadosDescriptografados.totalGeral || data.totalGeral || 0;
+                        // ✅ NÃO SOBRESCREVER totalGeral - usar o valor do documento
                     } else {
                         clienteNome = data.cliente || 'Erro ao descriptografar';
                         cargosLista = data.cargos || [];
@@ -332,7 +334,7 @@ function carregarPropostas() {
                     colecao: 'propostas',
                     data: dataProposta,
                     dataOrdenacao: dataProposta,
-                    totalGeral: totalGeral,
+                    totalGeral: totalGeral,  // ✅ Usa o valor do documento
                     cargos: cargosLista
                 });
             });
@@ -345,7 +347,6 @@ function carregarPropostas() {
                 }
                 const tituloCarta = data.nome || 'Carta sem nome';
                 
-                // 🔥 LIDAR COM TIMESTAMP DAS CARTAS
                 let dataCarta = data.dataAtualizacao || data.dataGeracao || new Date();
                 if (dataCarta && typeof dataCarta.toDate === 'function') {
                     dataCarta = dataCarta.toDate();
@@ -366,7 +367,7 @@ function carregarPropostas() {
                 });
             });
             
-            // 🔥 ORDENAR POR DATA (MAIS RECENTE PRIMEIRO)
+            // ORDENAR POR DATA (MAIS RECENTE PRIMEIRO)
             propostas.sort((a, b) => {
                 const dateA = a.dataOrdenacao instanceof Date ? a.dataOrdenacao : new Date(0);
                 const dateB = b.dataOrdenacao instanceof Date ? b.dataOrdenacao : new Date(0);
