@@ -4494,19 +4494,23 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             // Insumos
             let insumos = {};
-            // 🔥 CORREÇÃO: Usar a classe .insumo-card dentro da seção correta
             const insumosSection = item.querySelectorAll('.expandable-section')[5];
             if (insumosSection) {
+                console.log('🔍 Seção de insumos encontrada:', insumosSection);
+                
                 insumosSection.querySelectorAll('.insumo-card').forEach(card => {
                     const campo = card.querySelector('.insumo-valor')?.dataset.campo;
                     const valorInput = card.querySelector('.insumo-valor');
                     if (campo && valorInput) {
                         const valor = parseFloat(valorInput.value.replace(/\./g, '').replace(',', '.')) || 0;
-                        // 🔥 CORREÇÃO: Salvar SEMPRE, mesmo se for 0 (para preservar o campo)
+                        // 🔥 SALVAR SEMPRE
                         insumos[campo] = { valor: valor };
+                        console.log(`📦 Insumo capturado: ${campo} = ${valor}`);
                     }
                 });
             }
+
+console.log('📦 INSUMOS FINAL:', insumos);
             
             // Despesas (taxa de encargos fiscais)
             let despesas = {};
