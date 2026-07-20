@@ -3768,18 +3768,39 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             });
             
-            // Insumos
+            // ========== CAPTURAR INSUMOS (BUSCA POR TÍTULO) ==========
             let insumos = {};
-            item.querySelectorAll('.insumo-card').forEach(card => {
-                const campo = card.querySelector('.insumo-valor')?.dataset.campo;
-                const valorInput = card.querySelector('.insumo-valor');
-                if (campo) {
-                    const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
-                    if (valor > 0) {
+
+            // 🔥 Buscar a seção pelo título "Insumos"
+            const todasSecoes = item.querySelectorAll('.expandable-section');
+            let insumosSection = null;
+            for (const secao of todasSecoes) {
+                const tituloSpan = secao.querySelector('.section-title span');
+                if (tituloSpan && tituloSpan.textContent.trim() === 'Insumos') {
+                    insumosSection = secao;
+                    break;
+                }
+            }
+
+            // Fallback: tentar pelo índice 4 (corrigido)
+            if (!insumosSection) {
+                insumosSection = item.querySelectorAll('.expandable-section')[4];
+            }
+
+            if (insumosSection) {
+                console.log('✅ Seção de insumos ENCONTRADA!');
+                insumosSection.querySelectorAll('.insumo-card').forEach(card => {
+                    const campo = card.querySelector('.insumo-valor')?.dataset.campo;
+                    const valorInput = card.querySelector('.insumo-valor');
+                    if (campo && valorInput) {
+                        const valor = parseFloat(valorInput.value.replace(/\./g, '').replace(',', '.')) || 0;
+                        // 🔥 SALVAR SEMPRE, mesmo se for 0
                         insumos[campo] = { valor: valor };
                     }
-                }
-            });
+                });
+            } else {
+                console.warn('⚠️ Seção de insumos NÃO encontrada!');
+            }
             
             // Despesas
             let despesas = {};
