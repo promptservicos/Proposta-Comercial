@@ -288,8 +288,20 @@ function carregarPropostas() {
         .then(([propostasSnap, cartasSnap]) => {
             propostas = [];
             
+            console.log('🔍 Total de propostas no Firebase:', propostasSnap.size);
+            
             propostasSnap.forEach((doc) => {
                 const data = doc.data();
+                
+                // 🔥 LOG PARA TODAS AS PROPOSTAS
+                console.log('📄 Processando:', doc.id, 'Tipo:', data.tipo);
+                
+                // 🔥 LOG ESPECÍFICO PARA A PROPOSTA PROBLEMA
+                if (doc.id === 'X1Vt3HFxbTwMfW09fJMG') {
+                    console.log('🎯 PROPOSTA ENCONTRADA NO LOOP!');
+                    console.log('Dados completos:', data);
+                }
+                
                 let vendedorNome = data.vendedor;
                 if (vendedorNome && vendedorNome.includes('@')) {
                     vendedorNome = getNomeFromEmail(vendedorNome);
@@ -332,38 +344,14 @@ function carregarPropostas() {
                     // Fallback - usa o que tem
                     clienteNome = data.cliente || 'Sem cliente';
                     cargosLista = data.cargos || [];
-                    // Se ainda não tem cargos, tenta extrair do cliente (caso especial)
                     if (cargosLista.length === 0 && dadosDescriptografados?.cargos) {
                         cargosLista = dadosDescriptografados.cargos;
                     }
-
-                    // 🔥 VERIFICAR SE A PROPOSTA SERÁ ADICIONADA
-                    if (doc.id === 'X1Vt3HFxbTwMfW09fJMG') {
-                        console.log('✅ Proposta será adicionada com:', {
-                            cliente: clienteNome,
-                            vendedor: vendedorNome,
-                            tipo: data.tipo,
-                            totalGeral: totalGeral
-                        });
-                    }
-                    
-                    propostas.push({ 
-                        id: doc.id, 
-                        cliente: clienteNome,
-                        vendedor: vendedorNome,
-                        tipo: data.tipo || 'efetivo',
-                        colecao: 'propostas',
-                        data: dataProposta,
-                        dataOrdenacao: dataProposta,
-                        totalGeral: totalGeral,
-                        cargos: cargosLista
-                    });    
-
                 }
                 
-                // 🔥 LOG PARA DEBUG (remova depois)
+                // 🔥 LOG PARA A PROPOSTA PROBLEMA
                 if (doc.id === 'X1Vt3HFxbTwMfW09fJMG') {
-                    console.log('✅ Proposta encontrada!', {
+                    console.log('✅ Proposta processada com sucesso!', {
                         id: doc.id,
                         clienteNome,
                         totalGeral,
@@ -384,6 +372,17 @@ function carregarPropostas() {
                     cargos: cargosLista
                 });
             });
+            
+            console.log('📊 Total de propostas processadas:', propostas.length);
+            
+            // 🔥 VERIFICAR SE A PROPOSTA ESTÁ NO ARRAY
+            const encontrada = propostas.find(p => p.id === 'X1Vt3HFxbTwMfW09fJMG');
+            if (encontrada) {
+                console.log('✅ Proposta X1Vt3HFxbTwMfW09fJMG está no array!');
+            } else {
+                console.log('❌ Proposta X1Vt3HFxbTwMfW09fJMG NÃO está no array!');
+                console.log('IDs no array:', propostas.map(p => p.id));
+            }
             
             cartasSnap.forEach((doc) => {
                 const data = doc.data();
@@ -422,6 +421,16 @@ function carregarPropostas() {
             
             if (!isAdmin) {
                 propostas = propostas.filter(p => p.vendedor === usuarioNome);
+            }
+            
+            // 🔥 VERIFICAR NOVAMENTE APÓS O FILTRO
+            const encontradaPosFiltro = propostas.find(p => p.id === 'X1Vt3HFxbTwMfW09fJMG');
+            if (encontradaPosFiltro) {
+                console.log('✅ Proposta ainda está no array após o filtro');
+            } else {
+                console.log('❌ Proposta foi removida pelo filtro!');
+                console.log('isAdmin:', isAdmin);
+                console.log('usuarioNome:', usuarioNome);
             }
             
             aplicarFiltros();
