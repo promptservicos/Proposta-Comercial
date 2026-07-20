@@ -3868,7 +3868,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 🔥 PARTE MODIFICADA: Adicionado o campo emailVendedor
         const dadosPublicos = {
             vendedor: vendedor,
-            emailVendedor: emailVendedor,  // ← CAMPO OBRIGATÓRIO PARA AS REGRAS
+            emailVendedor: emailVendedor,
+            cliente: cliente,  // ← ADICIONAR ESTA LINHA
             tipo: 'temporario',
             data: firebase.firestore.FieldValue.serverTimestamp(),
             totalGeral: parseFloat(totalGeralEl.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')),
