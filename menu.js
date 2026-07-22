@@ -88,6 +88,7 @@ const emailToName = {
 const ADMIN_EMAILS = [
     'marketing@promptservicos.com.br',
     'fabiomansur@promptservicos.com.br',
+    'promptcoordenacao@gmail.com'
 ];
 
 const VENDEDORES = ['Ricardo', 'Michael', 'Moriela', 'Val', 'Fabio'];
