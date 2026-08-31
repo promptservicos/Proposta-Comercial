@@ -257,7 +257,6 @@ async function gerarImagemProposta() {
                 }
                 
                 if (valor > 0) {
-                    console.log(`Seção "${nomeSecao}" tem valor: ${valor} no input ${input.className || input.id || 'sem-classe'}`);
                     return true;
                 }
             }
@@ -268,7 +267,6 @@ async function gerarImagemProposta() {
                     continue;
                 }
                 if (cb.checked) {
-                    console.log(`Seção "${nomeSecao}" tem checkbox marcada: ${cb.className}`);
                     return true;
                 }
             }
@@ -278,7 +276,6 @@ async function gerarImagemProposta() {
                 const nomeInput = beneficio.querySelector('.beneficio-custom-nome');
                 const nome = nomeInput ? nomeInput.value.trim() : '';
                 if (nome) {
-                    console.log(`Seção "${nomeSecao}" tem benefício personalizado: ${nome}`);
                     return true;
                 }
             }
@@ -289,7 +286,6 @@ async function gerarImagemProposta() {
                 if (texto && texto.includes('R$')) {
                     const valor = parseFloat(texto.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
                     if (valor > 0.01) {
-                        console.log(`Seção "${nomeSecao}" tem total exibido: ${formatarMoeda(valor)}`);
                         return true;
                     }
                 }
@@ -301,7 +297,6 @@ async function gerarImagemProposta() {
                 if (qtdInput) {
                     const qtd = parseInt(qtdInput.value) || 0;
                     if (qtd > 0) {
-                        console.log(`Seção "${nomeSecao}" tem item de uniforme/EPI com quantidade ${qtd}`);
                         return true;
                     }
                 }
@@ -310,7 +305,6 @@ async function gerarImagemProposta() {
             const examesChecks = secaoElement.querySelectorAll('.exame-checkbox');
             for (const cb of examesChecks) {
                 if (cb.checked) {
-                    console.log(`Seção "${nomeSecao}" tem exame marcado`);
                     return true;
                 }
             }
@@ -319,7 +313,6 @@ async function gerarImagemProposta() {
             if (treinamentoInput) {
                 const treinamento = parseFloat(treinamentoInput.value.replace(/\./g, '').replace(',', '.')) || 0;
                 if (treinamento > 0) {
-                    console.log(`Seção "${nomeSecao}" tem treinamento: ${treinamento}`);
                     return true;
                 }
             }
@@ -344,49 +337,93 @@ async function gerarImagemProposta() {
                 return false;
             }
             
-            console.log(`Seção "${nomeSecao}" - SEM VALORES, será ocultada`);
             return false;
         }
         
-        // Função para clonar e limpar seções vazias
+        // 🔥 FUNÇÃO CLONE CORRIGIDA - VERSÃO FINAL
         function cloneCargoLimpo(cargoOriginal) {
+            // Cria uma cópia profunda
             const clone = cargoOriginal.cloneNode(true);
             
-            // 🔥 CORREÇÃO: CAPTURAR O VALOR DO ENCARGOS DO ORIGINAL E APLICAR NO CLONE
-            const encargosOriginal = cargoOriginal.querySelector('.encargos-percentual');
-            const encargosClone = clone.querySelector('.encargos-percentual');
-            if (encargosOriginal && encargosClone) {
-                encargosClone.value = encargosOriginal.value;
-            }
-            
-            // 🔥 CORREÇÃO: CAPTURAR O VALOR DA TAXA DE DESPESAS DO ORIGINAL E APLICAR NO CLONE
-            const taxaOriginal = cargoOriginal.querySelector('.despesa-taxa');
-            const taxaClone = clone.querySelector('.despesa-taxa');
-            if (taxaOriginal && taxaClone) {
-                taxaClone.value = taxaOriginal.value;
-            }
-            
-            const secoes = [
-                { selector: '.expandable-section', nome: 'Adicionais' },
-                { selector: '.expandable-section', nome: 'Uniformes e EPIs' },
-                { selector: '.expandable-section', nome: 'Benefícios' },
-                { selector: '.expandable-section', nome: 'Segurança' },
-                { selector: '.expandable-section', nome: 'Insumos' },
-                { selector: '.despesas-section', nome: 'Despesas' },
-                { selector: '.exames-section', nome: 'Exames' }
+            // 🔥🔥🔥 CORREÇÃO PRINCIPAL: CAPTURAR E APLICAR TODOS OS VALORES IMPORTANTES
+            // Mapeamento de seletores para campos que precisam ser copiados
+            const camposParaCopiar = [
+                '.encargos-percentual',
+                '.despesa-taxa',
+                '.cargo-salario',
+                '.cargo-quantidade',
+                '.cargo-nome'
             ];
             
-            secoes.forEach(secao => {
-                const elemento = clone.querySelector(secao.selector);
-                if (elemento && !secaoTemValores(elemento)) {
-                    elemento.style.display = 'none';
+            camposParaCopiar.forEach(seletor => {
+                const orig = cargoOriginal.querySelector(seletor);
+                const cloneElem = clone.querySelector(seletor);
+                if (orig && cloneElem) {
+                    cloneElem.value = orig.value;
+                    console.log(`✅ Copiado ${seletor}: ${orig.value}`);
                 }
             });
             
-            const adicionaisSection = clone.querySelector('.expandable-section:first-child');
-            if (adicionaisSection && !secaoTemValores(adicionaisSection)) {
-                adicionaisSection.style.display = 'none';
-            }
+            // 🔥 COPIA TODOS OS INPUTS DE TEXTO E NÚMERO (exceto os já copiados)
+            const todosInputsOrig = cargoOriginal.querySelectorAll('input[type="text"], input[type="number"]');
+            const todosInputsClone = clone.querySelectorAll('input[type="text"], input[type="number"]');
+            
+            // Lista de seletores já copiados para evitar duplicidade
+            const jaCopiados = new Set(['.encargos-percentual', '.despesa-taxa', '.cargo-salario', '.cargo-quantidade', '.cargo-nome']);
+            
+            todosInputsOrig.forEach((orig, index) => {
+                if (index < todosInputsClone.length) {
+                    const cloneInput = todosInputsClone[index];
+                    
+                    // Verifica se este input já foi copiado pelos seletores específicos
+                    let jaCopiado = false;
+                    for (const seletor of jaCopiados) {
+                        if (orig.matches(seletor)) {
+                            jaCopiado = true;
+                            break;
+                        }
+                    }
+                    
+                    // Se não foi copiado ainda e não está desabilitado
+                    if (!jaCopiado && cloneInput && !cloneInput.disabled && !cloneInput.readOnly) {
+                        // Ignora campos de quantidade/depreciação de uniformes/EPIs
+                        if (!cloneInput.classList.contains('quantidade-uniforme') && 
+                            !cloneInput.classList.contains('quantidade-epi') &&
+                            !cloneInput.classList.contains('depreciacao-uniforme') &&
+                            !cloneInput.classList.contains('depreciacao-epi') &&
+                            !cloneInput.classList.contains('item-custom-quantidade-input') &&
+                            !cloneInput.classList.contains('item-custom-depreciacao-input')) {
+                            cloneInput.value = orig.value;
+                        }
+                    }
+                }
+            });
+            
+            // 🔥 COPIA CHECKBOXES (adicionais)
+            const checkboxesOrig = cargoOriginal.querySelectorAll('.he-check, .an-check, .per-check, .ins-check, .acumulo-check');
+            const checkboxesClone = clone.querySelectorAll('.he-check, .an-check, .per-check, .ins-check, .acumulo-check');
+            
+            checkboxesOrig.forEach((orig, index) => {
+                if (index < checkboxesClone.length) {
+                    checkboxesClone[index].checked = orig.checked;
+                }
+            });
+            
+            // Ocultar seções sem valores
+            const secoes = [
+                '.expandable-section',
+                '.despesas-section',
+                '.exames-section'
+            ];
+            
+            secoes.forEach(seletor => {
+                const elementos = clone.querySelectorAll(seletor);
+                elementos.forEach(elemento => {
+                    if (!secaoTemValores(elemento)) {
+                        elemento.style.display = 'none';
+                    }
+                });
+            });
             
             return clone;
         }
@@ -524,77 +561,26 @@ async function gerarImagemProposta() {
             }
             
             try {
+                // 🔥 USAR A FUNÇÃO CLONE CORRIGIDA
                 const cloneCargo = cloneCargoLimpo(cargo);
-                
-                // 🔥 CORREÇÃO ADICIONAL: ATUALIZAR OS VALORES NOS INPUTS DO CLONE
-                // Salário
-                const salarioOriginal = cargo.querySelector('.cargo-salario');
-                const salarioClone = cloneCargo.querySelector('.cargo-salario');
-                if (salarioOriginal && salarioClone) {
-                    salarioClone.value = salarioOriginal.value;
-                }
-                
-                // Quantidade
-                const qtdOriginal = cargo.querySelector('.cargo-quantidade');
-                const qtdClone = cloneCargo.querySelector('.cargo-quantidade');
-                if (qtdOriginal && qtdClone) {
-                    qtdClone.value = qtdOriginal.value;
-                }
-                
-                // Nome do cargo
-                const nomeOriginal = cargo.querySelector('.cargo-nome');
-                const nomeClone = cloneCargo.querySelector('.cargo-nome');
-                if (nomeOriginal && nomeClone) {
-                    nomeClone.value = nomeOriginal.value;
-                }
                 
                 // Expandir todas as seções
                 const todasSecoes = cloneCargo.querySelectorAll('.expandable-section, .despesas-section, .exames-section');
-
                 todasSecoes.forEach(secao => {
-                    let nomeSecao = '';
-                    const tituloSpan = secao.querySelector('.section-title span, .exames-title span, .despesas-title span');
-                    if (tituloSpan) {
-                        nomeSecao = tituloSpan.textContent.trim();
-                    }
-                    
-                    const temValores = secaoTemValores(secao);
-                    
-                    if (!temValores) {
-                        console.log(`Ocultando seção: ${nomeSecao || 'sem nome'} - não tem valores`);
-                        secao.style.display = 'none';
-                    } else {
-                        console.log(`Mantendo seção: ${nomeSecao || 'sem nome'} - tem valores`);
+                    if (secao.style.display !== 'none') {
+                        const content = secao.querySelector('.section-content, .exames-content, .despesas-content');
+                        if (content) {
+                            content.classList.remove('collapsed');
+                            content.style.display = 'block';
+                        }
                     }
                 });
                 
-                // Fechar dropdowns de exames, uniformes e EPIs
-                const examesBoxes = cloneCargo.querySelectorAll('.exames-box');
-                examesBoxes.forEach(box => {
-                    const dropdownMenu = box.querySelector('.dropdown-menu');
-                    if (dropdownMenu) {
-                        dropdownMenu.classList.remove('open');
-                        dropdownMenu.style.display = 'none';
-                    }
-                    const headerIcon = box.querySelector('.box-header i');
-                    if (headerIcon) {
-                        headerIcon.classList.remove('fa-chevron-up');
-                        headerIcon.classList.add('fa-chevron-down');
-                    }
-                });
-                
-                const uniformesBoxes = cloneCargo.querySelectorAll('.uniformes-box, .epis-box');
-                uniformesBoxes.forEach(box => {
-                    const dropdownMenu = box.querySelector('.dropdown-menu');
-                    if (dropdownMenu) {
-                        dropdownMenu.classList.remove('open');
-                        dropdownMenu.style.display = 'none';
-                    }
-                    const headerIcon = box.querySelector('.box-header i');
-                    if (headerIcon) {
-                        headerIcon.classList.remove('fa-chevron-up');
-                        headerIcon.classList.add('fa-chevron-down');
-                    }
+                // Fechar dropdowns
+                const dropdowns = cloneCargo.querySelectorAll('.dropdown-menu');
+                dropdowns.forEach(dropdown => {
+                    dropdown.classList.remove('open');
+                    dropdown.style.display = 'none';
                 });
                 
                 // Criar elemento para imagem
@@ -632,6 +618,22 @@ async function gerarImagemProposta() {
                 
                 document.body.appendChild(elementoImagem);
                 
+                // 🔥 CORREÇÃO FINAL: APÓS ADICIONAR AO DOM, FORÇAR OS VALORES NOVAMENTE
+                // Isso garante que mesmo que o outerHTML tenha sobrescrito, os valores corretos sejam aplicados
+                const encargosInput = elementoImagem.querySelector('.encargos-percentual');
+                const encargosOriginal = cargo.querySelector('.encargos-percentual');
+                if (encargosInput && encargosOriginal) {
+                    encargosInput.value = encargosOriginal.value;
+                    console.log(`✅ Forçando encargos na imagem: ${encargosOriginal.value}`);
+                }
+                
+                const taxaInput = elementoImagem.querySelector('.despesa-taxa');
+                const taxaOriginal = cargo.querySelector('.despesa-taxa');
+                if (taxaInput && taxaOriginal) {
+                    taxaInput.value = taxaOriginal.value;
+                    console.log(`✅ Forçando taxa na imagem: ${taxaOriginal.value}`);
+                }
+                
                 // Ajustes de estilo
                 const cargoCloneElem = elementoImagem.querySelector('.cargo-item');
                 if (cargoCloneElem) {
@@ -645,11 +647,6 @@ async function gerarImagemProposta() {
                         content.style.display = 'block';
                         content.classList.remove('collapsed');
                     }
-                });
-                
-                const examesTotals = elementoImagem.querySelectorAll('.exames-total, .exames-resumo, .exames-total-geral');
-                examesTotals.forEach(total => {
-                    if (total) total.style.display = 'block';
                 });
                 
                 const allInputs = elementoImagem.querySelectorAll('input');
@@ -698,7 +695,6 @@ async function gerarImagemProposta() {
                 imagensGeradas++;
                 console.log(`✅ Imagem ${i + 1}/${cargos.length} baixada: ${nomeArquivo}`);
                 
-                // Pequena pausa entre downloads
                 await new Promise(resolve => setTimeout(resolve, 500));
                 
             } catch (cargoError) {
