@@ -217,17 +217,14 @@ async function gerarImagemProposta() {
         function secaoTemValores(secaoElement) {
             if (!secaoElement) return false;
             
-            // Verifica se a seção está visível (não oculta)
             if (secaoElement.style.display === 'none') return false;
             
-            // Em vez de usar :contains(), verifica o texto do elemento
             let nomeSecao = '';
             const titulo = secaoElement.querySelector('.section-title span, .exames-title span, .despesas-title span');
             if (titulo) {
                 nomeSecao = titulo.textContent.trim() || '';
             }
             
-            // Se não encontrou título por esses seletores, tenta encontrar qualquer span com texto
             if (!nomeSecao) {
                 const allSpans = secaoElement.querySelectorAll('span');
                 for (const span of allSpans) {
@@ -241,10 +238,8 @@ async function gerarImagemProposta() {
                 }
             }
             
-            // 1. Verificar inputs de valor (exceto uniformes/EPIs)
             const valorInputs = secaoElement.querySelectorAll('input[type="text"], input[type="number"]');
             for (const input of valorInputs) {
-                // Ignora inputs de quantidade/depreciação de uniformes/EPIs
                 if (input.classList.contains('quantidade-uniforme') || 
                     input.classList.contains('quantidade-epi') ||
                     input.classList.contains('depreciacao-uniforme') ||
@@ -261,17 +256,14 @@ async function gerarImagemProposta() {
                     valor = parseFloat(input.value) || 0;
                 }
                 
-                // Se encontrou algum valor > 0, a seção tem conteúdo
                 if (valor > 0) {
                     console.log(`Seção "${nomeSecao}" tem valor: ${valor} no input ${input.className || input.id || 'sem-classe'}`);
                     return true;
                 }
             }
             
-            // 2. Verificar checkboxes marcadas (exceto as de expandir/recolher)
             const checkboxes = secaoElement.querySelectorAll('input[type="checkbox"]');
             for (const cb of checkboxes) {
-                // Ignora se for checkbox de expandir conteúdo
                 if (cb.closest('.section-header') || cb.closest('.exames-header') || cb.closest('.despesas-header')) {
                     continue;
                 }
@@ -281,7 +273,6 @@ async function gerarImagemProposta() {
                 }
             }
             
-            // 3. Verificar campos de benefícios personalizados
             const customBeneficios = secaoElement.querySelectorAll('.beneficio-custom-card');
             for (const beneficio of customBeneficios) {
                 const nomeInput = beneficio.querySelector('.beneficio-custom-nome');
@@ -292,7 +283,6 @@ async function gerarImagemProposta() {
                 }
             }
             
-            // 4. Verificar totais exibidos (spans com valores)
             const totalSpans = secaoElement.querySelectorAll('.item-total, .item-mensal, .beneficio-total, .seguranca-total, .insumo-total, .despesa-valor, .exames-total span, .uniformes-total span, .epis-total span');
             for (const span of totalSpans) {
                 const texto = span.textContent;
@@ -305,7 +295,6 @@ async function gerarImagemProposta() {
                 }
             }
             
-            // 5. Verificar se há itens de uniformes/EPIs com quantidade > 0
             const uniformesItems = secaoElement.querySelectorAll('.item-lista');
             for (const item of uniformesItems) {
                 const qtdInput = item.querySelector('.quantidade-uniforme, .quantidade-epi');
@@ -318,7 +307,6 @@ async function gerarImagemProposta() {
                 }
             }
             
-            // 6. Verificar se há exames marcados
             const examesChecks = secaoElement.querySelectorAll('.exame-checkbox');
             for (const cb of examesChecks) {
                 if (cb.checked) {
@@ -327,7 +315,6 @@ async function gerarImagemProposta() {
                 }
             }
             
-            // 7. Verificar treinamento
             const treinamentoInput = secaoElement.querySelector('.treinamento-valor');
             if (treinamentoInput) {
                 const treinamento = parseFloat(treinamentoInput.value.replace(/\./g, '').replace(',', '.')) || 0;
@@ -337,22 +324,16 @@ async function gerarImagemProposta() {
                 }
             }
             
-            // 8. Verificar taxa de encargos (sempre tem, mas só conta se > 0)
             const despesaTaxa = secaoElement.querySelector('.despesa-taxa');
             if (despesaTaxa && nomeSecao.includes('Despesas')) {
-                // A seção de despesas SEMPRE tem a taxa, mas só mostra se houver base de cálculo
-                // Vamos verificar se há algum benefício ou insumo que gere base de cálculo
                 const parentCargo = secaoElement.closest('.cargo-item');
                 if (parentCargo) {
-                    // Verifica se há benefícios ou insumos com valor
                     const allSections = parentCargo.querySelectorAll('.expandable-section');
                     for (const section of allSections) {
                         const sectionTitle = section.querySelector('.section-title span');
                         if (sectionTitle) {
                             const title = sectionTitle.textContent.trim();
-                            // Verifica se é a seção de Benefícios ou Insumos
                             if (title === 'Benefícios' || title === 'Insumos') {
-                                // Usa a própria função para verificar se a seção tem valores
                                 if (secaoTemValores(section)) {
                                     return true;
                                 }
@@ -360,11 +341,9 @@ async function gerarImagemProposta() {
                         }
                     }
                 }
-                // Se não tem benefícios nem insumos, não mostra despesas
                 return false;
             }
             
-            // Se passou por todas as verificações, não tem valores
             console.log(`Seção "${nomeSecao}" - SEM VALORES, será ocultada`);
             return false;
         }
@@ -372,6 +351,20 @@ async function gerarImagemProposta() {
         // Função para clonar e limpar seções vazias
         function cloneCargoLimpo(cargoOriginal) {
             const clone = cargoOriginal.cloneNode(true);
+            
+            // 🔥 CORREÇÃO: CAPTURAR O VALOR DO ENCARGOS DO ORIGINAL E APLICAR NO CLONE
+            const encargosOriginal = cargoOriginal.querySelector('.encargos-percentual');
+            const encargosClone = clone.querySelector('.encargos-percentual');
+            if (encargosOriginal && encargosClone) {
+                encargosClone.value = encargosOriginal.value;
+            }
+            
+            // 🔥 CORREÇÃO: CAPTURAR O VALOR DA TAXA DE DESPESAS DO ORIGINAL E APLICAR NO CLONE
+            const taxaOriginal = cargoOriginal.querySelector('.despesa-taxa');
+            const taxaClone = clone.querySelector('.despesa-taxa');
+            if (taxaOriginal && taxaClone) {
+                taxaClone.value = taxaOriginal.value;
+            }
             
             const secoes = [
                 { selector: '.expandable-section', nome: 'Adicionais' },
@@ -533,6 +526,28 @@ async function gerarImagemProposta() {
             try {
                 const cloneCargo = cloneCargoLimpo(cargo);
                 
+                // 🔥 CORREÇÃO ADICIONAL: ATUALIZAR OS VALORES NOS INPUTS DO CLONE
+                // Salário
+                const salarioOriginal = cargo.querySelector('.cargo-salario');
+                const salarioClone = cloneCargo.querySelector('.cargo-salario');
+                if (salarioOriginal && salarioClone) {
+                    salarioClone.value = salarioOriginal.value;
+                }
+                
+                // Quantidade
+                const qtdOriginal = cargo.querySelector('.cargo-quantidade');
+                const qtdClone = cloneCargo.querySelector('.cargo-quantidade');
+                if (qtdOriginal && qtdClone) {
+                    qtdClone.value = qtdOriginal.value;
+                }
+                
+                // Nome do cargo
+                const nomeOriginal = cargo.querySelector('.cargo-nome');
+                const nomeClone = cloneCargo.querySelector('.cargo-nome');
+                if (nomeOriginal && nomeClone) {
+                    nomeClone.value = nomeOriginal.value;
+                }
+                
                 // Expandir todas as seções
                 const todasSecoes = cloneCargo.querySelectorAll('.expandable-section, .despesas-section, .exames-section');
 
@@ -543,7 +558,6 @@ async function gerarImagemProposta() {
                         nomeSecao = tituloSpan.textContent.trim();
                     }
                     
-                    // Verifica se a seção tem valores
                     const temValores = secaoTemValores(secao);
                     
                     if (!temValores) {
