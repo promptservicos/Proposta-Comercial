@@ -3253,12 +3253,145 @@ document.addEventListener('DOMContentLoaded', async function() {
         const urlParams = new URLSearchParams(window.location.search);
         const propostaId = urlParams.get('id');
         const vendedorParam = urlParams.get('vendedor');
+        const isVisualizacao = urlParams.get('visualizacao') === 'true';
         
         if (vendedorParam) {
             document.getElementById('vendedor-nome').textContent = vendedorParam;
         }
         
-        if (propostaId) {
+        // 🔥 SE FOR MODO VISUALIZAÇÃO, CARREGA DIRETO DO FIREBASE
+        if (isVisualizacao && propostaId) {
+            console.log('🔓 Modo visualização - carregando dados do Firebase...');
+            try {
+                const doc = await db.collection('propostas').doc(propostaId).get();
+                if (doc.exists) {
+                    const propostaData = doc.data();
+                    
+                    // Força o vendedor
+                    if (propostaData.vendedor && !vendedorParam) {
+                        document.getElementById('vendedor-nome').textContent = propostaData.vendedor;
+                    }
+                    
+                    // Tenta descriptografar os dados
+                    let dadosSensiveis = null;
+                    if (propostaData.dadosCriptografados) {
+                        dadosSensiveis = decryptData(propostaData.dadosCriptografados);
+                    }
+                    
+                    if (dadosSensiveis && dadosSensiveis.cargos) {
+                        // ========== DADOS CRIPTOGRAFADOS ==========
+                        clienteInput.value = dadosSensiveis.cliente || '';
+                        container.innerHTML = '';
+                        
+                        dadosSensiveis.cargos.forEach(c => {
+                            let examesObj = c.exames || {};
+                            const adicionais = c.adicionais || {
+                                horasExtras: false,
+                                noturno: false,
+                                periculosidade: false,
+                                insalubridade: false,
+                                heHoras: 0,
+                                anHoras: 0,
+                                percentualInsalubridade: 20
+                            };
+                            
+                            const seguranca = c.seguranca || {};
+                            
+                            container.appendChild(criarCargoItem(
+                                c.nome,
+                                c.quantidade,
+                                c.salario,
+                                adicionais,
+                                c.uniformes || {},
+                                c.epis || {},
+                                c.beneficios || {},
+                                seguranca,
+                                c.insumos || {},
+                                c.despesas || {},
+                                examesObj,
+                                c.treinamento || 0,
+                                c.adicionais?.encargosPercentual || 55.83,
+                                c.beneficiosPersonalizados || [],
+                                adicionais.percentualInsalubridade || 20
+                            ));
+                        });
+                        calcularTotalGeral();
+                        localStorage.removeItem(DRAFT_KEY);
+                        
+                        // 🔥 MODO VISUALIZAÇÃO - APLICAR RESTRIÇÕES
+                        if (isVisualizacao) {
+                            ativarModoVisualizacao();
+                        }
+                        
+                        return; // Sai da função, não carrega rascunho
+                    } else if (propostaData.cargos) {
+                        // ========== DADOS ANTIGOS (SEM CRIPTOGRAFIA) ==========
+                        clienteInput.value = propostaData.cliente || '';
+                        container.innerHTML = '';
+                        
+                        propostaData.cargos.forEach(c => {
+                            let examesObj = {};
+                            if (c.exames) {
+                                if (Array.isArray(c.exames)) {
+                                    c.exames.forEach(nomeExame => { 
+                                        examesObj[nomeExame] = true; 
+                                    });
+                                } else {
+                                    examesObj = c.exames;
+                                }
+                            }
+                            
+                            const adicionais = c.adicionais || {
+                                horasExtras: false,
+                                noturno: false,
+                                periculosidade: false,
+                                insalubridade: false,
+                                heHoras: 0,
+                                anHoras: 0,
+                                percentualInsalubridade: 20
+                            };
+                            
+                            const seguranca = c.seguranca || {};
+                            
+                            container.appendChild(criarCargoItem(
+                                c.nome,
+                                c.quantidade,
+                                c.salario,
+                                adicionais,
+                                c.uniformes || {},
+                                c.epis || {},
+                                c.beneficios || {},
+                                seguranca,
+                                c.insumos || {},
+                                c.despesas || {},
+                                examesObj,
+                                c.treinamento || 0,
+                                c.adicionais?.encargosPercentual || 55.83,
+                                c.beneficiosPersonalizados || [],
+                                adicionais.percentualInsalubridade || 20
+                            ));
+                        });
+                        calcularTotalGeral();
+                        localStorage.removeItem(DRAFT_KEY);
+                        
+                        // 🔥 MODO VISUALIZAÇÃO - APLICAR RESTRIÇÕES
+                        if (isVisualizacao) {
+                            ativarModoVisualizacao();
+                        }
+                        
+                        return; // Sai da função
+                    }
+                } else {
+                    console.warn('⚠️ Documento não encontrado no Firebase');
+                }
+            } catch (error) {
+                console.error('❌ Erro ao carregar proposta para visualização:', error);
+                // Se falhar, tenta carregar rascunho
+            }
+        }
+        
+        // ========== CARREGAR PROPOSTA NORMAL (NÃO VISUALIZAÇÃO) ==========
+        if (propostaId && !isVisualizacao) {
             try {
                 const doc = await db.collection('propostas').doc(propostaId).get();
                 if (doc.exists) {
@@ -3268,12 +3401,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                         document.getElementById('vendedor-nome').textContent = propostaData.vendedor || 'Não informado';
                     }
                     
+                    // Tenta descriptografar os dados
                     let dadosSensiveis = null;
                     if (propostaData.dadosCriptografados) {
                         dadosSensiveis = decryptData(propostaData.dadosCriptografados);
                     }
                     
                     if (dadosSensiveis && dadosSensiveis.cargos) {
+                        // ========== DADOS CRIPTOGRAFADOS ==========
                         clienteInput.value = dadosSensiveis.cliente || '';
                         container.innerHTML = '';
                         
@@ -3313,6 +3448,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         localStorage.removeItem(DRAFT_KEY);
                         
                     } else if (propostaData.cargos) {
+                        // ========== DADOS ANTIGOS (SEM CRIPTOGRAFIA) ==========
                         clienteInput.value = propostaData.cliente || '';
                         container.innerHTML = '';
                         
@@ -3362,6 +3498,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         localStorage.removeItem(DRAFT_KEY);
                         
                     } else if (!carregarRascunho()) {
+                        // ========== SEM DADOS - CRIA CARGO PADRÃO ==========
                         const segurancaZerada = {
                             sst: { valor: 0, depreciacao: 1 },
                             seguro_vida: { valor: 0, depreciacao: 1 }
@@ -3369,6 +3506,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, segurancaZerada, {}, {}, {}, 0, 55.83, [], 20));
                     }
                 } else {
+                    // ========== DOCUMENTO NÃO ENCONTRADO ==========
                     if (!carregarRascunho()) {
                         const segurancaZerada = {
                             sst: { valor: 0, depreciacao: 1 },
@@ -3380,6 +3518,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             } catch (error) {
                 console.error('Erro ao carregar proposta:', error);
                 if (!carregarRascunho()) {
+                    // ========== ERRO - CRIA CARGO PADRÃO ==========
                     const segurancaZerada = {
                         sst: { valor: 0, depreciacao: 1 },
                         seguro_vida: { valor: 0, depreciacao: 1 }
@@ -3388,6 +3527,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
         } else {
+            // ========== SEM ID - CARREGA RASCUNHO OU CRIA CARGO PADRÃO ==========
             if (!carregarRascunho()) {
                 const segurancaZerada = {
                     sst: { valor: 0, depreciacao: 1 },
@@ -3452,24 +3592,49 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
+    // ========== FUNÇÃO PARA GERAR LINK DE VISUALIZAÇÃO ==========
     async function gerarLinkVisualizacao() {
+        const btn = document.getElementById('btn-compartilhar-link');
+        const textoOriginal = btn ? btn.innerHTML : '';
+        
+        if (btn) {
+            btn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Gerando link...';
+            btn.disabled = true;
+        }
+        
         try {
             const vendedor = document.getElementById('vendedor-nome').textContent;
             const cliente = document.getElementById('cliente-nome').value || 'SEM CLIENTE';
             const urlParams = new URLSearchParams(window.location.search);
             let propostaId = urlParams.get('id');
             
-            if (!propostaId) {
-                await salvarPropostaAtual();
-                
+            // 🔥 SALVAR A PROPOSTA PRIMEIRO PARA GARANTIR DADOS ATUALIZADOS
+            console.log('🔄 Salvando proposta antes de gerar link...');
+            
+            // Usa a função salvarPropostaAtual que já existe
+            const novoId = await salvarPropostaAtual();
+            
+            // Se salvarPropostaAtual retornou um ID, usa ele
+            if (novoId) {
+                propostaId = novoId;
+                console.log('✅ Proposta salva com ID:', propostaId);
+            } else if (!propostaId) {
+                // Se não retornou ID e não tinha ID na URL, tenta pegar da URL
                 const newUrlParams = new URLSearchParams(window.location.search);
                 propostaId = newUrlParams.get('id');
-                
                 if (!propostaId) {
                     throw new Error('Não foi possível gerar o link. Tente salvar a proposta primeiro.');
                 }
             }
             
+            // 🔥 FORÇAR ATUALIZAÇÃO DA URL COM O ID CORRETO
+            if (propostaId) {
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.set('id', propostaId);
+                window.history.replaceState({}, '', newUrl);
+            }
+            
+            // Construir o link de visualização
             const baseUrl = window.location.href.split('?')[0];
             const linkVisualizacao = `${baseUrl}?id=${propostaId}&visualizacao=true`;
             
@@ -3479,18 +3644,26 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (shareLinkInput && modalShare) {
                 shareLinkInput.value = linkVisualizacao;
                 modalShare.classList.remove('hidden');
+                modalShare.style.display = 'flex';
             }
             
+            // Tenta copiar automaticamente
             try {
                 await navigator.clipboard.writeText(linkVisualizacao);
                 showToast('✅ Link copiado para a área de transferência!');
             } catch (err) {
                 console.log('Não foi possível copiar automaticamente');
+                showToast('📋 Clique no botão copiar para copiar o link', false);
             }
             
         } catch (error) {
             console.error('Erro ao gerar link:', error);
-            mostrarModal('Erro ao gerar link. Tente salvar a proposta primeiro.');
+            mostrarModal('❌ ' + error.message, true);
+        } finally {
+            if (btn) {
+                btn.innerHTML = textoOriginal;
+                btn.disabled = false;
+            }
         }
     }
 
@@ -3500,15 +3673,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         const urlParams = new URLSearchParams(window.location.search);
         const propostaId = urlParams.get('id');
         
+        // Obter email do usuário logado
         const user = auth.currentUser;
         const emailVendedor = user ? user.email : null;
         
         if (!emailVendedor) {
             console.error('Usuário não está logado');
             mostrarModal('Você precisa estar logado para salvar!', true);
-            return;
+            return null;
         }
         
+        console.log('📧 Salvando proposta para email:', emailVendedor);
+        
+        // --- Dados que serão criptografados ---
         const dadosSensiveis = {
             cliente: cliente,
             cargos: []
@@ -3522,6 +3699,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const encargosPercentualInput = item.querySelector('.encargos-percentual');
             const encargosPercentual = parseFloat(encargosPercentualInput?.value.replace(/\./g, '').replace(',', '.')) || 55.83;
             
+            // Adicionais
             const heCheck = item.querySelector('.he-check');
             const anCheck = item.querySelector('.an-check');
             const perCheck = item.querySelector('.per-check');
@@ -3531,6 +3709,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const insPercentualInput = item.querySelector('.ins-percentual-input');
             const percentualInsalubridade = insPercentualInput ? parseFloat(insPercentualInput.value) || 20 : 20;
             
+            // Uniformes e EPIs
             let uniformes = {};
             let epis = {};
             
@@ -3594,6 +3773,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (episCustom.length > 0) epis.custom = episCustom;
             }
             
+            // Benefícios
             let beneficios = {};
             let beneficiosPersonalizados = [];
             
@@ -3622,6 +3802,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             });
             
+            // Segurança
             let seguranca = {};
             item.querySelectorAll('.seguranca-item').forEach(card => {
                 const campo = card.querySelector('.seguranca-valor')?.dataset.campo;
@@ -3637,6 +3818,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             });
             
+            // Insumos
             let insumos = {};
             const todasSecoes = item.querySelectorAll('.expandable-section');
             let insumosSection = null;
@@ -3663,6 +3845,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
             
+            // Despesas
             let despesas = {};
             const despesasSection = item.querySelector('.despesas-section');
             if (despesasSection) {
@@ -3678,6 +3861,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
             
+            // Exames
             let exames = {};
             let treinamento = 0;
             const examesSection = item.querySelector('.exames-section');
@@ -3743,7 +3927,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (!dadosCriptografados) {
             console.error('Falha ao criptografar os dados');
             mostrarModal('Erro ao criptografar os dados da proposta', true);
-            return;
+            return null;
         }
 
         const dadosPublicos = {
@@ -3756,13 +3940,44 @@ document.addEventListener('DOMContentLoaded', async function() {
             dadosCriptografados: dadosCriptografados
         };
         
-        if (propostaId) {
-            await db.collection('propostas').doc(propostaId).update(dadosPublicos);
-            console.log('✅ Proposta atualizada com sucesso! ID:', propostaId);
-        } else {
-            const docRef = await db.collection('propostas').add(dadosPublicos);
-            window.history.replaceState(null, '', `?id=${docRef.id}`);
-            console.log('✅ Nova proposta criada com sucesso! ID:', docRef.id);
+        console.log('📦 Enviando para o Firebase:', { 
+            vendedor, 
+            emailVendedor, 
+            tipo: 'temporario',
+            totalGeral: dadosPublicos.totalGeral 
+        });
+        
+        try {
+            let docRef;
+            if (propostaId) {
+                // ATUALIZAR PROPOSTA EXISTENTE
+                docRef = db.collection('propostas').doc(propostaId);
+                await docRef.update(dadosPublicos);
+                console.log('✅ Proposta atualizada com sucesso! ID:', propostaId);
+                
+                // 🔥 ATUALIZAR A URL COM O ID CORRETO
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.set('id', propostaId);
+                window.history.replaceState({}, '', newUrl);
+                
+                return propostaId;
+            } else {
+                // CRIAR NOVA PROPOSTA
+                docRef = await db.collection('propostas').add(dadosPublicos);
+                const novoId = docRef.id;
+                console.log('✅ Nova proposta criada com sucesso! ID:', novoId);
+                
+                // 🔥 ATUALIZAR A URL COM O NOVO ID
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.set('id', novoId);
+                window.history.replaceState({}, '', newUrl);
+                
+                return novoId;
+            }
+        } catch (error) {
+            console.error('❌ Erro ao salvar:', error);
+            mostrarModal('❌ Erro ao salvar proposta: ' + error.message, true);
+            return null;
         }
     }
 

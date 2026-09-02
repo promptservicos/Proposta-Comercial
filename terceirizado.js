@@ -3047,10 +3047,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </div>
                 <div class="adicional-card">
                     <div class="adicional-header">
-                        <label class="checkbox-label">
+                        <label class="checkbox-label" style="flex-wrap: wrap; gap: 0.4rem; align-items: center;">
                             <input type="checkbox" class="ins-check">
                             <span class="checkbox-custom"></span>
-                            <span class="checkbox-text">Insalubridade</span>
+                            <span class="checkbox-text" style="font-size: 0.85rem;">Insalubridade</span>
+                            <span class="ins-percentual-wrapper" style="display: inline-flex; align-items: center; gap: 0.4rem; background: #f5f5f5; border: 1px solid #d0d0d0; border-radius: 24px; padding: 0.1rem 0.8rem; margin-left: 0.3rem; min-width: 85px;">
+                                <span class="ins-percentual-label" style="font-weight: 700; color: #1e2a3e; font-size: 0.85rem; user-select: none; min-width: 18px;">%</span>
+                                <input type="number" class="ins-percentual-input" 
+                                    style="display: inline-block; width: 65px; min-width: 65px; max-width: 65px; height: 34px; padding: 0.2rem 0.4rem; background: #ffffff; border: 2px solid #c10404; border-radius: 20px; color: #1e2a3e; font-weight: 700; font-size: 1rem; text-align: center; outline: none; font-family: 'Poppins', sans-serif; box-shadow: 0 0 0 1px rgba(193, 4, 4, 0.1); flex-shrink: 0; line-height: 1.4; box-sizing: border-box; -webkit-text-fill-color: #1e2a3e; -webkit-appearance: none; appearance: none; margin: 0;" 
+                                    value="20" min="0" max="100" step="0.5">
+                            </span>
                         </label>
                     </div>
                     <div class="adicional-conteudo ins-conteudo hidden">
@@ -3207,15 +3213,24 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             if (perConteudo) perConteudo.classList.toggle('hidden', !(perCheck && perCheck.checked));
             
-            // Insalubridade
+            // Insalubridade (com percentual variável)
             const insCheck = adicionaisContent.querySelector('.ins-check');
             const insConteudo = adicionaisContent.querySelector('.ins-conteudo');
             const insResultado = adicionaisContent.querySelector('.ins-resultado');
+            const insPercentualInput = adicionaisContent.querySelector('.ins-percentual-input');
+
             if (insCheck && insCheck.checked) {
-                const insalubridade = SALARIO_MINIMO * 0.2;
+                // Pega o percentual do input
+                let percentualIns = parseFloat(insPercentualInput?.value) || 20;
+                if (percentualIns < 0) percentualIns = 0;
+                if (percentualIns > 100) percentualIns = 100;
+                
+                const insalubridade = SALARIO_MINIMO * (percentualIns / 100);
                 const encargosIns = insalubridade * taxaEncargos;
                 const totalIns = insalubridade + encargosIns;
-                if (insResultado) insResultado.innerHTML = `<span class="valor-label">Total Insalubridade</span><span class="valor-number">${formatarMoeda(totalIns)}</span>`;
+                if (insResultado) {
+                    insResultado.innerHTML = `<span class="valor-label">Insalubridade (${percentualIns}%)</span><span class="valor-number">${formatarMoeda(totalIns)}</span>`;
+                }
                 totalAdicionais += totalIns;
             } else {
                 if (insResultado) insResultado.innerHTML = '';
@@ -3413,6 +3428,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
         
+        // ========== EVENTO PARA PERCENTUAL DE INSALUBRIDADE ==========
+        const insPercentualInput = adicionaisContent.querySelector('.ins-percentual-input');
+        if (insPercentualInput) {
+            insPercentualInput.addEventListener('input', function() {
+                let valor = parseFloat(this.value);
+                if (isNaN(valor) || valor < 0) valor = 0;
+                if (valor > 100) valor = 100;
+                this.value = valor;
+                atualizarResultados();
+                salvarRascunho();
+            });
+        }
+
         atualizarResultados();
         return item;
     }
