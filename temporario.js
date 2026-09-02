@@ -984,6 +984,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     treinamento: 0
                 };
                 
+                // ========== CAPTURAR ADICIONAIS ==========
                 const adicionaisSection = item.querySelector('.expandable-section:first-child');
                 const adicionaisContent = adicionaisSection ? adicionaisSection.querySelector('.section-content') : null;
                 
@@ -1016,6 +1017,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     };
                 }
                 
+                // ========== UNIFORMES PADRÃO ==========
                 item.querySelectorAll('.uniformes-box .item-lista').forEach(lista => {
                     const nome = lista.querySelector('.item-nome')?.textContent;
                     const qtdInput = lista.querySelector('.quantidade-uniforme');
@@ -1028,6 +1030,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 });
                 
+                // ========== EPIs PADRÃO ==========
                 item.querySelectorAll('.epis-box .item-lista').forEach(lista => {
                     const nome = lista.querySelector('.item-nome')?.textContent;
                     const qtdInput = lista.querySelector('.quantidade-epi');
@@ -1040,33 +1043,59 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 });
                 
-                item.querySelectorAll('.beneficio-card').forEach(card => {
-                    const campo = card.querySelector('.beneficio-valor')?.dataset.campo;
-                    const valorInput = card.querySelector('.beneficio-valor');
-                    const diasInput = card.querySelector('.beneficio-dias');
-                    if (campo) {
+                // ========== CAPTURAR BENEFÍCIOS ==========
+                let beneficios = {};
+                let beneficiosPersonalizados = [];
+
+                // 🔥 BUSCAR A SEÇÃO DE BENEFÍCIOS PELO TÍTULO
+                const todasSecoesBeneficios = item.querySelectorAll('.expandable-section');
+                let beneficiosSection = null;
+                for (const secao of todasSecoesBeneficios) {
+                    const tituloSpan = secao.querySelector('.section-title span');
+                    if (tituloSpan && tituloSpan.textContent.trim() === 'Benefícios') {
+                        beneficiosSection = secao;
+                        break;
+                    }
+                }
+
+                // Fallback: tentar pelo índice 2
+                if (!beneficiosSection) {
+                    beneficiosSection = item.querySelectorAll('.expandable-section')[2];
+                }
+
+                if (beneficiosSection) {
+                    // Benefícios fixos
+                    beneficiosSection.querySelectorAll('.beneficio-card').forEach(card => {
+                        const campo = card.querySelector('.beneficio-valor')?.dataset.campo;
+                        const valorInput = card.querySelector('.beneficio-valor');
+                        const diasInput = card.querySelector('.beneficio-dias');
+                        if (campo) {
+                            const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
+                            const dias = parseInt(diasInput?.value) || 0;
+                            if (valor > 0 || dias > 0) {
+                                beneficios[campo] = { valorDiario: valor, dias: dias };
+                            }
+                        }
+                    });
+                    
+                    // Benefícios personalizados
+                    beneficiosSection.querySelectorAll('.beneficio-custom-card').forEach(card => {
+                        const nomeInput = card.querySelector('.beneficio-custom-nome');
+                        const valorInput = card.querySelector('.beneficio-custom-valor');
+                        const diasInput = card.querySelector('.beneficio-custom-dias');
+                        const nome = nomeInput?.value.trim() || '';
                         const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
                         const dias = parseInt(diasInput?.value) || 0;
-                        if (valor > 0 || dias > 0) {
-                            cargo.beneficios[campo] = { valorDiario: valor, dias: dias };
+                        if (nome && (valor > 0 || dias > 0)) {
+                            beneficiosPersonalizados.push({ nome, valorDiario: valor, dias: dias });
                         }
-                    }
-                });
+                    });
+                }
                 
-                const beneficiosPersonalizados = [];
-                item.querySelectorAll('.beneficio-custom-card').forEach(card => {
-                    const nomeInput = card.querySelector('.beneficio-custom-nome');
-                    const valorInput = card.querySelector('.beneficio-custom-valor');
-                    const diasInput = card.querySelector('.beneficio-custom-dias');
-                    const nome = nomeInput?.value.trim() || '';
-                    const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
-                    const dias = parseInt(diasInput?.value) || 0;
-                    if (nome && (valor > 0 || dias > 0)) {
-                        beneficiosPersonalizados.push({ nome, valorDiario: valor, dias: dias });
-                    }
-                });
+                cargo.beneficios = beneficios;
                 cargo.beneficiosPersonalizados = beneficiosPersonalizados;
                 
+                // ========== SEGURANÇA ==========
                 item.querySelectorAll('.seguranca-item').forEach(card => {
                     const campo = card.querySelector('.seguranca-valor')?.dataset.campo;
                     const valorInput = card.querySelector('.seguranca-valor');
@@ -1080,6 +1109,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 });
                 
+                // ========== INSUMOS ==========
                 item.querySelectorAll('.insumo-card').forEach(card => {
                     const campo = card.querySelector('.insumo-valor')?.dataset.campo;
                     const valorInput = card.querySelector('.insumo-valor');
@@ -1091,6 +1121,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 });
                 
+                // ========== DESPESAS ==========
                 const despesasSection = item.querySelector('.despesas-section');
                 if (despesasSection) {
                     despesasSection.querySelectorAll('.despesa-card').forEach(card => {
@@ -1105,6 +1136,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     });
                 }
                 
+                // ========== EXAMES PADRÃO ==========
                 const examesSection = item.querySelector('.exames-section');
                 if (examesSection) {
                     const examesObj = {};
@@ -1121,6 +1153,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 }
                 
+                // ========== UNIFORMES PERSONALIZADOS ==========
                 const uniformesCustom = [];
                 item.querySelectorAll('.uniformes-box .item-custom').forEach(customItem => {
                     const nome = customItem.querySelector('.item-custom-nome')?.value;
@@ -1136,6 +1169,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
                 if (uniformesCustom.length > 0) cargo.uniformes.custom = uniformesCustom;
                 
+                // ========== EPIs PERSONALIZADOS ==========
                 const episCustom = [];
                 item.querySelectorAll('.epis-box .item-custom').forEach(customItem => {
                     const nome = customItem.querySelector('.item-custom-nome')?.value;
@@ -1151,6 +1185,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
                 if (episCustom.length > 0) cargo.epis.custom = episCustom;
                 
+                // ========== EXAMES PERSONALIZADOS ==========
                 const examesCustom = [];
                 item.querySelectorAll('.exame-custom-item').forEach(customItem => {
                     const nome = customItem.querySelector('.exame-custom-nome')?.value;
@@ -1169,6 +1204,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 dados.cargos.push(cargo);
             });
             
+            // Log para debug
+            console.log('=== DADOS SENDO SALVOS NO RASCUNHO ===');
+            console.log('Benefícios dos cargos:', dados.cargos.map(c => ({ nome: c.nome, beneficios: c.beneficios, benefPersonalizados: c.beneficiosPersonalizados })));
+            
             localStorage.setItem(DRAFT_KEY, JSON.stringify(dados));
             
         } catch (e) {
@@ -1185,7 +1224,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (dados.cargos && dados.cargos.length > 0) {
                     container.innerHTML = '';
                     dados.cargos.forEach(c => {
+                        console.log('=== CARREGANDO CARGO DO RASCUNHO ===');
+                        console.log('Nome:', c.nome);
+                        console.log('Benefícios:', c.beneficios);
+                        console.log('Benefícios Personalizados:', c.beneficiosPersonalizados);
+
                         let examesObj = c.exames || {};
+                        
+                        // GARANTIR que os adicionais existem
                         const adicionais = c.adicionais || {
                             horasExtras: false,
                             noturno: false,
@@ -1203,14 +1249,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                             adicionais,
                             c.uniformes || {},
                             c.epis || {},
-                            c.beneficios || {},
+                            c.beneficios || {},  // ← PASSAR OS BENEFÍCIOS
                             c.seguranca || {},
                             c.insumos || {},
                             c.despesas || {},
                             examesObj,
                             c.treinamento || 0,
                             parseFloat(c.adicionais?.encargosPercentual?.replace(/\./g, '').replace(',', '.')) || 55.83,
-                            c.beneficiosPersonalizados || [],
+                            c.beneficiosPersonalizados || [],  // ← PASSAR BENEFÍCIOS PERSONALIZADOS
                             adicionais.percentualInsalubridade || 20
                         ));
                     });
@@ -3267,19 +3313,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (doc.exists) {
                     const propostaData = doc.data();
                     
-                    // Força o vendedor
                     if (propostaData.vendedor && !vendedorParam) {
                         document.getElementById('vendedor-nome').textContent = propostaData.vendedor;
                     }
                     
-                    // Tenta descriptografar os dados
                     let dadosSensiveis = null;
                     if (propostaData.dadosCriptografados) {
                         dadosSensiveis = decryptData(propostaData.dadosCriptografados);
                     }
                     
                     if (dadosSensiveis && dadosSensiveis.cargos) {
-                        // ========== DADOS CRIPTOGRAFADOS ==========
                         clienteInput.value = dadosSensiveis.cliente || '';
                         container.innerHTML = '';
                         
@@ -3296,6 +3339,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                             };
                             
                             const seguranca = c.seguranca || {};
+                            const beneficios = c.beneficios || {};
+                            const beneficiosPersonalizados = c.beneficiosPersonalizados || [];
+                            
+                            console.log(`📊 Visualização - Cargo: ${c.nome}`);
+                            console.log('Benefícios:', beneficios);
+                            console.log('Benefícios Personalizados:', beneficiosPersonalizados);
                             
                             container.appendChild(criarCargoItem(
                                 c.nome,
@@ -3304,28 +3353,26 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 adicionais,
                                 c.uniformes || {},
                                 c.epis || {},
-                                c.beneficios || {},
+                                beneficios,
                                 seguranca,
                                 c.insumos || {},
                                 c.despesas || {},
                                 examesObj,
                                 c.treinamento || 0,
                                 c.adicionais?.encargosPercentual || 55.83,
-                                c.beneficiosPersonalizados || [],
+                                beneficiosPersonalizados,
                                 adicionais.percentualInsalubridade || 20
                             ));
                         });
                         calcularTotalGeral();
                         localStorage.removeItem(DRAFT_KEY);
                         
-                        // 🔥 MODO VISUALIZAÇÃO - APLICAR RESTRIÇÕES
                         if (isVisualizacao) {
                             ativarModoVisualizacao();
                         }
                         
-                        return; // Sai da função, não carrega rascunho
+                        return;
                     } else if (propostaData.cargos) {
-                        // ========== DADOS ANTIGOS (SEM CRIPTOGRAFIA) ==========
                         clienteInput.value = propostaData.cliente || '';
                         container.innerHTML = '';
                         
@@ -3352,6 +3399,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                             };
                             
                             const seguranca = c.seguranca || {};
+                            const beneficios = c.beneficios || {};
+                            const beneficiosPersonalizados = c.beneficiosPersonalizados || [];
                             
                             container.appendChild(criarCargoItem(
                                 c.nome,
@@ -3360,33 +3409,31 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 adicionais,
                                 c.uniformes || {},
                                 c.epis || {},
-                                c.beneficios || {},
+                                beneficios,
                                 seguranca,
                                 c.insumos || {},
                                 c.despesas || {},
                                 examesObj,
                                 c.treinamento || 0,
                                 c.adicionais?.encargosPercentual || 55.83,
-                                c.beneficiosPersonalizados || [],
+                                beneficiosPersonalizados,
                                 adicionais.percentualInsalubridade || 20
                             ));
                         });
                         calcularTotalGeral();
                         localStorage.removeItem(DRAFT_KEY);
                         
-                        // 🔥 MODO VISUALIZAÇÃO - APLICAR RESTRIÇÕES
                         if (isVisualizacao) {
                             ativarModoVisualizacao();
                         }
                         
-                        return; // Sai da função
+                        return;
                     }
                 } else {
                     console.warn('⚠️ Documento não encontrado no Firebase');
                 }
             } catch (error) {
                 console.error('❌ Erro ao carregar proposta para visualização:', error);
-                // Se falhar, tenta carregar rascunho
             }
         }
         
@@ -3401,14 +3448,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                         document.getElementById('vendedor-nome').textContent = propostaData.vendedor || 'Não informado';
                     }
                     
-                    // Tenta descriptografar os dados
                     let dadosSensiveis = null;
                     if (propostaData.dadosCriptografados) {
                         dadosSensiveis = decryptData(propostaData.dadosCriptografados);
                     }
                     
                     if (dadosSensiveis && dadosSensiveis.cargos) {
-                        // ========== DADOS CRIPTOGRAFADOS ==========
                         clienteInput.value = dadosSensiveis.cliente || '';
                         container.innerHTML = '';
                         
@@ -3425,6 +3470,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                             };
                             
                             const seguranca = c.seguranca || {};
+                            const beneficios = c.beneficios || {};
+                            const beneficiosPersonalizados = c.beneficiosPersonalizados || [];
+                            
+                            console.log(`📊 Cargo: ${c.nome}`);
+                            console.log('Benefícios:', beneficios);
+                            console.log('Benefícios Personalizados:', beneficiosPersonalizados);
                             
                             container.appendChild(criarCargoItem(
                                 c.nome,
@@ -3433,14 +3484,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 adicionais,
                                 c.uniformes || {},
                                 c.epis || {},
-                                c.beneficios || {},
+                                beneficios,
                                 seguranca,
                                 c.insumos || {},
                                 c.despesas || {},
                                 examesObj,
                                 c.treinamento || 0,
                                 c.adicionais?.encargosPercentual || 55.83,
-                                c.beneficiosPersonalizados || [],
+                                beneficiosPersonalizados,
                                 adicionais.percentualInsalubridade || 20
                             ));
                         });
@@ -3448,7 +3499,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                         localStorage.removeItem(DRAFT_KEY);
                         
                     } else if (propostaData.cargos) {
-                        // ========== DADOS ANTIGOS (SEM CRIPTOGRAFIA) ==========
                         clienteInput.value = propostaData.cliente || '';
                         container.innerHTML = '';
                         
@@ -3475,6 +3525,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                             };
                             
                             const seguranca = c.seguranca || {};
+                            const beneficios = c.beneficios || {};
+                            const beneficiosPersonalizados = c.beneficiosPersonalizados || [];
                             
                             container.appendChild(criarCargoItem(
                                 c.nome,
@@ -3483,14 +3535,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 adicionais,
                                 c.uniformes || {},
                                 c.epis || {},
-                                c.beneficios || {},
+                                beneficios,
                                 seguranca,
                                 c.insumos || {},
                                 c.despesas || {},
                                 examesObj,
                                 c.treinamento || 0,
                                 c.adicionais?.encargosPercentual || 55.83,
-                                c.beneficiosPersonalizados || [],
+                                beneficiosPersonalizados,
                                 adicionais.percentualInsalubridade || 20
                             ));
                         });
@@ -3498,7 +3550,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                         localStorage.removeItem(DRAFT_KEY);
                         
                     } else if (!carregarRascunho()) {
-                        // ========== SEM DADOS - CRIA CARGO PADRÃO ==========
                         const segurancaZerada = {
                             sst: { valor: 0, depreciacao: 1 },
                             seguro_vida: { valor: 0, depreciacao: 1 }
@@ -3506,7 +3557,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                         container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, segurancaZerada, {}, {}, {}, 0, 55.83, [], 20));
                     }
                 } else {
-                    // ========== DOCUMENTO NÃO ENCONTRADO ==========
                     if (!carregarRascunho()) {
                         const segurancaZerada = {
                             sst: { valor: 0, depreciacao: 1 },
@@ -3518,7 +3568,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             } catch (error) {
                 console.error('Erro ao carregar proposta:', error);
                 if (!carregarRascunho()) {
-                    // ========== ERRO - CRIA CARGO PADRÃO ==========
                     const segurancaZerada = {
                         sst: { valor: 0, depreciacao: 1 },
                         seguro_vida: { valor: 0, depreciacao: 1 }
@@ -3527,7 +3576,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
         } else {
-            // ========== SEM ID - CARREGA RASCUNHO OU CRIA CARGO PADRÃO ==========
             if (!carregarRascunho()) {
                 const segurancaZerada = {
                     sst: { valor: 0, depreciacao: 1 },
@@ -3773,36 +3821,56 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (episCustom.length > 0) epis.custom = episCustom;
             }
             
-            // Benefícios
+            // ========== CAPTURAR BENEFÍCIOS ==========
             let beneficios = {};
             let beneficiosPersonalizados = [];
-            
-            item.querySelectorAll('.beneficio-card').forEach(card => {
-                const campo = card.querySelector('.beneficio-valor')?.dataset.campo;
-                const valorInput = card.querySelector('.beneficio-valor');
-                const diasInput = card.querySelector('.beneficio-dias');
-                if (campo) {
+
+            // 🔥 BUSCAR A SEÇÃO DE BENEFÍCIOS PELO TÍTULO
+            const todasSecoesBeneficiosSalvar = item.querySelectorAll('.expandable-section');
+            let beneficiosSectionSalvar = null;
+            for (const secao of todasSecoesBeneficiosSalvar) {
+                const tituloSpan = secao.querySelector('.section-title span');
+                if (tituloSpan && tituloSpan.textContent.trim() === 'Benefícios') {
+                    beneficiosSectionSalvar = secao;
+                    break;
+                }
+            }
+
+            // Fallback: tentar pelo índice 2
+            if (!beneficiosSectionSalvar) {
+                beneficiosSectionSalvar = item.querySelectorAll('.expandable-section')[2];
+            }
+
+            if (beneficiosSectionSalvar) {
+                // Benefícios fixos
+                beneficiosSectionSalvar.querySelectorAll('.beneficio-card').forEach(card => {
+                    const campo = card.querySelector('.beneficio-valor')?.dataset.campo;
+                    const valorInput = card.querySelector('.beneficio-valor');
+                    const diasInput = card.querySelector('.beneficio-dias');
+                    if (campo) {
+                        const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
+                        const dias = parseInt(diasInput?.value) || 0;
+                        if (valor > 0 || dias > 0) {
+                            beneficios[campo] = { valorDiario: valor, dias: dias };
+                        }
+                    }
+                });
+                
+                // Benefícios personalizados
+                beneficiosSectionSalvar.querySelectorAll('.beneficio-custom-card').forEach(card => {
+                    const nomeInput = card.querySelector('.beneficio-custom-nome');
+                    const valorInput = card.querySelector('.beneficio-custom-valor');
+                    const diasInput = card.querySelector('.beneficio-custom-dias');
+                    const nome = nomeInput?.value.trim() || '';
                     const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
                     const dias = parseInt(diasInput?.value) || 0;
-                    if (valor > 0 || dias > 0) {
-                        beneficios[campo] = { valorDiario: valor, dias: dias };
+                    if (nome && (valor > 0 || dias > 0)) {
+                        beneficiosPersonalizados.push({ nome, valorDiario: valor, dias: dias });
                     }
-                }
-            });
+                });
+            }
             
-            item.querySelectorAll('.beneficio-custom-card').forEach(card => {
-                const nomeInput = card.querySelector('.beneficio-custom-nome');
-                const valorInput = card.querySelector('.beneficio-custom-valor');
-                const diasInput = card.querySelector('.beneficio-custom-dias');
-                const nome = nomeInput?.value.trim() || '';
-                const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
-                const dias = parseInt(diasInput?.value) || 0;
-                if (nome && (valor > 0 || dias > 0)) {
-                    beneficiosPersonalizados.push({ nome, valorDiario: valor, dias: dias });
-                }
-            });
-            
-            // Segurança
+            // ========== SEGURANÇA ==========
             let seguranca = {};
             item.querySelectorAll('.seguranca-item').forEach(card => {
                 const campo = card.querySelector('.seguranca-valor')?.dataset.campo;
@@ -3818,7 +3886,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             });
             
-            // Insumos
+            // ========== INSUMOS ==========
             let insumos = {};
             const todasSecoes = item.querySelectorAll('.expandable-section');
             let insumosSection = null;
@@ -3845,7 +3913,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
             
-            // Despesas
+            // ========== DESPESAS ==========
             let despesas = {};
             const despesasSection = item.querySelector('.despesas-section');
             if (despesasSection) {
@@ -3861,7 +3929,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
             
-            // Exames
+            // ========== EXAMES ==========
             let exames = {};
             let treinamento = 0;
             const examesSection = item.querySelector('.exames-section');
@@ -3912,8 +3980,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 },
                 uniformes,
                 epis,
-                beneficios,
-                beneficiosPersonalizados,
+                beneficios,  // ← BENEFÍCIOS
+                beneficiosPersonalizados,  // ← BENEFÍCIOS PERSONALIZADOS
                 seguranca,
                 insumos,
                 despesas,
@@ -3950,24 +4018,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         try {
             let docRef;
             if (propostaId) {
-                // ATUALIZAR PROPOSTA EXISTENTE
                 docRef = db.collection('propostas').doc(propostaId);
                 await docRef.update(dadosPublicos);
                 console.log('✅ Proposta atualizada com sucesso! ID:', propostaId);
                 
-                // 🔥 ATUALIZAR A URL COM O ID CORRETO
                 const newUrl = new URL(window.location);
                 newUrl.searchParams.set('id', propostaId);
                 window.history.replaceState({}, '', newUrl);
                 
                 return propostaId;
             } else {
-                // CRIAR NOVA PROPOSTA
                 docRef = await db.collection('propostas').add(dadosPublicos);
                 const novoId = docRef.id;
                 console.log('✅ Nova proposta criada com sucesso! ID:', novoId);
                 
-                // 🔥 ATUALIZAR A URL COM O NOVO ID
                 const newUrl = new URL(window.location);
                 newUrl.searchParams.set('id', novoId);
                 window.history.replaceState({}, '', newUrl);
