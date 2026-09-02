@@ -16,7 +16,6 @@ if (!firebase.apps.length) {
 
 const auth = firebase.auth();
 const db = firebase.firestore();
-// REMOVA a linha abaixo se não tiver o SDK do Analytics
 
 // ================== CONSTANTES ==================
 const SALARIO_MINIMO = 1621.00;
@@ -218,26 +217,24 @@ async function gerarImagemPorCargo() {
             return adicionais;
         }
                 
-        // Função para verificar se uma seção tem valores > 0 (VERSÃO MELHORADA PARA TEMPORÁRIO)
+        // Função para verificar se uma seção tem valores > 0
         function secaoTemValores(secaoElement) {
             if (!secaoElement) return false;
             
-            // Verifica se a seção está visível (não oculta)
             if (secaoElement.style.display === 'none') return false;
             
             const titulo = secaoElement.querySelector('.section-title span, .exames-title span, .despesas-title span');
             const nomeSecao = titulo ? titulo.textContent : '';
             
-            // 1. Verificar inputs de valor (exceto uniformes/EPIs)
             const valorInputs = secaoElement.querySelectorAll('input[type="text"], input[type="number"]');
             for (const input of valorInputs) {
-                // Ignora inputs de quantidade/depreciação de uniformes/EPIs
                 if (input.classList.contains('quantidade-uniforme') || 
                     input.classList.contains('quantidade-epi') ||
                     input.classList.contains('depreciacao-uniforme') ||
                     input.classList.contains('depreciacao-epi') ||
                     input.classList.contains('item-custom-quantidade-input') ||
-                    input.classList.contains('item-custom-depreciacao-input')) {
+                    input.classList.contains('item-custom-depreciacao-input') ||
+                    input.classList.contains('ins-percentual-input')) {
                     continue;
                 }
                 
@@ -248,38 +245,33 @@ async function gerarImagemPorCargo() {
                     valor = parseFloat(input.value) || 0;
                 }
                 
-                // Se encontrou algum valor > 0, a seção tem conteúdo
                 if (valor > 0) {
-                    console.log(`Seção "${nomeSecao}" tem valor: ${valor} no input ${input.className || 'sem-classe'}`);
+                    console.log(`Seção "${nomeSecao}" tem valor: ${valor}`);
                     return true;
                 }
             }
             
-            // 2. Verificar checkboxes marcadas (exceto as de expandir/recolher)
             const checkboxes = secaoElement.querySelectorAll('input[type="checkbox"]');
             for (const cb of checkboxes) {
-                // Ignora se for checkbox de expandir conteúdo
                 if (cb.closest('.section-header') || cb.closest('.exames-header') || cb.closest('.despesas-header')) {
                     continue;
                 }
                 if (cb.checked) {
-                    console.log(`Seção "${nomeSecao}" tem checkbox marcada: ${cb.className}`);
+                    console.log(`Seção "${nomeSecao}" tem checkbox marcada`);
                     return true;
                 }
             }
             
-            // 3. Verificar campos de benefícios personalizados
             const customBeneficios = secaoElement.querySelectorAll('.beneficio-custom-card');
             for (const beneficio of customBeneficios) {
                 const nomeInput = beneficio.querySelector('.beneficio-custom-nome');
                 const nome = nomeInput ? nomeInput.value.trim() : '';
                 if (nome) {
-                    console.log(`Seção "${nomeSecao}" tem benefício personalizado: ${nome}`);
+                    console.log(`Seção "${nomeSecao}" tem benefício personalizado`);
                     return true;
                 }
             }
             
-            // 4. Verificar totais exibidos (spans com valores)
             const totalSpans = secaoElement.querySelectorAll('.item-total, .item-mensal, .beneficio-total, .seguranca-total, .insumo-total, .despesa-valor, .exames-total span, .uniformes-total span, .epis-total span');
             for (const span of totalSpans) {
                 const texto = span.textContent;
@@ -292,7 +284,6 @@ async function gerarImagemPorCargo() {
                 }
             }
             
-            // 5. Verificar se há itens de uniformes/EPIs com quantidade > 0
             const uniformesItems = secaoElement.querySelectorAll('.item-lista');
             for (const item of uniformesItems) {
                 const qtdInput = item.querySelector('.quantidade-uniforme, .quantidade-epi');
@@ -305,7 +296,6 @@ async function gerarImagemPorCargo() {
                 }
             }
             
-            // 6. Verificar se há exames marcados
             const examesChecks = secaoElement.querySelectorAll('.exame-checkbox');
             for (const cb of examesChecks) {
                 if (cb.checked) {
@@ -314,7 +304,6 @@ async function gerarImagemPorCargo() {
                 }
             }
             
-            // 7. Verificar treinamento
             const treinamentoInput = secaoElement.querySelector('.treinamento-valor');
             if (treinamentoInput) {
                 const treinamento = parseFloat(treinamentoInput.value.replace(/\./g, '').replace(',', '.')) || 0;
@@ -324,7 +313,6 @@ async function gerarImagemPorCargo() {
                 }
             }
             
-            // 8. Verificar despesas (porcentagens > 0)
             const despesaPorcentagem = secaoElement.querySelectorAll('.despesa-porcentagem');
             for (const input of despesaPorcentagem) {
                 const valor = parseFloat(input.value.replace(/\./g, '').replace(',', '.')) || 0;
@@ -334,16 +322,13 @@ async function gerarImagemPorCargo() {
                 }
             }
             
-            // Se passou por todas as verificações, não tem valores
             console.log(`Seção "${nomeSecao}" - SEM VALORES, será ocultada`);
             return false;
         }
 
-        // Função para clonar e limpar seções vazias (VERSÃO CORRIGIDA)
         function cloneCargoLimpo(cargoOriginal) {
             const clone = cargoOriginal.cloneNode(true);
             
-            // Encontra todas as seções expansíveis por título (mais robusto que :nth-child)
             const todasSecoes = clone.querySelectorAll('.expandable-section, .despesas-section, .exames-section');
             
             todasSecoes.forEach(secao => {
@@ -353,7 +338,6 @@ async function gerarImagemPorCargo() {
                     nomeSecao = tituloSpan.textContent.trim();
                 }
                 
-                // Verifica se a seção tem valores
                 const temValores = secaoTemValores(secao);
                 
                 if (!temValores) {
@@ -367,7 +351,6 @@ async function gerarImagemPorCargo() {
             return clone;
         }
         
-        // ========== CORREÇÃO: Calcular total geral da proposta multiplicando pela quantidade ==========
         let totalGeralProposta = 0;
         cargos.forEach(cargo => {
             const totalVagaElem = cargo.querySelector('.total-prestacao .valor');
@@ -377,7 +360,6 @@ async function gerarImagemPorCargo() {
             if (totalVagaElem) {
                 const totalText = totalVagaElem.textContent;
                 const totalValor = parseFloat(totalText.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
-                // MULTIPLICA PELA QUANTIDADE DE FUNCIONÁRIOS
                 totalGeralProposta += totalValor * quantidade;
             }
         });
@@ -470,7 +452,6 @@ async function gerarImagemPorCargo() {
         
         document.body.removeChild(totalElemento);
         
-        // Download da imagem total
         const totalBlob = await new Promise(resolve => totalCanvas.toBlob(resolve, 'image/png'));
         const totalLink = document.createElement('a');
         totalLink.download = `${clienteNome}_TOTAL_DA_PROPOSTA.png`;
@@ -508,7 +489,6 @@ async function gerarImagemPorCargo() {
             try {
                 const cloneCargo = cloneCargoLimpo(cargo);
                 
-                // Expandir todas as seções
                 const todasSecoes = cloneCargo.querySelectorAll('.expandable-section, .exames-section, .despesas-section');
                 todasSecoes.forEach(secao => {
                     const content = secao.querySelector('.section-content, .exames-content, .despesas-content');
@@ -523,7 +503,6 @@ async function gerarImagemPorCargo() {
                     }
                 });
                 
-                // Fechar dropdowns de exames, uniformes e EPIs
                 const examesBoxes = cloneCargo.querySelectorAll('.exames-box');
                 examesBoxes.forEach(box => {
                     const dropdownMenu = box.querySelector('.dropdown-menu');
@@ -552,7 +531,6 @@ async function gerarImagemPorCargo() {
                     }
                 });
                 
-                // Criar elemento para imagem
                 const elementoImagem = document.createElement('div');
                 elementoImagem.style.position = 'fixed';
                 elementoImagem.style.left = '-9999px';
@@ -565,7 +543,6 @@ async function gerarImagemPorCargo() {
                 elementoImagem.style.color = '#333333';
                 elementoImagem.style.background = '#ffffff';
 
-                // Calcular o total deste cargo específico
                 let totalCargo = 0;
                 const totalVagaElemClone = cloneCargo.querySelector('.total-prestacao .valor');
                 const qtdClone = cloneCargo.querySelector('.cargo-quantidade');
@@ -594,7 +571,6 @@ async function gerarImagemPorCargo() {
                     </div>
                     ${cloneCargo.outerHTML}
                     
-                    <!-- ========== TOTAL DA PROPOSTA NO RODAPÉ ========== -->
                     <div style="margin-top: 20px; padding: 15px 20px; background: linear-gradient(135deg, #c10404 0%, #8b0303 100%); border-radius: 12px; display: flex; justify-content: space-between; align-items: center; color: #fff;">
                         <div style="font-size: 14px; opacity: 0.9;">
                             <i class="fas fa-file-invoice" style="margin-right: 8px;"></i>
@@ -605,7 +581,6 @@ async function gerarImagemPorCargo() {
                         </div>
                     </div>
                     
-                    <!-- ========== DETALHAMENTO DOS CARGOS ========== -->
                     <div style="margin-top: 10px; padding: 10px 15px; background: #f8f8f8; border-radius: 8px; border-left: 3px solid #c10404;">
                         <div style="font-size: 11px; color: #666; font-weight: 600; margin-bottom: 5px;">RESUMO DA PROPOSTA:</div>
                         ${Array.from(cargos).map((c, idx) => {
@@ -635,10 +610,8 @@ async function gerarImagemPorCargo() {
                     </div>
                 `;
 
-                // 🔥 FORÇAR ESTILOS DE TEMA CLARO
                 const style = document.createElement('style');
                 style.textContent = `
-                    /* Reset completo para tema claro */
                     .cargo-item, .cargo-item * {
                         background-color: #ffffff !important;
                         background: #ffffff !important;
@@ -722,7 +695,6 @@ async function gerarImagemPorCargo() {
 
                 document.body.appendChild(elementoImagem);
                 
-                // Ajustes de estilo
                 const cargoCloneElem = elementoImagem.querySelector('.cargo-item');
                 if (cargoCloneElem) {
                     cargoCloneElem.style.margin = '0';
@@ -777,7 +749,6 @@ async function gerarImagemPorCargo() {
                 
                 document.body.removeChild(elementoImagem);
                 
-                // Download da imagem do cargo
                 const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
                 const link = document.createElement('a');
                 link.download = nomeArquivo;
@@ -788,7 +759,6 @@ async function gerarImagemPorCargo() {
                 imagensGeradas++;
                 console.log(`✅ Imagem ${i + 1}/${cargos.length} baixada: ${nomeArquivo}`);
                 
-                // Pequena pausa entre downloads
                 await new Promise(resolve => setTimeout(resolve, 500));
                 
             } catch (cargoError) {
@@ -797,7 +767,6 @@ async function gerarImagemPorCargo() {
             }
         }
         
-        // Restaurar tema original
         if (wasDarkMode) {
             document.body.classList.remove('dark');
         }
@@ -829,38 +798,31 @@ async function gerarImagemPorCargo() {
 // ================== INICIALIZAÇÃO ==================
 document.addEventListener('DOMContentLoaded', async function() {
     
-    // ========== GARANTIR MODAIS OCULTOS NO CARREGAMENTO ==========
     document.querySelectorAll('.modal').forEach(modal => {
         modal.classList.add('hidden');
         modal.style.display = 'none';
     });
     
-    // ========== CONFIGURAR MODAIS ==========
-    // Fechar modal de confirmação com o botão "Entendi"
     document.getElementById('modal-ok')?.addEventListener('click', function() {
         fecharModal();
     });
 
-    // Fechar modal de confirmação clicando fora
     document.getElementById('messageModal')?.addEventListener('click', function(e) {
         if (e.target === this) {
             fecharModal();
         }
     });
 
-    // Fechar modal de compartilhamento com o botão "Fechar"
     document.getElementById('modal-share-ok')?.addEventListener('click', function() {
         fecharModalShare();
     });
 
-    // Fechar modal de compartilhamento clicando fora
     document.getElementById('modal-share')?.addEventListener('click', function(e) {
         if (e.target === this) {
             fecharModalShare();
         }
     });
 
-    // Fechar modal de compartilhamento com o botão "Copiar"
     document.getElementById('btn-copiar-link')?.addEventListener('click', function() {
         const shareLinkInput = document.getElementById('share-link');
         if (shareLinkInput) {
@@ -877,14 +839,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (window.isLoading) return;
     window.isLoading = true;
 
-    // Verificar se é modo visualização logo no início
     const urlParamsVis = new URLSearchParams(window.location.search);
     const isVisualizacaoModo = urlParamsVis.get('visualizacao') === 'true';
     
-    // Se for modo visualização, não precisa carregar dados do usuário logado
     if (isVisualizacaoModo) {
         console.log('🔓 Modo visualização - carregando dados apenas para leitura');
-        // Carrega a proposta mas NÃO redireciona para login
     }
 
     const container = document.getElementById('cargos-container');
@@ -896,7 +855,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     const modalMensagem = document.getElementById('modal-mensagem');
     const modalOk = document.getElementById('modal-ok');
 
-    // ========== FUNÇÃO MOSTRAR MODAL CORRIGIDA ==========
     function mostrarModal(mensagem, isError = false, duracao = 3000) {
         console.log('🔵 mostrarModal chamada:', mensagem);
         
@@ -926,16 +884,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             modalIcon.style.color = '#28a745';
         }
         
-        // 🔥 FORÇA A EXIBIÇÃO DO MODAL
         messageModal.style.display = 'flex';
         messageModal.classList.remove('hidden');
         
-        // Limpa timeout anterior
         if (window._modalTimeout) {
             clearTimeout(window._modalTimeout);
         }
         
-        // Fecha automaticamente após a duração
         if (duracao > 0) {
             window._modalTimeout = setTimeout(() => {
                 messageModal.style.display = 'none';
@@ -944,7 +899,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // ========== FECHAR MODAL ==========
     function fecharModal() {
         const messageModal = document.getElementById('messageModal');
         if (messageModal) {
@@ -1005,7 +959,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             };
             
             document.querySelectorAll('.cargo-item').forEach(item => {
-                // ========== DADOS BÁSICOS ==========
                 const cargo = {
                     nome: item.querySelector('.cargo-nome')?.value || '',
                     quantidade: item.querySelector('.cargo-quantidade')?.value || 1,
@@ -1017,7 +970,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                         periculosidade: false,
                         insalubridade: false,
                         heHoras: 0,
-                        anHoras: 0
+                        anHoras: 0,
+                        percentualInsalubridade: 20
                     },
                     uniformes: {},
                     epis: {},
@@ -1030,11 +984,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                     treinamento: 0
                 };
                 
-                // ========== CAPTURAR ADICIONAIS ==========
                 const adicionaisSection = item.querySelector('.expandable-section:first-child');
                 const adicionaisContent = adicionaisSection ? adicionaisSection.querySelector('.section-content') : null;
                 
-                // Forçar expansão para acessar os elementos
                 if (adicionaisContent && adicionaisContent.classList.contains('collapsed')) {
                     adicionaisContent.classList.remove('collapsed');
                     const toggleIcon = adicionaisSection?.querySelector('.section-toggle');
@@ -1051,6 +1003,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const insCheck = adicionaisContent.querySelector('.ins-check');
                     const heHorasInput = adicionaisContent.querySelector('.he-horas');
                     const anHorasInput = adicionaisContent.querySelector('.an-horas');
+                    const insPercentualInput = adicionaisContent.querySelector('.ins-percentual-input');
                     
                     cargo.adicionais = {
                         horasExtras: heCheck ? heCheck.checked : false,
@@ -1058,11 +1011,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                         periculosidade: perCheck ? perCheck.checked : false,
                         insalubridade: insCheck ? insCheck.checked : false,
                         heHoras: heHorasInput ? parseFloat(heHorasInput.value) || 0 : 0,
-                        anHoras: anHorasInput ? parseFloat(anHorasInput.value) || 0 : 0
+                        anHoras: anHorasInput ? parseFloat(anHorasInput.value) || 0 : 0,
+                        percentualInsalubridade: insPercentualInput ? parseFloat(insPercentualInput.value) || 20 : 20
                     };
                 }
                 
-                // ========== UNIFORMES PADRÃO ==========
                 item.querySelectorAll('.uniformes-box .item-lista').forEach(lista => {
                     const nome = lista.querySelector('.item-nome')?.textContent;
                     const qtdInput = lista.querySelector('.quantidade-uniforme');
@@ -1075,7 +1028,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 });
                 
-                // ========== EPIs PADRÃO ==========
                 item.querySelectorAll('.epis-box .item-lista').forEach(lista => {
                     const nome = lista.querySelector('.item-nome')?.textContent;
                     const qtdInput = lista.querySelector('.quantidade-epi');
@@ -1088,7 +1040,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 });
                 
-                // ========== BENEFÍCIOS FIXOS ==========
                 item.querySelectorAll('.beneficio-card').forEach(card => {
                     const campo = card.querySelector('.beneficio-valor')?.dataset.campo;
                     const valorInput = card.querySelector('.beneficio-valor');
@@ -1102,7 +1053,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 });
                 
-                // ========== BENEFÍCIOS PERSONALIZADOS ==========
                 const beneficiosPersonalizados = [];
                 item.querySelectorAll('.beneficio-custom-card').forEach(card => {
                     const nomeInput = card.querySelector('.beneficio-custom-nome');
@@ -1117,7 +1067,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
                 cargo.beneficiosPersonalizados = beneficiosPersonalizados;
                 
-                // ========== SEGURANÇA ==========
                 item.querySelectorAll('.seguranca-item').forEach(card => {
                     const campo = card.querySelector('.seguranca-valor')?.dataset.campo;
                     const valorInput = card.querySelector('.seguranca-valor');
@@ -1131,7 +1080,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 });
                 
-                // ========== INSUMOS ==========
                 item.querySelectorAll('.insumo-card').forEach(card => {
                     const campo = card.querySelector('.insumo-valor')?.dataset.campo;
                     const valorInput = card.querySelector('.insumo-valor');
@@ -1143,7 +1091,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 });
                 
-                // ========== DESPESAS ==========
                 const despesasSection = item.querySelector('.despesas-section');
                 if (despesasSection) {
                     despesasSection.querySelectorAll('.despesa-card').forEach(card => {
@@ -1158,7 +1105,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     });
                 }
                 
-                // ========== EXAMES PADRÃO ==========
                 const examesSection = item.querySelector('.exames-section');
                 if (examesSection) {
                     const examesObj = {};
@@ -1175,7 +1121,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 }
                 
-                // ========== UNIFORMES PERSONALIZADOS ==========
                 const uniformesCustom = [];
                 item.querySelectorAll('.uniformes-box .item-custom').forEach(customItem => {
                     const nome = customItem.querySelector('.item-custom-nome')?.value;
@@ -1191,7 +1136,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
                 if (uniformesCustom.length > 0) cargo.uniformes.custom = uniformesCustom;
                 
-                // ========== EPIs PERSONALIZADOS ==========
                 const episCustom = [];
                 item.querySelectorAll('.epis-box .item-custom').forEach(customItem => {
                     const nome = customItem.querySelector('.item-custom-nome')?.value;
@@ -1207,7 +1151,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
                 if (episCustom.length > 0) cargo.epis.custom = episCustom;
                 
-                // ========== EXAMES PERSONALIZADOS ==========
                 const examesCustom = [];
                 item.querySelectorAll('.exame-custom-item').forEach(customItem => {
                     const nome = customItem.querySelector('.exame-custom-nome')?.value;
@@ -1226,11 +1169,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 dados.cargos.push(cargo);
             });
             
-            // Log para debug
-            console.log('=== DADOS SENDO SALVOS NO RASCUNHO ===');
-            console.log('Adicionais dos cargos:', dados.cargos.map(c => c.adicionais));
-            console.log('Benefícios Personalizados:', dados.cargos.map(c => c.beneficiosPersonalizados));
-            
             localStorage.setItem(DRAFT_KEY, JSON.stringify(dados));
             
         } catch (e) {
@@ -1247,27 +1185,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (dados.cargos && dados.cargos.length > 0) {
                     container.innerHTML = '';
                     dados.cargos.forEach(c => {
-                        console.log('=== CARREGANDO CARGO DO RASCUNHO ===');
-                        console.log('Nome:', c.nome);
-                        console.log('Adicionais brutos:', c.adicionais);
-
                         let examesObj = c.exames || {};
-                        
-                        // GARANTIR que os adicionais existem
                         const adicionais = c.adicionais || {
                             horasExtras: false,
                             noturno: false,
                             periculosidade: false,
                             insalubridade: false,
                             heHoras: 0,
-                            anHoras: 0
+                            anHoras: 0,
+                            percentualInsalubridade: 20
                         };
                         
                         container.appendChild(criarCargoItem(
                             c.nome,
                             c.quantidade,
                             parseFloat(c.salario?.replace(/\./g, '').replace(',', '.')) || 0,
-                            adicionais,  // <-- PASSAR OS ADICIONAIS
+                            adicionais,
                             c.uniformes || {},
                             c.epis || {},
                             c.beneficios || {},
@@ -1277,7 +1210,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                             examesObj,
                             c.treinamento || 0,
                             parseFloat(c.adicionais?.encargosPercentual?.replace(/\./g, '').replace(',', '.')) || 55.83,
-                            c.beneficiosPersonalizados || []
+                            c.beneficiosPersonalizados || [],
+                            adicionais.percentualInsalubridade || 20
                         ));
                     });
                     calcularTotalGeral();
@@ -1319,11 +1253,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         if (iniciarRetraido) {
             content.classList.add('collapsed');
-            // Quando fechado (retraído), seta pra BAIXO (chevron-down)
             header.querySelector('.section-toggle').classList.remove('fa-chevron-up');
             header.querySelector('.section-toggle').classList.add('fa-chevron-down');
         } else {
-            // Quando aberto, seta pra CIMA (chevron-up)
             header.querySelector('.section-toggle').classList.remove('fa-chevron-down');
             header.querySelector('.section-toggle').classList.add('fa-chevron-up');
         }
@@ -1333,12 +1265,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             isExpanded = !isExpanded;
             if (isExpanded) {
                 content.classList.remove('collapsed');
-                // ABERTO: seta pra CIMA
                 header.querySelector('.section-toggle').classList.remove('fa-chevron-down');
                 header.querySelector('.section-toggle').classList.add('fa-chevron-up');
             } else {
                 content.classList.add('collapsed');
-                // FECHADO: seta pra BAIXO
                 header.querySelector('.section-toggle').classList.remove('fa-chevron-up');
                 header.querySelector('.section-toggle').classList.add('fa-chevron-down');
             }
@@ -1499,7 +1429,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         const uniformesCustomItems = [];
         const episCustomItems = [];
         
-        // Função para criar item personalizado (uniforme ou EPI)
         function criarItemPersonalizadoDropdown(tipo, itemData = null) {
             const div = document.createElement('div');
             div.className = 'item-custom item-lista';
@@ -1618,7 +1547,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             };
         }
         
-        // Função para criar botão "Adicionar Personalizado"
         function criarBotaoAdicionarCustom(tipo) {
             const btnDiv = document.createElement('div');
             btnDiv.className = 'btn-add-custom-container';
@@ -1630,7 +1558,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             return btnDiv;
         }
         
-        // Adicionar itens padrão UNIFORMES
         UNIFORMES.forEach(u => {
             const { div, atualizar, getQuantidade, getDepreciacao, getMensal, getTotal } = criarItemListaComDepreciacao(u, 'uniforme');
             const quantidadeInput = div.querySelector('.quantidade-uniforme');
@@ -1653,7 +1580,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
         
-        // Carregar uniformes personalizados existentes
         if (dadosUniformes && dadosUniformes.custom) {
             dadosUniformes.custom.forEach(item => {
                 const customItem = criarItemPersonalizadoDropdown('uniforme', item);
@@ -1672,7 +1598,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             salvarRascunho();
         });
         
-        // Adicionar itens padrão EPIS
         EPIS.forEach(e => {
             const { div, atualizar, getQuantidade, getDepreciacao, getMensal, getTotal } = criarItemListaComDepreciacao(e, 'epi');
             const quantidadeInput = div.querySelector('.quantidade-epi');
@@ -1695,7 +1620,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
         
-        // Carregar EPIs personalizados existentes
         if (dadosEpis && dadosEpis.custom) {
             dadosEpis.custom.forEach(item => {
                 const customItem = criarItemPersonalizadoDropdown('epi', item);
@@ -1715,7 +1639,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
         
         function calcularTotalUniformePorFuncionario() {
-            // Retorna o valor mensal por UM funcionário
             let total = 0;
             uniformesItems.forEach(item => {
                 total += item.getMensal();
@@ -1727,7 +1650,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         function calcularTotalUniformeTotalGeral(qtdFuncionarios) {
-            // Retorna o valor TOTAL (sem depreciação) para todos os funcionários
             let total = 0;
             uniformesItems.forEach(item => {
                 total += item.getTotal() * qtdFuncionarios;
@@ -1739,7 +1661,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         function calcularTotalEpiPorFuncionario() {
-            // Retorna o valor mensal por UM funcionário
             let total = 0;
             episItems.forEach(item => {
                 total += item.getMensal();
@@ -1751,7 +1672,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         function calcularTotalEpiTotalGeral(qtdFuncionarios) {
-            // Retorna o valor TOTAL (sem depreciação) para todos os funcionários
             let total = 0;
             episItems.forEach(item => {
                 total += item.getTotal() * qtdFuncionarios;
@@ -1765,23 +1685,18 @@ document.addEventListener('DOMContentLoaded', async function() {
         function calcularTotais() {
             const qtdFuncionarios = parseInt(cargoItem?.querySelector('.cargo-quantidade')?.value) || 1;
             
-            // Valor mensal por funcionário (R$ 32,42)
             const uniformePorFuncionario = calcularTotalUniformePorFuncionario();
             const epiPorFuncionario = calcularTotalEpiPorFuncionario();
             
-            // Valor mensal TOTAL para todos os funcionários (R$ 97,25)
             const uniformeMensalTotal = uniformePorFuncionario * qtdFuncionarios;
             const epiMensalTotal = epiPorFuncionario * qtdFuncionarios;
             const totalGeralMensal = uniformeMensalTotal + epiMensalTotal;
             
-            // ATUALIZA O SUBTOTAL DO CABEÇALHO (deve ser o valor TOTAL mensal)
             header.querySelector('.summary-value').textContent = formatarMoeda(totalGeralMensal);
             
-            // Atualiza "Total Mensal Uniformes:" (mostra o valor POR funcionário)
             if (uniformesTotalSpan) uniformesTotalSpan.textContent = formatarMoeda(uniformePorFuncionario);
             if (episTotalSpan) episTotalSpan.textContent = formatarMoeda(epiPorFuncionario);
             
-            // Atualiza as divs de total geral
             const uniformesTotalGeralDiv = content.querySelector('.uniformes-total-geral');
             const episTotalGeralDiv = content.querySelector('.epis-total-geral');
             
@@ -1806,7 +1721,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             };
         }
         
-        // Event listeners para itens padrão
         uniformesItems.forEach(item => {
             item.div.querySelectorAll('input').forEach(input => {
                 input.addEventListener('input', () => {
@@ -1834,7 +1748,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
         
-        // Dropdown toggle
         const uniformesHeader = uniformesBox.querySelector('.box-header');
         const episHeader = episBox.querySelector('.box-header');
         const uniformesMenuEl = uniformesMenu;
@@ -1972,8 +1885,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function criarBeneficiosSection(cargoItem, dadosBeneficios = {}, dadosBeneficiosPersonalizados = []) {
-        console.log('criarBeneficiosSection - dadosBeneficiosPersonalizados recebidos:', dadosBeneficiosPersonalizados);
-        
         const conteudoHtml = `
             <div class="beneficios-fixos">
                 <h4 style="color: #c10404; margin-bottom: 0.8rem; font-size: 0.85rem;">Benefícios Fixos</h4>
@@ -1998,7 +1909,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         const beneficiosTotalGeralSpan = content.querySelector('.beneficios-valor-geral');
         const beneficiosQtdFuncionariosSpan = content.querySelector('.beneficios-qtd-funcionarios');
         
-        // Array para armazenar os benefícios personalizados (referências DOM)
         const customBeneficiosRefs = [];
         
         function atualizarTotalGeral(totalPorFuncionario) {
@@ -2009,7 +1919,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             return totalGeral;
         }
         
-        // Benefícios fixos
         BENEFICIOS.forEach(b => {
             const card = document.createElement('div');
             card.className = 'beneficio-card';
@@ -2032,7 +1941,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             fixosGrid.appendChild(card);
         });
         
-        // Função para criar um card de benefício personalizado
         function criarBeneficioCustomizado(beneficio = null) {
             const card = document.createElement('div');
             card.className = 'beneficio-custom-card';
@@ -2060,13 +1968,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </button>
             `;
             
-            // Adicionar event listeners
             const nomeInput = card.querySelector('.beneficio-custom-nome');
             const valorInput = card.querySelector('.beneficio-custom-valor');
             const diasInput = card.querySelector('.beneficio-custom-dias');
             const btnRemover = card.querySelector('.btn-remover-beneficio');
             
-            // Formatação do valor
             valorInput.addEventListener('input', function(e) {
                 let valor = e.target.value.replace(/\D/g, '');
                 e.target.value = valor ? (parseInt(valor) / 100).toFixed(2).replace('.', ',') : '';
@@ -2094,7 +2000,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (cargoItem && cargoItem.dispatchEvent) cargoItem.dispatchEvent(new Event('recalcular'));
             });
             
-            // Atualizar total inicial
             const valor = parseFloat(valorInput.value.replace(/\./g, '').replace(',', '.')) || 0;
             const diasVal = parseInt(diasInput.value) || 0;
             const totalSpan = card.querySelector('.beneficio-total');
@@ -2103,8 +2008,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             return card;
         }
         
-        // Carregar benefícios personalizados existentes
-        console.log('Carregando benefícios personalizados:', dadosBeneficiosPersonalizados);
         if (dadosBeneficiosPersonalizados && dadosBeneficiosPersonalizados.length > 0) {
             dadosBeneficiosPersonalizados.forEach(beneficio => {
                 const card = criarBeneficioCustomizado(beneficio);
@@ -2113,7 +2016,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         }
         
-        // Botão para adicionar novo benefício
         btnAdicionar.addEventListener('click', () => {
             const card = criarBeneficioCustomizado();
             customGrid.appendChild(card);
@@ -2125,7 +2027,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         function calcularTotal() {
             let total = 0;
             
-            // Benefícios fixos
             fixosGrid.querySelectorAll('.beneficio-card').forEach(card => {
                 const valorInput = card.querySelector('.beneficio-valor');
                 const diasInput = card.querySelector('.beneficio-dias');
@@ -2137,7 +2038,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 totalSpan.textContent = `Total: ${formatarMoeda(subtotal)}`;
             });
             
-            // Benefícios personalizados
             customGrid.querySelectorAll('.beneficio-custom-card').forEach(card => {
                 const valorInput = card.querySelector('.beneficio-custom-valor');
                 const diasInput = card.querySelector('.beneficio-custom-dias');
@@ -2154,7 +2054,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             return total;
         }
         
-        // Event listeners para benefícios fixos
         fixosGrid.querySelectorAll('.beneficio-valor, .beneficio-dias').forEach(input => {
             input.addEventListener('input', function(e) {
                 if (e.target.classList.contains('beneficio-valor')) {
@@ -2167,7 +2066,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
         
-        // Atualizar quantidade de funcionários
         if (cargoItem) {
             const qtdInput = cargoItem.querySelector('.cargo-quantidade');
             if (qtdInput) {
@@ -2178,7 +2076,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         calcularTotal();
         
-        // Função para capturar dados
         const getDados = () => {
             const beneficios = {};
             fixosGrid.querySelectorAll('.beneficio-card').forEach(card => {
@@ -2205,8 +2102,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             });
             
-            console.log('getDados - Benefícios Personalizados capturados:', beneficiosPersonalizados);
-            
             return { beneficios, beneficiosPersonalizados };
         };
         
@@ -2218,14 +2113,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         const { section, updateSummary, content } = criarSecaoExpansivel('Segurança e Seguro', 'fa-shield-alt', conteudoHtml, true);
         const grid = content.querySelector('.seguranca-grid');
         
-        // ========== CORREÇÃO: USAR VALOR SALVO OU 0 ==========
         SEGURANCA.forEach(s => {
             const card = document.createElement('div');
             card.className = 'seguranca-item';
             
-            // Verifica se o campo existe nos dados salvos
             let valorUnitario = 0;
-            let depreciacao = 1; // valor padrão
+            let depreciacao = 1;
             
             if (dadosSeguranca && dadosSeguranca[s.campo] !== undefined) {
                 const valorSalvo = dadosSeguranca[s.campo].valor;
@@ -2305,7 +2198,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const depreciacaoInput = card.querySelector('.seguranca-depreciacao');
                     const valor = parseFloat(valorInput.value.replace(/\./g, '').replace(',', '.')) || 0;
                     const depreciacao = parseInt(depreciacaoInput.value) || 1;
-                    // ========== CORREÇÃO: SALVAR SEMPRE, MESMO SE FOR 0 ==========
                     seguranca[campo] = { 
                         valor: valor, 
                         depreciacao: depreciacao 
@@ -2404,13 +2296,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const porcentagem = parseFloat(item.porcentagemInput.value.replace(/\./g, '').replace(',', '.')) || 0;
                 
                 if (item.campo === 'taxa_adm') {
-                    // NOVA LÓGICA: Taxa Adm sobre Salário+Encargos+Adicionais + Insumos+Benefícios
                     const baseTaxaAdm = subtotalSalarioEncargosAdicionais + subtotalInsumosBeneficios;
                     taxaAdm = baseTaxaAdm * (porcentagem / 100);
                     item.valorSpan.textContent = formatarMoeda(taxaAdm);
                     item.calculoSpan.textContent = `(${formatarMoeda(baseTaxaAdm)} × ${porcentagem}%)`;
                 } else if (item.campo === 'encargos_fiscais') {
-                    // Encargos fiscais permanecem sobre (Salário+Encargos+Adicionais + Insumos+Benefícios + Taxa Adm)
                     const baseEncargosFiscais = subtotalSalarioEncargosAdicionais + subtotalInsumosBeneficios + taxaAdm;
                     encargosFiscais = baseEncargosFiscais * (porcentagem / 100);
                     item.valorSpan.textContent = formatarMoeda(encargosFiscais);
@@ -2535,7 +2425,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             return totalGeral;
         }
         
-        // Função para criar exame personalizado DENTRO DO DROPDOWN
         function criarExamePersonalizadoDropdown(exameData = null) {
             const div = document.createElement('div');
             div.className = 'exame-custom-item item-lista';
@@ -2637,7 +2526,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             return btnDiv;
         }
         
-        // Adicionar exames obrigatórios
         EXAMES_OBRIGATORIOS.forEach(e => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'exames-item item-lista';
@@ -2660,7 +2548,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
         
-        // Adicionar exames complementares
         EXAMES_COMPLEMENTARES.forEach(e => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'exames-item item-lista';
@@ -2683,7 +2570,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
         
-        // Carregar exames personalizados existentes
         if (dadosExames && dadosExames.custom) {
             dadosExames.custom.forEach(item => {
                 const customItem = criarExamePersonalizadoDropdown(item);
@@ -2750,7 +2636,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
         
-        // Dropdown toggle
         const examesHeader = examesBox.querySelector('.box-header');
         const examesMenuEl = examesMenu;
         const examesIcon = examesHeader.querySelector('i');
@@ -2841,18 +2726,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         };
     }
 
-    // ========== FUNÇÃO CRIAR INSUMOS SECTION ==========
     function criarInsumosSection(cargoItem, dadosInsumos = {}) {
         const conteudoHtml = `<div class="insumos-grid"></div>`;
         const { section, updateSummary, content } = criarSecaoExpansivel('Insumos', 'fa-boxes', conteudoHtml, true);
         const grid = content.querySelector('.insumos-grid');
         
-        // ========== CORREÇÃO: USAR VALOR SALVO OU 0 ==========
         INSUMOS.forEach(s => {
             const card = document.createElement('div');
             card.className = 'insumo-card';
             
-            // Verifica se o campo existe nos dados salvos
             let valorUnitario = 0;
             if (dadosInsumos && dadosInsumos[s.campo] !== undefined) {
                 const valorSalvo = dadosInsumos[s.campo].valor;
@@ -2927,21 +2809,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         };
     }
 
-    function criarCargoItem(cargo = '', quantidade = 1, salario = 0, dadosAdicionais = {}, dadosUniformes = {}, dadosEpis = {}, dadosBeneficios = {}, dadosSeguranca = {}, dadosInsumos = {}, dadosDespesas = {}, dadosExames = {}, treinamentoValor = 0, encargosPercentual = 55.83, dadosBeneficiosPersonalizados = []) {
-        
-        console.log('🔵 criarCargoItem - ADICIONAIS RECEBIDOS:', {
-            cargo: cargo,
-            dadosAdicionais: dadosAdicionais,
-            horasExtras: dadosAdicionais?.horasExtras,
-            heHoras: dadosAdicionais?.heHoras
-        });
+    function criarCargoItem(cargo = '', quantidade = 1, salario = 0, dadosAdicionais = {}, dadosUniformes = {}, dadosEpis = {}, dadosBeneficios = {}, dadosSeguranca = {}, dadosInsumos = {}, dadosDespesas = {}, dadosExames = {}, treinamentoValor = 0, encargosPercentual = 55.83, dadosBeneficiosPersonalizados = [], percentualInsalubridade = 20) {
         
         const item = document.createElement('div');
         item.className = 'cargo-item';
         
         let isExpanded = true;
         
-        // Header do cargo com botão toggle
         const header = document.createElement('div');
         header.className = 'cargo-header';
         header.innerHTML = `
@@ -2960,7 +2834,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         `;
         item.appendChild(header);
         
-        // ========== LINHA DE CAMPOS BÁSICOS (sempre visível) ==========
         const linha = document.createElement('div');
         linha.className = 'cargo-linha';
         linha.innerHTML = `
@@ -2986,12 +2859,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         `;
         item.appendChild(linha);
         
-        // ========== CONTAINER RECOLHÍVEL (apenas as seções internas) ==========
         const innerContainer = document.createElement('div');
         innerContainer.className = 'cargo-inner-container';
         item.appendChild(innerContainer);
         
-        // Seção Adicionais
+        // 🔥 Seção Adicionais - VERSÃO CORRIGIDA com campo visível
         const adicionaisHtml = `
             <div class="adicionais-grid">
                 <div class="adicional-card">
@@ -3040,10 +2912,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </div>
                 <div class="adicional-card">
                     <div class="adicional-header">
-                        <label class="checkbox-label">
+                        <label class="checkbox-label" style="flex-wrap: wrap; gap: 0.3rem; align-items: center; width: 100%;">
                             <input type="checkbox" class="ins-check">
                             <span class="checkbox-custom"></span>
-                            <span class="checkbox-text">Insalubridade</span>
+                            <span class="checkbox-text" style="font-size: 0.85rem;">Insalubridade</span>
+                            <span class="ins-percentual-wrapper" style="display: inline-flex; align-items: center; gap: 0.3rem; background: #f5f5f5; border: 2px solid #c10404; border-radius: 24px; padding: 0.05rem 0.5rem; margin-left: 0.2rem; margin-bottom: 0.2rem; min-width: 80px; flex-shrink: 0; vertical-align: middle;">
+                                <span class="ins-percentual-label" style="font-weight: 700; color: #1e2a3e; font-size: 0.8rem; user-select: none; min-width: 16px;">%</span>
+                                <input type="number" class="ins-percentual-input" 
+                                    style="display: inline-block; width: 55px; min-width: 50px; max-width: 60px; height: 30px; padding: 0.1rem 0.2rem; background: #ffffff; border: 2px solid #c10404; border-radius: 20px; color: #1e2a3e; font-weight: 700; font-size: 0.95rem; text-align: center; outline: none; font-family: 'Poppins', sans-serif; box-shadow: 0 0 0 1px rgba(193, 4, 4, 0.1); flex-shrink: 0; line-height: 1.3; box-sizing: border-box; -webkit-text-fill-color: #1e2a3e; -webkit-appearance: none; appearance: none; margin: 0;" 
+                                    value="${percentualInsalubridade}" min="0" max="100" step="0.5">
+                            </span>
                         </label>
                     </div>
                     <div class="adicional-conteudo ins-conteudo hidden">
@@ -3055,36 +2933,28 @@ document.addEventListener('DOMContentLoaded', async function() {
         const { section: adicionaisSection, updateSummary: updateAdicionaisSummary, content: adicionaisContent } = criarSecaoExpansivel('Adicionais', 'fa-bolt', adicionaisHtml, true);
         innerContainer.appendChild(adicionaisSection);
         
-        // Seção Uniformes e EPIs
         const { section: uniformesSection, atualizarTotais: atualizarUniformesTotais, getDados: getUniformesDados } = criarUniformesEpisSection(item, dadosUniformes, dadosEpis);
         innerContainer.appendChild(uniformesSection);
         
-        // Seção Benefícios
         const { section: beneficiosSection, calcularTotal: calcularBeneficios, getDados: getBeneficiosDados } = criarBeneficiosSection(item, dadosBeneficios, dadosBeneficiosPersonalizados || []);
         innerContainer.appendChild(beneficiosSection);
         
-        // Seção Segurança
         const { section: segurancaSection, calcularTotal: calcularSeguranca, getDados: getSegurancaDados } = criarSegurancaSection(item, dadosSeguranca);
         innerContainer.appendChild(segurancaSection);
         
-        // Seção Insumos
         const { section: insumosSection, calcularTotal: calcularInsumos, getDados: getInsumosDados } = criarInsumosSection(item, dadosInsumos);
         innerContainer.appendChild(insumosSection);
         
-        // Seção Despesas
         const { section: despesasSection, calcularDespesas, getDados: getDespesasDados } = criarDespesasSection(item, dadosDespesas);
         innerContainer.appendChild(despesasSection);
         
-        // Seção Exames
         const { section: examesSection, calcularTotal: calcularExames, getDados: getExamesDados } = criarExamesSection(item, dadosExames, treinamentoValor);
         innerContainer.appendChild(examesSection);
         
-        // Resultados (sempre visível)
         const resultadosDiv = document.createElement('div');
         resultadosDiv.className = 'cargo-resultados';
         item.appendChild(resultadosDiv);
         
-        // Armazenar referências
         item.__getUniformesDados = getUniformesDados;
         item.__getBeneficiosDados = getBeneficiosDados;
         item.__getSegurancaDados = getSegurancaDados;
@@ -3092,7 +2962,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         item.__getDespesasDados = getDespesasDados;
         item.__getExamesDados = getExamesDados;
         
-        // ========== FUNÇÃO DE TOGGLE (afeta apenas o innerContainer) ==========
         const btnToggle = header.querySelector('.btn-toggle-cargo');
         const toggleIcon = btnToggle.querySelector('i');
         
@@ -3114,7 +2983,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             toggleCargo();
         });
         
-        // ========== FUNÇÃO DE ATUALIZAÇÃO DOS RESULTADOS ==========
         function atualizarResultados() {
             const qtd = parseInt(item.querySelector('.cargo-quantidade').value) || 1;
             const salarioInput = item.querySelector('.cargo-salario').value;
@@ -3181,11 +3049,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             const insCheck = adicionaisContent.querySelector('.ins-check');
             const insConteudo = adicionaisContent.querySelector('.ins-conteudo');
             const insResultado = adicionaisContent.querySelector('.ins-resultado');
+            const insPercentualInput = adicionaisContent.querySelector('.ins-percentual-input');
             let valorInsBruto = 0;
+            
             if (insCheck && insCheck.checked) {
-                valorInsBruto = SALARIO_MINIMO * 0.2;
+                let percentualIns = parseFloat(insPercentualInput?.value) || 20;
+                if (percentualIns < 0) percentualIns = 0;
+                if (percentualIns > 100) percentualIns = 100;
+                
+                valorInsBruto = SALARIO_MINIMO * (percentualIns / 100);
                 totalAdicionaisBrutos += valorInsBruto;
-                if (insResultado) insResultado.innerHTML = `<span class="valor-label">Insalubridade (bruto)</span><span class="valor-number">${formatarMoeda(valorInsBruto)}</span>`;
+                if (insResultado) {
+                    insResultado.innerHTML = `<span class="valor-label">Insalubridade (${percentualIns}%)</span><span class="valor-number">${formatarMoeda(valorInsBruto)}</span>`;
+                }
             } else {
                 if (insResultado) insResultado.innerHTML = '';
             }
@@ -3296,6 +3172,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             salvarRascunho();
         });
         
+        // 🔥 EVENTO PARA PERCENTUAL DE INSALUBRIDADE
+        const insPercentualInput = adicionaisContent.querySelector('.ins-percentual-input');
+        if (insPercentualInput) {
+            insPercentualInput.addEventListener('input', function() {
+                let valor = parseFloat(this.value);
+                if (isNaN(valor) || valor < 0) valor = 0;
+                if (valor > 100) valor = 100;
+                this.value = valor;
+                atualizarResultados();
+                salvarRascunho();
+            });
+        }
+        
         adicionaisContent.querySelectorAll('.he-check, .an-check, .per-check, .ins-check').forEach(chk => {
             chk.addEventListener('change', () => { atualizarResultados(); salvarRascunho(); });
         });
@@ -3315,8 +3204,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // ========== RESTAURAR ADICIONAIS ==========
         if (dadosAdicionais) {
-            console.log('🟢 RESTAURANDO ADICIONAIS:', dadosAdicionais);
-            
             const adicionaisContentElem = item.querySelector('.expandable-section:first-child .section-content');
             const adicionaisHeader = item.querySelector('.expandable-section:first-child .section-header');
             
@@ -3335,6 +3222,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const insCheck = adicionaisContent.querySelector('.ins-check');
             const heHoras = adicionaisContent.querySelector('.he-horas');
             const anHoras = adicionaisContent.querySelector('.an-horas');
+            const insPercentual = adicionaisContent.querySelector('.ins-percentual-input');
             
             if (heCheck) heCheck.checked = dadosAdicionais.horasExtras === true;
             if (anCheck) anCheck.checked = dadosAdicionais.noturno === true;
@@ -3342,6 +3230,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (insCheck) insCheck.checked = dadosAdicionais.insalubridade === true;
             if (heHoras && dadosAdicionais.heHoras) heHoras.value = dadosAdicionais.heHoras;
             if (anHoras && dadosAdicionais.anHoras) anHoras.value = dadosAdicionais.anHoras;
+            if (insPercentual && dadosAdicionais.percentualInsalubridade) {
+                insPercentual.value = dadosAdicionais.percentualInsalubridade;
+            }
             
             const heConteudo = adicionaisContent.querySelector('.he-conteudo');
             const anConteudo = adicionaisContent.querySelector('.an-conteudo');
@@ -3377,14 +3268,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                         document.getElementById('vendedor-nome').textContent = propostaData.vendedor || 'Não informado';
                     }
                     
-                    // Tenta descriptografar os dados
                     let dadosSensiveis = null;
                     if (propostaData.dadosCriptografados) {
                         dadosSensiveis = decryptData(propostaData.dadosCriptografados);
                     }
                     
                     if (dadosSensiveis && dadosSensiveis.cargos) {
-                        // ========== DADOS CRIPTOGRAFADOS ==========
                         clienteInput.value = dadosSensiveis.cliente || '';
                         container.innerHTML = '';
                         
@@ -3396,10 +3285,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 periculosidade: false,
                                 insalubridade: false,
                                 heHoras: 0,
-                                anHoras: 0
+                                anHoras: 0,
+                                percentualInsalubridade: 20
                             };
                             
-                            // ========== CORREÇÃO: GARANTIR QUE OS DADOS DE SEGURANÇA SEJAM PRESERVADOS ==========
                             const seguranca = c.seguranca || {};
                             
                             container.appendChild(criarCargoItem(
@@ -3410,20 +3299,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 c.uniformes || {},
                                 c.epis || {},
                                 c.beneficios || {},
-                                seguranca,  // ← Passa os dados de segurança (incluindo 0)
+                                seguranca,
                                 c.insumos || {},
                                 c.despesas || {},
                                 examesObj,
                                 c.treinamento || 0,
                                 c.adicionais?.encargosPercentual || 55.83,
-                                c.beneficiosPersonalizados || []
+                                c.beneficiosPersonalizados || [],
+                                adicionais.percentualInsalubridade || 20
                             ));
                         });
                         calcularTotalGeral();
                         localStorage.removeItem(DRAFT_KEY);
                         
                     } else if (propostaData.cargos) {
-                        // ========== DADOS ANTIGOS (SEM CRIPTOGRAFIA) ==========
                         clienteInput.value = propostaData.cliente || '';
                         container.innerHTML = '';
                         
@@ -3445,10 +3334,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 periculosidade: false,
                                 insalubridade: false,
                                 heHoras: 0,
-                                anHoras: 0
+                                anHoras: 0,
+                                percentualInsalubridade: 20
                             };
                             
-                            // ========== CORREÇÃO: GARANTIR QUE OS DADOS DE SEGURANÇA SEJAM PRESERVADOS ==========
                             const seguranca = c.seguranca || {};
                             
                             container.appendChild(criarCargoItem(
@@ -3459,75 +3348,69 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 c.uniformes || {},
                                 c.epis || {},
                                 c.beneficios || {},
-                                seguranca,  // ← Passa os dados de segurança (incluindo 0)
+                                seguranca,
                                 c.insumos || {},
                                 c.despesas || {},
                                 examesObj,
                                 c.treinamento || 0,
                                 c.adicionais?.encargosPercentual || 55.83,
-                                c.beneficiosPersonalizados || []
+                                c.beneficiosPersonalizados || [],
+                                adicionais.percentualInsalubridade || 20
                             ));
                         });
                         calcularTotalGeral();
                         localStorage.removeItem(DRAFT_KEY);
                         
                     } else if (!carregarRascunho()) {
-                        // ========== SEM DADOS - CRIA CARGO PADRÃO COM SEGURANÇA ZERADA ==========
                         const segurancaZerada = {
                             sst: { valor: 0, depreciacao: 1 },
                             seguro_vida: { valor: 0, depreciacao: 1 }
                         };
-                        container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, segurancaZerada, {}, {}, {}, 0, 55.83, []));
+                        container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, segurancaZerada, {}, {}, {}, 0, 55.83, [], 20));
                     }
                 } else {
-                    // ========== DOCUMENTO NÃO ENCONTRADO ==========
                     if (!carregarRascunho()) {
                         const segurancaZerada = {
                             sst: { valor: 0, depreciacao: 1 },
                             seguro_vida: { valor: 0, depreciacao: 1 }
                         };
-                        container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, segurancaZerada, {}, {}, {}, 0, 55.83, []));
+                        container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, segurancaZerada, {}, {}, {}, 0, 55.83, [], 20));
                     }
                 }
             } catch (error) {
                 console.error('Erro ao carregar proposta:', error);
                 if (!carregarRascunho()) {
-                    // ========== ERRO - CRIA CARGO PADRÃO COM SEGURANÇA ZERADA ==========
                     const segurancaZerada = {
                         sst: { valor: 0, depreciacao: 1 },
                         seguro_vida: { valor: 0, depreciacao: 1 }
                     };
-                    container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, segurancaZerada, {}, {}, {}, 0, 55.83, []));
+                    container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, segurancaZerada, {}, {}, {}, 0, 55.83, [], 20));
                 }
             }
         } else {
-            // ========== SEM ID - CARREGA RASCUNHO OU CRIA CARGO PADRÃO ==========
             if (!carregarRascunho()) {
                 const segurancaZerada = {
                     sst: { valor: 0, depreciacao: 1 },
                     seguro_vida: { valor: 0, depreciacao: 1 }
                 };
-                container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, segurancaZerada, {}, {}, {}, 0, 55.83, []));
+                container.appendChild(criarCargoItem('', 1, 0, {}, {}, {}, {}, segurancaZerada, {}, {}, {}, 0, 55.83, [], 20));
             }
         }
     }
     
     await carregarPropostaExistente();
     
-    // ========== BOTÃO ADICIONAR CARGO - CORREÇÃO ==========
     btnAdicionar.addEventListener('click', function() {
-        // ========== CORREÇÃO: SEGURANÇA COM VALORES ZERADOS ==========
         const segurancaZerada = {
             sst: { valor: 0, depreciacao: 1 },
             seguro_vida: { valor: 0, depreciacao: 1 }
         };
-        const novoCargo = criarCargoItem('', 1, 0, {}, {}, {}, {}, segurancaZerada, {}, {}, {}, 0, 55.83, []);
+        const novoCargo = criarCargoItem('', 1, 0, {}, {}, {}, {}, segurancaZerada, {}, {}, {}, 0, 55.83, [], 20);
         container.appendChild(novoCargo);
         calcularTotalGeral();
         salvarRascunho();
     });
     
-    // ========== TEMA CLARO/ESCURO ==========
     function initTema() {
         const temaSalvo = localStorage.getItem('theme_temporario');
         const btnTema = document.getElementById('themeToggle');
@@ -3569,7 +3452,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // ========== FUNÇÃO PARA GERAR LINK DE VISUALIZAÇÃO ==========
     async function gerarLinkVisualizacao() {
         try {
             const vendedor = document.getElementById('vendedor-nome').textContent;
@@ -3577,7 +3459,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             const urlParams = new URLSearchParams(window.location.search);
             let propostaId = urlParams.get('id');
             
-            // Se não tiver ID, salva primeiro para ter um ID
             if (!propostaId) {
                 await salvarPropostaAtual();
                 
@@ -3589,11 +3470,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
             
-            // Construir o link de visualização
             const baseUrl = window.location.href.split('?')[0];
             const linkVisualizacao = `${baseUrl}?id=${propostaId}&visualizacao=true`;
             
-            // Mostrar modal com o link
             const modalShare = document.getElementById('modal-share');
             const shareLinkInput = document.getElementById('share-link');
             
@@ -3602,7 +3481,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 modalShare.classList.remove('hidden');
             }
             
-            // Copiar automaticamente para a área de transferência
             try {
                 await navigator.clipboard.writeText(linkVisualizacao);
                 showToast('✅ Link copiado para a área de transferência!');
@@ -3616,14 +3494,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // ========== SALVAR PROPOSTA ATUAL (COM CRIPTOGRAFIA) ==========
     async function salvarPropostaAtual() {
         const vendedor = document.getElementById('vendedor-nome').textContent;
         const cliente = clienteInput.value || 'SEM CLIENTE';
         const urlParams = new URLSearchParams(window.location.search);
         const propostaId = urlParams.get('id');
         
-        // Obter email do usuário logado
         const user = auth.currentUser;
         const emailVendedor = user ? user.email : null;
         
@@ -3633,9 +3509,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
         
-        console.log('📧 Salvando proposta para email:', emailVendedor);
-        
-        // --- Dados que serão criptografados ---
         const dadosSensiveis = {
             cliente: cliente,
             cargos: []
@@ -3649,15 +3522,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             const encargosPercentualInput = item.querySelector('.encargos-percentual');
             const encargosPercentual = parseFloat(encargosPercentualInput?.value.replace(/\./g, '').replace(',', '.')) || 55.83;
             
-            // Adicionais
             const heCheck = item.querySelector('.he-check');
             const anCheck = item.querySelector('.an-check');
             const perCheck = item.querySelector('.per-check');
             const insCheck = item.querySelector('.ins-check');
             const heHorasInput = item.querySelector('.he-horas');
             const anHorasInput = item.querySelector('.an-horas');
+            const insPercentualInput = item.querySelector('.ins-percentual-input');
+            const percentualInsalubridade = insPercentualInput ? parseFloat(insPercentualInput.value) || 20 : 20;
             
-            // Uniformes e EPIs
             let uniformes = {};
             let epis = {};
             
@@ -3721,7 +3594,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (episCustom.length > 0) epis.custom = episCustom;
             }
             
-            // Benefícios
             let beneficios = {};
             let beneficiosPersonalizados = [];
             
@@ -3750,8 +3622,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             });
             
-            // Segurança
-            // ========== CAPTURAR SEGURANÇA - CORREÇÃO ==========
             let seguranca = {};
             item.querySelectorAll('.seguranca-item').forEach(card => {
                 const campo = card.querySelector('.seguranca-valor')?.dataset.campo;
@@ -3760,7 +3630,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (campo) {
                     const valor = parseFloat(valorInput?.value.replace(/\./g, '').replace(',', '.')) || 0;
                     const depreciacao = parseInt(depInput?.value) || 1;
-                    // ========== CORREÇÃO: SALVAR SEMPRE, MESMO SE FOR 0 ==========
                     seguranca[campo] = { 
                         valor: valor, 
                         depreciacao: depreciacao 
@@ -3768,10 +3637,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             });
             
-            // ========== CAPTURAR INSUMOS (BUSCA POR TÍTULO) ==========
             let insumos = {};
-
-            // 🔥 Buscar a seção pelo título "Insumos"
             const todasSecoes = item.querySelectorAll('.expandable-section');
             let insumosSection = null;
             for (const secao of todasSecoes) {
@@ -3782,27 +3648,21 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
 
-            // Fallback: tentar pelo índice 4 (corrigido)
             if (!insumosSection) {
                 insumosSection = item.querySelectorAll('.expandable-section')[4];
             }
 
             if (insumosSection) {
-                console.log('✅ Seção de insumos ENCONTRADA!');
                 insumosSection.querySelectorAll('.insumo-card').forEach(card => {
                     const campo = card.querySelector('.insumo-valor')?.dataset.campo;
                     const valorInput = card.querySelector('.insumo-valor');
                     if (campo && valorInput) {
                         const valor = parseFloat(valorInput.value.replace(/\./g, '').replace(',', '.')) || 0;
-                        // 🔥 SALVAR SEMPRE, mesmo se for 0
                         insumos[campo] = { valor: valor };
                     }
                 });
-            } else {
-                console.warn('⚠️ Seção de insumos NÃO encontrada!');
             }
             
-            // Despesas
             let despesas = {};
             const despesasSection = item.querySelector('.despesas-section');
             if (despesasSection) {
@@ -3818,7 +3678,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
             
-            // Exames
             let exames = {};
             let treinamento = 0;
             const examesSection = item.querySelector('.exames-section');
@@ -3864,7 +3723,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     insalubridade: insCheck ? insCheck.checked : false,
                     heHoras: heHorasInput ? parseFloat(heHorasInput.value) || 0 : 0,
                     anHoras: anHorasInput ? parseFloat(anHorasInput.value) || 0 : 0,
-                    encargosPercentual: encargosPercentual
+                    encargosPercentual: encargosPercentual,
+                    percentualInsalubridade: percentualInsalubridade
                 },
                 uniformes,
                 epis,
@@ -3886,23 +3746,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
 
-        // 🔥 PARTE MODIFICADA: Adicionado o campo emailVendedor
         const dadosPublicos = {
             vendedor: vendedor,
             emailVendedor: emailVendedor,
-            cliente: cliente,  // ← ADICIONAR ESTA LINHA
+            cliente: cliente,
             tipo: 'temporario',
             data: firebase.firestore.FieldValue.serverTimestamp(),
             totalGeral: parseFloat(totalGeralEl.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')),
             dadosCriptografados: dadosCriptografados
         };
-        
-        console.log('📦 Enviando para o Firebase:', { 
-            vendedor, 
-            emailVendedor, 
-            tipo: 'temporario',
-            totalGeral: dadosPublicos.totalGeral 
-        });
         
         if (propostaId) {
             await db.collection('propostas').doc(propostaId).update(dadosPublicos);
@@ -3914,7 +3766,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // ========== BAIXAR IMAGENS ==========
     function initBaixarImagens() {
         const btnBaixar = document.getElementById('btn-baixar-imagens');
         if (!btnBaixar) return;
@@ -3936,7 +3787,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // ========== COMPARTILHAR LINK ==========
     function initCompartilharLink() {
         const btnCompartilharLink = document.getElementById('btn-compartilhar-link');
         if (!btnCompartilharLink) return;
@@ -3963,7 +3813,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         const isVisualizacao = urlParams.get('visualizacao') === 'true';
         
         if (isVisualizacao) {
-            // Desabilitar todos os campos de entrada
             document.querySelectorAll('input, select, textarea').forEach(el => {
                 el.disabled = true;
                 el.style.opacity = '0.7';
@@ -3971,33 +3820,27 @@ document.addEventListener('DOMContentLoaded', async function() {
                 el.style.pointerEvents = 'none';
             });
             
-            // Desabilitar checkboxes
             document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
                 cb.disabled = true;
                 cb.style.pointerEvents = 'none';
             });
             
-            // Ocultar botões de ação
             document.querySelectorAll('.btn-add, #btn-salvar, .btn-remover, #btn-baixar-imagens, #btn-compartilhar-link, .btn-tema').forEach(btn => {
                 if (btn) btn.style.display = 'none';
             });
             
-            // Ocultar botão de adicionar cargo
             const btnAddCargo = document.getElementById('adicionar-cargo');
             if (btnAddCargo) btnAddCargo.style.display = 'none';
             
-            // Desabilitar dropdowns (não podem abrir)
             document.querySelectorAll('.box-header').forEach(header => {
                 header.style.pointerEvents = 'none';
                 header.style.cursor = 'default';
             });
             
-            // Expandir todas as seções para o cliente ver tudo
             document.querySelectorAll('.section-content.collapsed, .despesas-content.collapsed, .exames-content.collapsed').forEach(content => {
                 if (content) content.classList.remove('collapsed');
             });
             
-            // Adicionar aviso visual
             const aviso = document.createElement('div');
             aviso.className = 'aviso-visualizacao';
             aviso.innerHTML = `
@@ -4012,10 +3855,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // ========== SALVAR PROPOSTA (COM CRIPTOGRAFIA) ==========
     document.getElementById('btn-salvar').addEventListener('click', async function() {
-        console.log('🔵 Botão Salvar clicado!');
-        
         const cargos = document.querySelectorAll('.cargo-item');
         if (cargos.length === 0) {
             mostrarModal('Adicione pelo menos um cargo antes de salvar.', true);
@@ -4029,7 +3869,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         try {
-            await salvarPropostaAtual();  // Chama a função COM criptografia
+            await salvarPropostaAtual();
             mostrarModal('✅ Proposta salva com sucesso!');
             localStorage.removeItem(DRAFT_KEY);
         } catch (error) {
@@ -4038,16 +3878,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 
-    // ========== INICIALIZAR FUNCIONALIDADES ==========
     initTema();
     initBaixarImagens();
     initCompartilharLink();
     checkVisualizacao();
 
-    // ========== CONFIGURAR MODAIS COM VERIFICAÇÕES ==========
-    // Aguardar um pouco para garantir que os elementos estão no DOM
     setTimeout(() => {
-        // Modal de compartilhamento
         const modalShare = document.getElementById('modal-share');
         const modalShareOk = document.getElementById('modal-share-ok');
         const btnCopiarLinkModal = document.getElementById('btn-copiar-link');
@@ -4081,7 +3917,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         }
 
-        // Modal de mensagem - USAR O messageModal, NÃO o modalOverlay
         const messageModal = document.getElementById('messageModal');
         const modalOkBtn = document.getElementById('modal-ok');
 
@@ -4098,14 +3933,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }, 100);
 
-    // Verificar autenticação - com prevenção de loop
-    let isRedirecting = false;
-
-    // Verificar se é modo de visualização
     const urlParams = new URLSearchParams(window.location.search);
     const isVisualizacao = urlParams.get('visualizacao') === 'true';
 
-    // Verificar autenticação - PULA se for modo visualização
     if (!isVisualizacao) {
         auth.onAuthStateChanged((user) => {
             if (!user) {
@@ -4117,13 +3947,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     } else {
         console.log('Modo de visualização ativo - sem necessidade de login');
-        // Garantir que está em modo somente leitura
         document.querySelectorAll('input, select, textarea, button:not(#btn-voltar):not(.theme-toggle)').forEach(el => {
             if (el) el.disabled = true;
         });
     }
 
-    // ========== FECHAR MODAL DE CONFIRMAÇÃO ==========
     document.getElementById('modal-ok')?.addEventListener('click', function() {
         const messageModal = document.getElementById('messageModal');
         if (messageModal) {
@@ -4139,7 +3967,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 
-    // ========== FECHAR MODAL DE COMPARTILHAMENTO ==========
     document.getElementById('modal-share-ok')?.addEventListener('click', function() {
         const modalShare = document.getElementById('modal-share');
         if (modalShare) {
